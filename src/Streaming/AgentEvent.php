@@ -115,8 +115,9 @@ final readonly class AgentEvent
         ]);
     }
 
-    public static function error(string $message): self
+    /** $code is what a host translates on; $message is a neutral English fallback, safe to show as is. */
+    public static function error(string $code, string $message): self
     {
-        return new self(EventType::Error, ['message' => $message]);
+        return new self(EventType::Error, ['code' => $code, 'message' => $message]);
     }
 }

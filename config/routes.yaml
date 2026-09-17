@@ -1,0 +1,28 @@
+# The agent's HTTP surface, without a base path: the host imports this file with the prefix it
+# wants (`prefix: /agent`) under the firewall that resolves its principal.
+odiseo_ai_agent_session_start:
+    path: /session
+    controller: Odiseo\AiAgentBundle\Bridge\Symfony\Controller\SessionController::start
+    methods: [POST]
+
+odiseo_ai_agent_chat:
+    path: /chat
+    controller: Odiseo\AiAgentBundle\Bridge\Symfony\Controller\ChatController::chat
+    methods: [POST]
+
+odiseo_ai_agent_memory_list:
+    path: /memory
+    controller: Odiseo\AiAgentBundle\Bridge\Symfony\Controller\MemoryController::list
+    methods: [GET]
+
+odiseo_ai_agent_memory_forget:
+    path: /memory/{key}
+    controller: Odiseo\AiAgentBundle\Bridge\Symfony\Controller\MemoryController::forget
+    methods: [DELETE]
+    requirements:
+        key: '.+'
+
+odiseo_ai_agent_memory_clear:
+    path: /memory
+    controller: Odiseo\AiAgentBundle\Bridge\Symfony\Controller\MemoryController::clear
+    methods: [DELETE]

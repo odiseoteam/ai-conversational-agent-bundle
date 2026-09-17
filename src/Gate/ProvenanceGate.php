@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Odiseo\AiAgentBundle\Gate;
 
+use Odiseo\AiAgentBundle\Session\Provenance;
 use Odiseo\AiAgentBundle\Session\TurnState;
 use Odiseo\AiAgentBundle\Streaming\ToolOutcome;
 
@@ -20,7 +21,7 @@ final class ProvenanceGate
 
     public static function check(TurnState $state, string $id, string $resolveHint): ?ToolOutcome
     {
-        if ($state->hasSeen($id)) {
+        if (Provenance::hasSeen($state, $id)) {
             return null;
         }
 

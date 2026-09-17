@@ -8,6 +8,12 @@ use Doctrine\DBAL\Connection;
 use Odiseo\AiAgentBundle\Agent\AgentLoop;
 use Odiseo\AiAgentBundle\Agent\ContextProvider;
 use Odiseo\AiAgentBundle\Agent\NullContextProvider;
+use Odiseo\AiAgentBundle\Agent\TurnRunner;
+use Odiseo\AiAgentBundle\Bridge\Symfony\Command\ChatCommand;
+use Odiseo\AiAgentBundle\Bridge\Symfony\Controller\ChatController;
+use Odiseo\AiAgentBundle\Bridge\Symfony\Controller\MemoryController;
+use Odiseo\AiAgentBundle\Bridge\Symfony\Controller\SessionController;
+use Odiseo\AiAgentBundle\Bridge\Symfony\EventListener\SessionWriteBackListener;
 use Odiseo\AiAgentBundle\Budget\BudgetPolicy;
 use Odiseo\AiAgentBundle\Budget\CostTable;
 use Odiseo\AiAgentBundle\Budget\Dbal\DbalSpendLedger;
@@ -25,6 +31,10 @@ use Odiseo\AiAgentBundle\Execution\HostToolInvoker;
 use Odiseo\AiAgentBundle\Execution\ToolExecutor;
 use Odiseo\AiAgentBundle\Execution\ToolSurface;
 use Odiseo\AiAgentBundle\Fencing\Fence;
+use Odiseo\AiAgentBundle\Host\ConsoleEnvironment;
+use Odiseo\AiAgentBundle\Host\NullConsoleEnvironment;
+use Odiseo\AiAgentBundle\Host\NullTurnHook;
+use Odiseo\AiAgentBundle\Host\TurnHook;
 use Odiseo\AiAgentBundle\Memory\Dbal\DbalMemoryStore;
 use Odiseo\AiAgentBundle\Memory\MemoryCapability;
 use Odiseo\AiAgentBundle\Memory\MemoryRuntime;
@@ -36,6 +46,7 @@ use Odiseo\AiAgentBundle\Prompt\StaticPromptBuilder;
 use Odiseo\AiAgentBundle\Provider\Anthropic\AnthropicProvider;
 use Odiseo\AiAgentBundle\Provider\ModelProvider;
 use Odiseo\AiAgentBundle\Session\Dbal\DbalSessionStore;
+use Odiseo\AiAgentBundle\Session\SessionResolver;
 use Odiseo\AiAgentBundle\Session\SessionStore;
 use Odiseo\AiAgentBundle\Skill\SkillCapability;
 use Odiseo\AiAgentBundle\Skill\SkillRegistry;
@@ -57,6 +68,23 @@ final class OdiseoAiAgentBundle extends AbstractBundle
 {
     protected string $extensionAlias = 'odiseo_ai_agent';
 
+    /** The package root, so `@OdiseoAiAgentBundle/config/…` and `translations/` resolve there. */
+    public function getPath(): string
+    {
+        return \dirname(__DIR__, 3);
+    }
+
+    /** The rate limiters the agent's routes consume; a host tunes them by redefining the same names. */
+    public function prependExtension(ContainerConfigurator $container, ContainerBuilder $builder): void
+    {
+        $limiter = ['policy' => 'sliding_window', 'interval' => '1 hour'];
+        $builder->prependExtensionConfig('framework', ['rate_limiter' => [
+            'agent_session_start' => $limiter + ['limit' => 10],
+            'agent_chat_turn' => $limiter + ['limit' => 60],
+            'agent_chat_turn_per_session' => $limiter + ['limit' => 40],
+        ]]);
+    }
+
     public function configure(DefinitionConfigurator $definition): void
     {
         $definition->rootNode()
@@ -68,6 +96,9 @@ final class OdiseoAiAgentBundle extends AbstractBundle
                     ->scalarNode('audience')->defaultValue('a visitor')->end()
                     ->scalarNode('scope')->defaultValue('the organisation and what it offers')->end()
                     ->scalarNode('reply_language')->defaultValue('the language of the visitor\'s most recent message')->end()
+                    // Introduces, in the prompt's language, what the host queued for the model
+                    // between turns (a button pressed, an action taken outside the chat).
+                    ->scalarNode('app_events_label')->defaultValue('What happened in the app meanwhile')->end()
                 ->end()->end()
                 ->arrayNode('models')->addDefaultsIfNotSet()->children()
                     ->scalarNode('turn')->defaultValue('claude-sonnet-5')->end()
@@ -108,6 +139,8 @@ final class OdiseoAiAgentBundle extends AbstractBundle
                 ->end()->end()
                 ->arrayNode('sessions')->addDefaultsIfNotSet()->children()
                     ->integerNode('retention_days')->defaultValue(30)->end()
+                    // The clock the model reads; null is PHP's default timezone.
+                    ->scalarNode('timezone')->defaultNull()->end()
                 ->end()->end()
                 ->scalarNode('skills_dir')->defaultNull()->end()
                 ->scalarNode('evals_dir')->defaultNull()->end()
@@ -205,6 +238,29 @@ final class OdiseoAiAgentBundle extends AbstractBundle
         $services->alias(ModelProvider::class, AnthropicProvider::class);
 
         $services->set(AgentLoop::class);
+        $services->set(TurnRunner::class)->args(['$appEventsLabel' => $config['identity']['app_events_label']]);
+
+        // -- The HTTP and console surfaces. The host names its principal and hooks; what it
+        // does not set falls back to a no-op.
+        $services->set(SessionResolver::class)->args(['$timezone' => $config['sessions']['timezone']]);
+        $services->set(SessionWriteBackListener::class);
+        $services->set(NullTurnHook::class);
+        if (!$builder->hasAlias(TurnHook::class)) {
+            $services->alias(TurnHook::class, NullTurnHook::class);
+        }
+        $services->set(NullConsoleEnvironment::class);
+        if (!$builder->hasAlias(ConsoleEnvironment::class)) {
+            $services->alias(ConsoleEnvironment::class, NullConsoleEnvironment::class);
+        }
+        $services->set(SessionController::class)
+            ->args(['$limiter' => service('limiter.agent_session_start')])
+            ->tag('controller.service_arguments');
+        $services->set(ChatController::class)
+            ->args(['$perIp' => service('limiter.agent_chat_turn'), '$perSession' => service('limiter.agent_chat_turn_per_session')])
+            ->tag('controller.service_arguments');
+        $services->set(MemoryController::class)->tag('controller.service_arguments');
+        $services->set(ChatCommand::class);
+        $builder->setParameter('odiseo_ai_agent.timezone', $config['sessions']['timezone']);
 
         $services->set(CodeGrader::class);
         $services->set(JudgeGrader::class)->args(['$model' => $config['models']['judge']]);

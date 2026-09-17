@@ -20,7 +20,8 @@ namespace Odiseo\AiAgentBundle\Streaming;
  * progress      {message, tool?, step?}: a status line replacing the previous one.
  * state_update  {key, value}: a whole piece of vertical state after it moved.
  * turn_complete {stop_reason, usage, elapsed_ms, results_cleared}.
- * error         {message}, safe to show.
+ * error         {code, message}: the host translates the code; the message is a neutral
+ *               English fallback, safe to show as is.
  */
 enum EventType: string
 {

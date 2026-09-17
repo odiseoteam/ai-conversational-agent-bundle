@@ -127,7 +127,7 @@ final class AgentLoop
                         'scope' => $exceeded->value,
                         'session' => $session->sessionTag(),
                     ]);
-                    yield AgentEvent::error('This conversation has reached its limit for now. Please try again later.');
+                    yield AgentEvent::error('budget_exceeded', 'This conversation has reached its limit for now. Please try again later.');
                     $stopReason = 'budget';
                     break;
                 }
