@@ -34,9 +34,9 @@ final class HostToolInvoker
 
     /**
      * @param array<string, mixed> $input
-     * @param string|null          $note what to tell the model on its next turn when the call went
-     *                                   through; it enters the transcript unfenced, so it is
-     *                                   sanitized like any host string
+     * @param string|null          $note  what to tell the model on its next turn when the call went
+     *                                    through; it enters the transcript unfenced, so it is
+     *                                    sanitized like any host string
      */
     public function invoke(string $tool, array $input, SessionRecord $record, SessionContext $session, ?string $note = null): ToolOutcome
     {
