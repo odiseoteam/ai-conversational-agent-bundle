@@ -13,7 +13,6 @@ use Odiseo\AiAgentBundle\Execution\ToolExecutor;
 use Odiseo\AiAgentBundle\Execution\ToolSurface;
 use Odiseo\AiAgentBundle\Execution\TurnScope;
 use Odiseo\AiAgentBundle\Fencing\Fence;
-use Odiseo\AiAgentBundle\Fencing\Sanitizer;
 use Odiseo\AiAgentBundle\Grounding\ForcedRead;
 use Odiseo\AiAgentBundle\Grounding\GroundingResolver;
 use Odiseo\AiAgentBundle\Memory\MemoryFact;
@@ -33,7 +32,7 @@ use Odiseo\AiAgentBundle\Provider\Stream\TurnFinished;
 use Odiseo\AiAgentBundle\Session\SessionContext;
 use Odiseo\AiAgentBundle\Session\TurnState;
 use Odiseo\AiAgentBundle\Streaming\AgentEvent;
-use Odiseo\AiAgentBundle\Streaming\PartialJson;
+use Odiseo\AiAgentBundle\Streaming\EventType;
 use Odiseo\AiAgentBundle\Streaming\ToolOutcome;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -46,9 +45,11 @@ use Psr\Log\NullLogger;
  * automatic rounds only, and a round of clean presentation calls ends the turn without asking
  * the model for a closing line.
  *
- * Tool calls in a round run one after another. PHP can fan them out — Symfony's HTTP client
- * multiplexes, and Fibers are there — and the dispatch seam is this method; running them in
- * parallel is a decision that has not been taken yet, not something the language prevents.
+ * With eager dispatch a tool call runs the moment its arguments finish streaming, while the
+ * model is still writing the rest of the round (StreamedRound); otherwise the round's calls
+ * run after it, one after another. PHP can fan them out — Symfony's HTTP client multiplexes,
+ * and Fibers are there — and the dispatch seam is StreamedRound::run; running them in parallel
+ * is a decision that has not been taken yet, not something the language prevents.
  */
 final class AgentLoop
 {
@@ -156,17 +157,12 @@ final class AgentLoop
                 );
 
                 $response = null;
-                // A tool's status line (ToolSurface::withStatus puts it first in the schema)
-                // is worth showing well before the round finishes: waiting for the whole round
-                // — every tool call in it, plus any closing text — means the local reads this
-                // deployment's tools do resolve before a person ever sees the line. Each call's
-                // arguments are buffered as they stream and tolerantly parsed (PartialJson) so
-                // the status can be read the moment it is complete, without waiting on whatever
-                // argument the model happens to write after it.
-                $toolNames = [];
-                $partials = [];
-                $statusShown = [];
-
+                // What the stream shows before the round is over — a call's status line the
+                // moment it is complete, a presentation call's partial frames, and with eager
+                // dispatch the call itself — is StreamedRound's; the join below picks up the
+                // rest. Waiting for the whole round instead means the local reads this
+                // deployment's tools do resolve before a person ever sees a line.
+                $streamed = new StreamedRound($this->executor, $toolContext, $this->config->eagerToolDispatch && !$forceText);
                 foreach ($this->provider->stream($request) as $event) {
                     if ($event instanceof TextChunk) {
                         yield AgentEvent::textDelta($event->text);
@@ -174,22 +170,13 @@ final class AgentLoop
                     }
 
                     if ($event instanceof ToolCallStarted) {
-                        $toolNames[$event->id] = $event->tool;
+                        $streamed->started($event->id, $event->tool);
                         continue;
                     }
 
                     if ($event instanceof ToolInputChunk) {
-                        $partials[$event->id] = ($partials[$event->id] ?? '').$event->partialJson;
-                        if (isset($statusShown[$event->id])) {
-                            continue;
-                        }
-
-                        $decoded = PartialJson::decode($partials[$event->id]);
-                        $status = Sanitizer::label($decoded[ToolSurface::STATUS_FIELD] ?? '', ToolSurface::STATUS_MAX_CHARS);
-                        if ('' !== $status) {
-                            $statusShown[$event->id] = true;
-                            yield AgentEvent::progress($status, $toolNames[$event->id] ?? $event->tool);
-                        }
+                        yield from $streamed->chunk($event->id, $event->tool, $event->partialJson);
+                        $settled = $streamed->settled();
                         continue;
                     }
 
@@ -218,33 +205,35 @@ final class AgentLoop
                 }
 
                 $blocks = [];
-                $settled = [];
                 $closesTurn = $this->config->closeOnPresentation;
                 $chipsInRound = false;
 
-                // Every call the round asked for is announced before the first one runs, so
-                // the person sees the whole fan-out rather than one line at a time.
-                foreach ($response->toolUses as $call) {
-                    yield $this->executor->toolCallEvent($call->name, $call->id, $call->input);
+                // The calls eager dispatch did not reach (dispatch off, or a buffer that never
+                // parsed) run now from the canonical arguments; without eager dispatch every
+                // call is announced before the first one runs, so the person sees the whole
+                // fan-out rather than one line at a time.
+                $pending = array_values(array_filter(
+                    $response->toolUses,
+                    static fn ($call): bool => null === $streamed->outcome($call->id),
+                ));
+                if (!$this->config->eagerToolDispatch) {
+                    foreach ($pending as $call) {
+                        yield $this->executor->toolCallEvent($call->name, $call->id, $call->input);
+                    }
                 }
-
-                foreach ($response->toolUses as $call) {
-                    $outcome = $this->executor->execute($call->name, $call->input, $toolContext);
-                    $settled[$call->id] = $outcome;
-
-                    foreach ($outcome->events as $produced) {
+                foreach ($pending as $call) {
+                    foreach ($streamed->run($call->id, $call->name, $call->input) as $produced) {
+                        // Already announced above when dispatch is off.
+                        if (!$this->config->eagerToolDispatch && EventType::ToolCall === $produced->type) {
+                            continue;
+                        }
                         yield $produced;
                     }
+                }
+                $settled = $streamed->settled();
 
-                    yield AgentEvent::toolResult(
-                        $call->name,
-                        $call->id,
-                        Sanitizer::truncateDisplay($outcome->resultText, 140),
-                        $outcome->isError,
-                        null !== $outcome->blocked ? 'blocked' : ($outcome->isError ? 'error' : 'ok'),
-                        $outcome->blocked,
-                    );
-
+                foreach ($response->toolUses as $call) {
+                    $outcome = $settled[$call->id];
                     $blocks[] = Transcript::toolResultBlock($call->id, $outcome);
                     $closesTurn = $closesTurn && $this->executor->endsClean($call->name, $outcome);
                     $chipsInRound = $chipsInRound || (ChipComponent::TOOL === $call->name && !$outcome->refused());

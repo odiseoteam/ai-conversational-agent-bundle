@@ -61,6 +61,16 @@ final readonly class AgentEvent
         return new self(EventType::Ui, ['component' => $component, 'payload' => $payload]);
     }
 
+    /** The same event tagged with the call that produced it, so the host can replace its partial frames. */
+    public function withStreamId(string $streamId): self
+    {
+        if (EventType::Ui !== $this->type || isset($this->data['stream_id'])) {
+            return $this;
+        }
+
+        return new self($this->type, $this->data + ['stream_id' => $streamId]);
+    }
+
     /** @param array<string, mixed> $payload */
     public static function uiPartial(string $component, array $payload, string $streamId): self
     {

@@ -50,7 +50,7 @@ final readonly class AgentConfig
         // starts a tool call while the round is still being written; the rolling cache turns
         // the prior rounds into cache reads; closing on presentation ends the turn after a
         // round of clean presentation calls instead of asking for a closing line.
-        public bool $eagerToolDispatch = false,
+        public bool $eagerToolDispatch = true,
         public bool $rollingConversationCache = true,
         public bool $closeOnPresentation = true,
 

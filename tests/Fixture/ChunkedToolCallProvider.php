@@ -11,27 +11,40 @@ use Odiseo\AiAgentBundle\Provider\Request\TurnRequest;
 use Odiseo\AiAgentBundle\Provider\Response\ProviderResponse;
 use Odiseo\AiAgentBundle\Provider\Response\ToolUse;
 use Odiseo\AiAgentBundle\Provider\Response\Usage;
+use Odiseo\AiAgentBundle\Provider\Stream\TextChunk;
 use Odiseo\AiAgentBundle\Provider\Stream\ToolCallStarted;
 use Odiseo\AiAgentBundle\Provider\Stream\ToolInputChunk;
 use Odiseo\AiAgentBundle\Provider\Stream\TurnFinished;
 
 /**
- * A provider that streams one tool call's arguments piece by piece, the way a real one does —
- * for the one thing FakeProvider does not simulate: the status line arriving well before the
- * argument that follows it finishes.
+ * A provider that streams tool calls' arguments piece by piece, the way a real one does — for
+ * what FakeProvider does not simulate: a status line or a partial frame arriving well before
+ * the call finishes, and a call closing while the model still writes what follows it.
+ *
+ * Each call is [tool, id, chunks, finalInput]; $trailingText streams after the last call and
+ * before the turn finishes. A second round answers with $closing.
  */
 final class ChunkedToolCallProvider implements ModelProvider
 {
+    private int $round = 0;
+
     /**
-     * @param list<string>         $chunks     the tool call's JSON input, split however the test wants
-     * @param array<string, mixed> $finalInput
+     * @param list<array{0: string, 1: string, 2: list<string>, 3: array<string, mixed>}> $calls
      */
     public function __construct(
-        private readonly string $tool,
-        private readonly string $id,
-        private readonly array $chunks,
-        private readonly array $finalInput,
+        private readonly array $calls,
+        private readonly string $trailingText = '',
+        private readonly string $closing = 'Listo.',
     ) {
+    }
+
+    /**
+     * @param list<string>         $chunks
+     * @param array<string, mixed> $finalInput
+     */
+    public static function single(string $tool, string $id, array $chunks, array $finalInput, string $trailingText = ''): self
+    {
+        return new self([[$tool, $id, $chunks, $finalInput]], $trailingText);
     }
 
     public function capabilities(): ProviderCapabilities
@@ -41,17 +54,30 @@ final class ChunkedToolCallProvider implements ModelProvider
 
     public function stream(TurnRequest $request): iterable
     {
-        yield new ToolCallStarted($this->id, $this->tool);
-        foreach ($this->chunks as $chunk) {
-            yield new ToolInputChunk($this->id, $this->tool, $chunk);
+        if ($this->round++ > 0) {
+            yield new TextChunk($this->closing);
+            yield new TurnFinished(new ProviderResponse([['type' => 'text', 'text' => $this->closing]], [], 'end_turn', new Usage(10, 5)));
+
+            return;
         }
 
-        yield new TurnFinished(new ProviderResponse(
-            [['type' => 'tool_use', 'id' => $this->id, 'name' => $this->tool, 'input' => $this->finalInput]],
-            [new ToolUse($this->id, $this->tool, $this->finalInput)],
-            'tool_use',
-            new Usage(10, 5),
-        ));
+        $content = [];
+        $uses = [];
+        foreach ($this->calls as [$tool, $id, $chunks, $finalInput]) {
+            yield new ToolCallStarted($id, $tool);
+            foreach ($chunks as $chunk) {
+                yield new ToolInputChunk($id, $tool, $chunk);
+            }
+            $content[] = ['type' => 'tool_use', 'id' => $id, 'name' => $tool, 'input' => $finalInput];
+            $uses[] = new ToolUse($id, $tool, $finalInput);
+        }
+
+        if ('' !== $this->trailingText) {
+            yield new TextChunk($this->trailingText);
+            $content[] = ['type' => 'text', 'text' => $this->trailingText];
+        }
+
+        yield new TurnFinished(new ProviderResponse($content, $uses, 'tool_use', new Usage(10, 5)));
     }
 
     public function complete(TurnRequest $request): ProviderResponse

@@ -261,7 +261,7 @@ final class AgentLoopTest extends TestCase
 
     public function testAStatusLineSurfacesBeforeTheRoundFinishes(): void
     {
-        $provider = new Fixture\ChunkedToolCallProvider(
+        $provider = Fixture\ChunkedToolCallProvider::single(
             tool: 'find_records',
             id: 'tu-1',
             chunks: [
@@ -290,12 +290,85 @@ final class AgentLoopTest extends TestCase
         self::assertLessThan($toolCallIndex, $progressIndex, 'the status line arrives before the tool_call event, which only fires once the whole round is done');
     }
 
+    public function testAToolRunsTheMomentItsArgumentsCloseWhileTheModelStillWrites(): void
+    {
+        $directory = new DirectoryCapability();
+        $provider = Fixture\ChunkedToolCallProvider::single(
+            'find_records',
+            'tu-1',
+            ['{"query": "al', 'go"}'],
+            ['query' => 'algo'],
+            trailingText: 'y mientras tanto sigo escribiendo',
+        );
+        $builder = new AgentBuilder($provider, extra: [$directory]);
+
+        $messages = [Transcript::userMessage('algo')];
+        $events = $this->collect($builder, $messages);
+        $types = array_map(static fn (AgentEvent $e): EventType => $e->type, $events);
+
+        $result = array_search(EventType::ToolResult, $types, true);
+        $trailing = array_search(EventType::TextDelta, $types, true);
+        self::assertNotFalse($result);
+        self::assertNotFalse($trailing);
+        self::assertLessThan($trailing, $result, 'the tool ran and reported before the text that followed its block streamed');
+        self::assertSame(1, $directory->runs['find_records'] ?? 0, 'the join did not run it a second time');
+        self::assertCount(1, $this->ofType($events, EventType::ToolCall));
+        self::assertSame('y mientras tanto sigo escribiendoListo.', $this->text($events, after: $result), 'everything the model wrote after the block came after the result');
+    }
+
+    public function testWithoutEagerDispatchTheRoundIsAnnouncedThenRunAfterTheStream(): void
+    {
+        $directory = new DirectoryCapability();
+        $provider = Fixture\ChunkedToolCallProvider::single(
+            'find_records',
+            'tu-1',
+            ['{"query": "algo"}'],
+            ['query' => 'algo'],
+            trailingText: 'cola',
+        );
+        $builder = new AgentBuilder($provider, new AgentConfig(eagerToolDispatch: false), extra: [$directory]);
+
+        $messages = [Transcript::userMessage('algo')];
+        $events = $this->collect($builder, $messages);
+        $types = array_map(static fn (AgentEvent $e): EventType => $e->type, $events);
+
+        self::assertLessThan(array_search(EventType::ToolCall, $types, true), array_search(EventType::TextDelta, $types, true));
+        self::assertSame(1, $directory->runs['find_records'] ?? 0);
+        self::assertCount(1, $this->ofType($events, EventType::ToolCall));
+    }
+
+    public function testAPresentationCallStreamsPartialFramesAsItsListGrows(): void
+    {
+        $directory = new DirectoryCapability();
+        $provider = new Fixture\ChunkedToolCallProvider([
+            ['find_records', 'tu-1', ['{"query": "algo"}'], ['query' => 'algo']],
+            ['present_records', 'tu-2', ['{"ids": ["R-', '1"', ', "R-2"', ']}'], ['ids' => ['R-1', 'R-2']]],
+        ]);
+        $builder = new AgentBuilder($provider, extra: [$directory]);
+
+        $messages = [Transcript::userMessage('algo')];
+        $events = $this->collect($builder, $messages);
+
+        $partials = $this->ofType($events, EventType::UiPartial);
+        self::assertCount(2, $partials, 'one frame per visible change: the first id complete, then the second');
+        self::assertSame(['R-1'], array_column($partials[0]->data['payload']['items'], 'id'));
+        self::assertSame(['R-1', 'R-2'], array_column($partials[1]->data['payload']['items'], 'id'));
+        self::assertSame('tu-2', $partials[0]->data['stream_id']);
+
+        $ui = $this->ofType($events, EventType::Ui);
+        self::assertCount(1, $ui);
+        self::assertSame('tu-2', $ui[0]->data['stream_id'], 'the final card carries the same stream id so the host replaces the last frame');
+        self::assertSame(['R-1', 'R-2'], array_column($ui[0]->data['payload']['items'], 'id'));
+    }
+
     /** @param list<AgentEvent> $events */
-    private function text(array $events): string
+    private function text(array $events, EventType $type = EventType::TextDelta, int $after = -1): string
     {
         $text = '';
-        foreach ($this->ofType($events, EventType::TextDelta) as $event) {
-            $text .= $event->data['text'];
+        foreach ($events as $index => $event) {
+            if ($index > $after && $event->type === $type) {
+                $text .= $event->data['text'];
+            }
         }
 
         return $text;

@@ -13,8 +13,10 @@ namespace Odiseo\AiAgentBundle\Streaming;
  * tool_result   {tool, id, summary, is_error, status, reason?, excerpt?}; status is ok,
  *               error or blocked (a gate held the call; reason names the gate).
  * ui            {component, payload}: a validated, enriched component.
- * ui_partial    The same plus stream_id, while the call is still being generated. Declared
- *               from day one so the frontend contract does not change; not emitted in v1.
+ * ui_partial    The same plus stream_id, while the call is still being generated: one frame
+ *               per visible change (a title, one more entry), built by the component's
+ *               partial hook. The final ui carries the same stream_id and replaces the last
+ *               frame; a call that ends refused leaves no ui, so the host drops its frames.
  * progress      {message, tool?, step?}: a status line replacing the previous one.
  * state_update  {key, value}: a whole piece of vertical state after it moved.
  * turn_complete {stop_reason, usage, elapsed_ms, results_cleared}.

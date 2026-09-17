@@ -22,6 +22,9 @@ use Odiseo\AiAgentBundle\Streaming\ToolOutcome;
 /** A minimal vertical: one read, one gated write, one card, one grounding rule, one domain error. */
 final class DirectoryCapability implements Capability, DomainErrorMapper
 {
+    /** @var array<string, int> tool => times execute() ran it */
+    public array $runs = [];
+
     /** @param array<string, string> $records id => title */
     public function __construct(private readonly array $records = ['R-1' => 'Primero', 'R-2' => 'Segundo'])
     {
@@ -108,11 +111,25 @@ final class DirectoryCapability implements Capability, DomainErrorMapper
 
                 return ['items' => $items];
             },
+            // Parcial: los ids ya completos que la sesión vio, sin notas ni rechazo.
+            static function (array $input, $context): array {
+                $items = [];
+                foreach (\is_array($input['ids'] ?? null) ? $input['ids'] : [] as $id) {
+                    $record = \is_scalar($id) ? $context->tools->state->seen((string) $id) : null;
+                    if (null !== $record) {
+                        $items[] = ['id' => (string) $id, 'title' => $record->data['title'] ?? (string) $id];
+                    }
+                }
+
+                return ['items' => $items];
+            },
         )];
     }
 
     public function execute(string $tool, array $input, ToolContext $context): ToolOutcome
     {
+        $this->runs[$tool] = ($this->runs[$tool] ?? 0) + 1;
+
         if ('break_things' === $tool) {
             throw new \RuntimeException('the directory is down');
         }

@@ -98,7 +98,7 @@ final class OdiseoAiAgentBundle extends AbstractBundle
                     ->scalarNode('extraction_prompt_file')->defaultNull()->end()
                 ->end()->end()
                 ->arrayNode('latency')->addDefaultsIfNotSet()->children()
-                    ->booleanNode('eager_tool_dispatch')->defaultFalse()->end()
+                    ->booleanNode('eager_tool_dispatch')->defaultTrue()->end()
                     ->booleanNode('rolling_conversation_cache')->defaultTrue()->end()
                     ->booleanNode('close_on_presentation')->defaultTrue()->end()
                 ->end()->end()

@@ -7,9 +7,11 @@ namespace Odiseo\AiAgentBundle\Execution;
 use Odiseo\AiAgentBundle\Capability\CapabilityRegistry;
 use Odiseo\AiAgentBundle\Capability\ToolContext;
 use Odiseo\AiAgentBundle\Fencing\Sanitizer;
+use Odiseo\AiAgentBundle\Presentation\PartialFrame;
 use Odiseo\AiAgentBundle\Presentation\PresentationComponent;
 use Odiseo\AiAgentBundle\Presentation\PresentationRunner;
 use Odiseo\AiAgentBundle\Streaming\AgentEvent;
+use Odiseo\AiAgentBundle\Streaming\PartialJson;
 use Odiseo\AiAgentBundle\Streaming\ToolOutcome;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -82,6 +84,36 @@ final class ToolExecutor
         [$arguments, $status] = $this->splitStatus($tool, $input);
 
         return AgentEvent::toolCall($tool, $toolUseId, $arguments, $status);
+    }
+
+    /**
+     * The frame a presentation call still being written shows so far, or null: for a tool
+     * that is not a component, one without a partial hook, or a buffer with nothing visible
+     * yet. A hook that throws costs the frame, not the turn.
+     */
+    public function partialFrame(string $tool, string $buffer, ToolContext $context): ?PartialFrame
+    {
+        $component = $this->components()[$tool] ?? null;
+        if (null === $component || null === $component->partial) {
+            return null;
+        }
+
+        $decoded = PartialJson::decode($buffer);
+        if (null === $decoded) {
+            return null;
+        }
+
+        try {
+            return PresentationRunner::partial($component, $decoded, $context);
+        } catch (\Throwable $error) {
+            $this->logger->warning('partial frame of {tool} failed', [
+                'tool' => $tool,
+                'session' => $context->session->sessionTag(),
+                'exception' => $error,
+            ]);
+
+            return null;
+        }
     }
 
     /** @param array<string, mixed> $input */

@@ -14,14 +14,20 @@ namespace Odiseo\AiAgentBundle\Presentation;
 final readonly class PresentationComponent
 {
     /**
-     * @param \Closure(array<string, mixed>): array<string, mixed>                           $validate
-     * @param (\Closure(array<string, mixed>, EnrichmentContext): array<string, mixed>)|null $enrich
+     * $partial builds a payload from the arguments as they are still being written (open
+     * lists closed, half-written strings left out): it must tolerate any field missing and
+     * throw on nothing. A component without one renders only once its call is complete.
+     *
+     * @param \Closure(array<string, mixed>): array<string, mixed>                                  $validate
+     * @param (\Closure(array<string, mixed>, EnrichmentContext): array<string, mixed>)|null        $enrich
+     * @param (\Closure(array<string, mixed>, EnrichmentContext): (array<string, mixed>|null))|null $partial
      */
     public function __construct(
         public string $tool,
         public string $component,
         public \Closure $validate,
         public ?\Closure $enrich = null,
+        public ?\Closure $partial = null,
     ) {
     }
 }
