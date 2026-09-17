@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests;
 
-use Odiseo\AiAgentBundle\Prompt\PromptAssembler;
+use Odiseo\AiConversationalAgentBundle\Prompt\PromptAssembler;
 use PHPUnit\Framework\TestCase;
 
 final class PromptAssemblerTest extends TestCase

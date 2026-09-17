@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Memory;
+namespace Odiseo\AiConversationalAgentBundle\Memory;
 
 /**
  * One stored fact. The shape is bounded here; what a value may be about is the write filter's

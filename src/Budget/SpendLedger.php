@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Budget;
+namespace Odiseo\AiConversationalAgentBundle\Budget;
 
 /**
  * What has been spent, by session and by day. It is a cost control: it stops the bill running

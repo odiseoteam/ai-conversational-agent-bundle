@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Presentation;
+namespace Odiseo\AiConversationalAgentBundle\Presentation;
 
 /**
  * One presentation tool: the component the host renders, the validator that turns the model's

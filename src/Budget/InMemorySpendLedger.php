@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Budget;
+namespace Odiseo\AiConversationalAgentBundle\Budget;
 
 final class InMemorySpendLedger implements SpendLedger
 {

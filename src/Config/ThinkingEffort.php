@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Config;
+namespace Odiseo\AiConversationalAgentBundle\Config;
 
 enum ThinkingEffort: string
 {

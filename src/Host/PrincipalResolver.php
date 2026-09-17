@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Host;
+namespace Odiseo\AiConversationalAgentBundle\Host;
 
 /**
  * Who is speaking, resolved by the host from its own notion of identity (a signed-in user, a

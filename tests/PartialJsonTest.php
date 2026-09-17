@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests;
 
-use Odiseo\AiAgentBundle\Streaming\PartialJson;
+use Odiseo\AiConversationalAgentBundle\Streaming\PartialJson;
 use PHPUnit\Framework\TestCase;
 
 final class PartialJsonTest extends TestCase

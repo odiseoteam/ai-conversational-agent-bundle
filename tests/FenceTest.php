@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests;
 
-use Odiseo\AiAgentBundle\Fencing\Fence;
-use Odiseo\AiAgentBundle\Fencing\Sanitizer;
+use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
+use Odiseo\AiConversationalAgentBundle\Fencing\Sanitizer;
 use PHPUnit\Framework\TestCase;
 
 final class FenceTest extends TestCase

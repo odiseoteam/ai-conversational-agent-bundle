@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Memory\Dbal;
+namespace Odiseo\AiConversationalAgentBundle\Memory\Dbal;
 
 use Doctrine\DBAL\Connection;
-use Odiseo\AiAgentBundle\Memory\MemoryCategory;
-use Odiseo\AiAgentBundle\Memory\MemoryFact;
-use Odiseo\AiAgentBundle\Memory\MemoryStore;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryCategory;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryFact;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryStore;
 
 /**
  * Facts keyed by subject and key, so a later save on the same subject replaces the earlier one

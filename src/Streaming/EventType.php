@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Streaming;
+namespace Odiseo\AiConversationalAgentBundle\Streaming;
 
 /**
  * The events a turn yields to its host. A host renders what it knows and ignores the rest.

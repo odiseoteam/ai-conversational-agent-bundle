@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Presentation;
+namespace Odiseo\AiConversationalAgentBundle\Presentation;
 
-use Odiseo\AiAgentBundle\Capability\Capability;
-use Odiseo\AiAgentBundle\Capability\Limits;
-use Odiseo\AiAgentBundle\Capability\ToolContext;
-use Odiseo\AiAgentBundle\Capability\ToolSpec;
-use Odiseo\AiAgentBundle\Execution\ChipComponent;
-use Odiseo\AiAgentBundle\Fencing\Sanitizer;
-use Odiseo\AiAgentBundle\Streaming\ToolOutcome;
+use Odiseo\AiConversationalAgentBundle\Capability\Capability;
+use Odiseo\AiConversationalAgentBundle\Capability\Limits;
+use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
+use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
+use Odiseo\AiConversationalAgentBundle\Execution\ChipComponent;
+use Odiseo\AiConversationalAgentBundle\Fencing\Sanitizer;
+use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
 
 /**
  * The turn's chips. Every vertical wants them and they carry no domain of their own, so they

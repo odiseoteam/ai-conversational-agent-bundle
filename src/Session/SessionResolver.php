@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Session;
+namespace Odiseo\AiConversationalAgentBundle\Session;
 
-use Odiseo\AiAgentBundle\Host\PrincipalResolver;
+use Odiseo\AiConversationalAgentBundle\Host\PrincipalResolver;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Session\Dbal;
+namespace Odiseo\AiConversationalAgentBundle\Session\Dbal;
 
 use Doctrine\DBAL\Connection;
-use Odiseo\AiAgentBundle\Session\SessionConflictException;
-use Odiseo\AiAgentBundle\Session\SessionStore;
+use Odiseo\AiConversationalAgentBundle\Session\SessionConflictException;
+use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
 
 /**
  * The default store: two tables, plain SQL, jsonb.

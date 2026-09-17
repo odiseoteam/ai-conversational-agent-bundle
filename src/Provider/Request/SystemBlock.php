@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Provider\Request;
+namespace Odiseo\AiConversationalAgentBundle\Provider\Request;
 
 /**
  * One block of the system prompt. $cacheHint asks the provider to make everything up to and

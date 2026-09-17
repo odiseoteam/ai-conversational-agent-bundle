@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Bridge\Symfony\Command;
+namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Command;
 
-use Odiseo\AiAgentBundle\Agent\TurnRunner;
-use Odiseo\AiAgentBundle\Host\ConsoleEnvironment;
-use Odiseo\AiAgentBundle\Provider\AuthenticationException;
-use Odiseo\AiAgentBundle\Session\SessionResolver;
-use Odiseo\AiAgentBundle\Session\SessionStore;
-use Odiseo\AiAgentBundle\Streaming\AgentEvent;
-use Odiseo\AiAgentBundle\Streaming\EventType;
+use Odiseo\AiConversationalAgentBundle\Agent\TurnRunner;
+use Odiseo\AiConversationalAgentBundle\Host\ConsoleEnvironment;
+use Odiseo\AiConversationalAgentBundle\Provider\AuthenticationException;
+use Odiseo\AiConversationalAgentBundle\Session\SessionResolver;
+use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
+use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
+use Odiseo\AiConversationalAgentBundle\Streaming\EventType;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;

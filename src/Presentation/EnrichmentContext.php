@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Presentation;
+namespace Odiseo\AiConversationalAgentBundle\Presentation;
 
-use Odiseo\AiAgentBundle\Capability\ToolContext;
+use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
 
 /**
  * What an enrich hook works with. A hook appends to notes anything the model should hear

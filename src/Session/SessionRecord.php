@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Session;
+namespace Odiseo\AiConversationalAgentBundle\Session;
 
 /**
  * One session as the host holds it: a small state document and the transcript.

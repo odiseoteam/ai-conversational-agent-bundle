@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Memory;
+namespace Odiseo\AiConversationalAgentBundle\Memory;
 
-use Odiseo\AiAgentBundle\Capability\Capability;
-use Odiseo\AiAgentBundle\Capability\PromptFragment;
-use Odiseo\AiAgentBundle\Capability\PromptSection;
-use Odiseo\AiAgentBundle\Capability\ToolContext;
-use Odiseo\AiAgentBundle\Capability\ToolSpec;
-use Odiseo\AiAgentBundle\Streaming\ToolOutcome;
+use Odiseo\AiConversationalAgentBundle\Capability\Capability;
+use Odiseo\AiConversationalAgentBundle\Capability\PromptFragment;
+use Odiseo\AiConversationalAgentBundle\Capability\PromptSection;
+use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
+use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
+use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
 
 /**
  * Remembering across sessions. The tools stay registered whether or not memory is on: turning

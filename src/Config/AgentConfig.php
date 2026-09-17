@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Config;
+namespace Odiseo\AiConversationalAgentBundle\Config;
 
-use Odiseo\AiAgentBundle\Capability\Limits;
+use Odiseo\AiConversationalAgentBundle\Capability\Limits;
 
 /**
  * One deployment's settings. Per-request values travel in the SessionContext instead.

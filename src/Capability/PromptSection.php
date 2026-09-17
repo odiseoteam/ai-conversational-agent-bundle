@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Capability;
+namespace Odiseo\AiConversationalAgentBundle\Capability;
 
 enum PromptSection: string
 {

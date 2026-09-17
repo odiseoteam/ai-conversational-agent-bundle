@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Presentation;
+namespace Odiseo\AiConversationalAgentBundle\Presentation;
 
-use Odiseo\AiAgentBundle\Capability\ToolContext;
-use Odiseo\AiAgentBundle\Streaming\AgentEvent;
-use Odiseo\AiAgentBundle\Streaming\ToolOutcome;
+use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
+use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
+use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
 
 final class PresentationRunner
 {

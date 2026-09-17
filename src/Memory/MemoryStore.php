@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Memory;
+namespace Odiseo\AiConversationalAgentBundle\Memory;
 
 /**
  * Where facts live, keyed by subject (the principal). A deployment puts its own store behind

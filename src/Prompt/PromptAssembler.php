@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Prompt;
+namespace Odiseo\AiConversationalAgentBundle\Prompt;
 
-use Odiseo\AiAgentBundle\Provider\Request\SystemBlock;
+use Odiseo\AiConversationalAgentBundle\Provider\Request\SystemBlock;
 
 /**
  * Where the cache breakpoints go: after the static system text, after the last tool, and

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Memory;
+namespace Odiseo\AiConversationalAgentBundle\Memory;
 
-use Odiseo\AiAgentBundle\Config\AgentConfig;
-use Odiseo\AiAgentBundle\Fencing\Fence;
-use Odiseo\AiAgentBundle\Provider\ModelProvider;
-use Odiseo\AiAgentBundle\Provider\Request\SystemBlock;
-use Odiseo\AiAgentBundle\Provider\Request\TurnRequest;
-use Odiseo\AiAgentBundle\Streaming\ToolOutcome;
+use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
+use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
+use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
+use Odiseo\AiConversationalAgentBundle\Provider\Request\SystemBlock;
+use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
+use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 

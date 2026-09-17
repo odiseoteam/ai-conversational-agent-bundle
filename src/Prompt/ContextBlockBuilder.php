@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Prompt;
+namespace Odiseo\AiConversationalAgentBundle\Prompt;
 
-use Odiseo\AiAgentBundle\Fencing\Fence;
-use Odiseo\AiAgentBundle\Memory\MemoryFact;
+use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryFact;
 
 /**
  * The per-request half of the prompt, behind the cache breakpoint and inside the data fence.

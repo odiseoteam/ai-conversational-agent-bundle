@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Session;
+namespace Odiseo\AiConversationalAgentBundle\Session;
 
 /**
  * The caller and the moment, as every capability receives them.

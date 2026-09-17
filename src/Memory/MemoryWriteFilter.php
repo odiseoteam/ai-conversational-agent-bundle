@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Memory;
+namespace Odiseo\AiConversationalAgentBundle\Memory;
 
 /**
  * What may never be stored, whatever the model decides.

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Grounding;
+namespace Odiseo\AiConversationalAgentBundle\Grounding;
 
 /** The read a turn's first round is pinned to, with the input the rule wrote for it. */
 final readonly class ForcedRead

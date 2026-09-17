@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Skill;
+namespace Odiseo\AiConversationalAgentBundle\Skill;
 
-use Odiseo\AiAgentBundle\Capability\Capability;
-use Odiseo\AiAgentBundle\Capability\ToolContext;
-use Odiseo\AiAgentBundle\Capability\ToolSpec;
-use Odiseo\AiAgentBundle\Streaming\ToolOutcome;
+use Odiseo\AiConversationalAgentBundle\Capability\Capability;
+use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
+use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
+use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
 
 /**
  * The flows' rules, loaded on demand. The static prompt carries only the index, so a rule that

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Capability;
+namespace Odiseo\AiConversationalAgentBundle\Capability;
 
 /**
  * The count caps the core enforces on every path: how much of a tool result reaches the

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Agent;
+namespace Odiseo\AiConversationalAgentBundle\Agent;
 
-use Odiseo\AiAgentBundle\Capability\ToolContext;
-use Odiseo\AiAgentBundle\Execution\ToolExecutor;
-use Odiseo\AiAgentBundle\Execution\ToolSurface;
-use Odiseo\AiAgentBundle\Fencing\Sanitizer;
-use Odiseo\AiAgentBundle\Streaming\AgentEvent;
-use Odiseo\AiAgentBundle\Streaming\PartialJson;
-use Odiseo\AiAgentBundle\Streaming\ToolOutcome;
+use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
+use Odiseo\AiConversationalAgentBundle\Execution\ToolExecutor;
+use Odiseo\AiConversationalAgentBundle\Execution\ToolSurface;
+use Odiseo\AiConversationalAgentBundle\Fencing\Sanitizer;
+use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
+use Odiseo\AiConversationalAgentBundle\Streaming\PartialJson;
+use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
 
 /**
  * One model round while it streams: each tool call's arguments buffered as they arrive, and

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Session;
+namespace Odiseo\AiConversationalAgentBundle\Session;
 
 /**
  * One record a tool returned this session. It is what the provenance gate checks against and

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Budget;
+namespace Odiseo\AiConversationalAgentBundle\Budget;
 
-use Odiseo\AiAgentBundle\Provider\Response\Usage;
+use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
 
 /**
  * What a call cost. The prices are deployment configuration: the defaults below follow the

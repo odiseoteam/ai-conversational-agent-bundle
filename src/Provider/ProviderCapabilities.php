@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Provider;
+namespace Odiseo\AiConversationalAgentBundle\Provider;
 
 /**
  * What an adapter's provider can actually do. The loop reads this and degrades explicitly:

@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests;
 
-use Odiseo\AiAgentBundle\Execution\HostToolInvoker;
-use Odiseo\AiAgentBundle\Gate\ProvenanceGate;
-use Odiseo\AiAgentBundle\Provider\Fake\FakeProvider;
-use Odiseo\AiAgentBundle\Session\SeenRecord;
-use Odiseo\AiAgentBundle\Session\SessionContext;
-use Odiseo\AiAgentBundle\Session\SessionRecord;
-use Odiseo\AiAgentBundle\Session\TurnState;
-use Odiseo\AiAgentBundle\Tests\Fixture\AgentBuilder;
-use Odiseo\AiAgentBundle\Tests\Fixture\DirectoryCapability;
+use Odiseo\AiConversationalAgentBundle\Execution\HostToolInvoker;
+use Odiseo\AiConversationalAgentBundle\Gate\ProvenanceGate;
+use Odiseo\AiConversationalAgentBundle\Provider\Fake\FakeProvider;
+use Odiseo\AiConversationalAgentBundle\Session\SeenRecord;
+use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
+use Odiseo\AiConversationalAgentBundle\Session\SessionRecord;
+use Odiseo\AiConversationalAgentBundle\Session\TurnState;
+use Odiseo\AiConversationalAgentBundle\Tests\Fixture\AgentBuilder;
+use Odiseo\AiConversationalAgentBundle\Tests\Fixture\DirectoryCapability;
 use PHPUnit\Framework\TestCase;
 
 /** A host's own call goes through the same gates as the model's, and tells the model afterwards. */

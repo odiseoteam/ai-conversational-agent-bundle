@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Fencing;
+namespace Odiseo\AiConversationalAgentBundle\Fencing;
 
 /**
  * The tag that wraps third-party content and the notice the static prompt carries about it.

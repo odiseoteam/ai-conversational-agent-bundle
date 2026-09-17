@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Eval;
+namespace Odiseo\AiConversationalAgentBundle\Eval;
 
-use Odiseo\AiAgentBundle\Agent\AgentLoop;
-use Odiseo\AiAgentBundle\Agent\Transcript;
-use Odiseo\AiAgentBundle\Eval\Grader\CodeGrader;
-use Odiseo\AiAgentBundle\Eval\Grader\JudgeGrader;
-use Odiseo\AiAgentBundle\Memory\MemoryCategory;
-use Odiseo\AiAgentBundle\Memory\MemoryFact;
-use Odiseo\AiAgentBundle\Memory\MemoryStore;
-use Odiseo\AiAgentBundle\Session\SeenRecord;
-use Odiseo\AiAgentBundle\Session\SessionContext;
-use Odiseo\AiAgentBundle\Session\TurnState;
+use Odiseo\AiConversationalAgentBundle\Agent\AgentLoop;
+use Odiseo\AiConversationalAgentBundle\Agent\Transcript;
+use Odiseo\AiConversationalAgentBundle\Eval\Grader\CodeGrader;
+use Odiseo\AiConversationalAgentBundle\Eval\Grader\JudgeGrader;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryCategory;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryFact;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryStore;
+use Odiseo\AiConversationalAgentBundle\Session\SeenRecord;
+use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
+use Odiseo\AiConversationalAgentBundle\Session\TurnState;
 
 /**
  * Runs a case: loads its precondition into the session state and the memory store, plays its

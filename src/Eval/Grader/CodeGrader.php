@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Eval\Grader;
+namespace Odiseo\AiConversationalAgentBundle\Eval\Grader;
 
-use Odiseo\AiAgentBundle\Eval\EvalCase;
-use Odiseo\AiAgentBundle\Eval\TurnRecording;
-use Odiseo\AiAgentBundle\Memory\MemoryFact;
+use Odiseo\AiConversationalAgentBundle\Eval\EvalCase;
+use Odiseo\AiConversationalAgentBundle\Eval\TurnRecording;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryFact;
 
 /**
  * Every expected key except `rubric`. These grade the calls the agent made and the state they

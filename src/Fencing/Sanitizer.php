@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Fencing;
+namespace Odiseo\AiConversationalAgentBundle\Fencing;
 
 /**
  * Text hygiene for anything the model reads as data or writes for a person to read.

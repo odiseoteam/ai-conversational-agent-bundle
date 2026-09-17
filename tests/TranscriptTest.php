@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests;
 
-use Odiseo\AiAgentBundle\Agent\Transcript;
+use Odiseo\AiConversationalAgentBundle\Agent\Transcript;
 use PHPUnit\Framework\TestCase;
 
 final class TranscriptTest extends TestCase

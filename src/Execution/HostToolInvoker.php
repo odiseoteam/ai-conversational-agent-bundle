@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Execution;
+namespace Odiseo\AiConversationalAgentBundle\Execution;
 
-use Odiseo\AiAgentBundle\Capability\Limits;
-use Odiseo\AiAgentBundle\Capability\ToolContext;
-use Odiseo\AiAgentBundle\Fencing\Fence;
-use Odiseo\AiAgentBundle\Session\SessionContext;
-use Odiseo\AiAgentBundle\Session\SessionRecord;
-use Odiseo\AiAgentBundle\Streaming\ToolOutcome;
+use Odiseo\AiConversationalAgentBundle\Capability\Limits;
+use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
+use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
+use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
+use Odiseo\AiConversationalAgentBundle\Session\SessionRecord;
+use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
 
 /**
  * A tool run by the host outside a turn — a button in the interface, not the model — through

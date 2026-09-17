@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Eval\Grader;
+namespace Odiseo\AiConversationalAgentBundle\Eval\Grader;
 
-use Odiseo\AiAgentBundle\Eval\EvalCase;
-use Odiseo\AiAgentBundle\Eval\TurnRecording;
-use Odiseo\AiAgentBundle\Fencing\Fence;
-use Odiseo\AiAgentBundle\Provider\ModelProvider;
-use Odiseo\AiAgentBundle\Provider\Request\SystemBlock;
-use Odiseo\AiAgentBundle\Provider\Request\TurnRequest;
+use Odiseo\AiConversationalAgentBundle\Eval\EvalCase;
+use Odiseo\AiConversationalAgentBundle\Eval\TurnRecording;
+use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
+use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
+use Odiseo\AiConversationalAgentBundle\Provider\Request\SystemBlock;
+use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
 
 /**
  * The one expected key a code grader cannot check: a rubric with a PASS condition and a FAIL

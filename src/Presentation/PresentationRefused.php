@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Presentation;
+namespace Odiseo\AiConversationalAgentBundle\Presentation;
 
 /**
  * Raised by a validator or an enrich hook when the call cannot render. $gate names the gate

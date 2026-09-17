@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Provider\Response;
+namespace Odiseo\AiConversationalAgentBundle\Provider\Response;
 
 /**
  * What one model call consumed. Cache reads and cache writes are kept apart because they are

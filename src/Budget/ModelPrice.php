@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Budget;
+namespace Odiseo\AiConversationalAgentBundle\Budget;
 
 /** USD per million tokens. Cache writes and cache reads are priced apart from plain input. */
 final readonly class ModelPrice

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Execution;
+namespace Odiseo\AiConversationalAgentBundle\Execution;
 
 /**
  * The one component that carries a turn's chips. It is named in the core because the caps and

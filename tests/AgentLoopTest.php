@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests;
 
-use Odiseo\AiAgentBundle\Agent\Transcript;
-use Odiseo\AiAgentBundle\Config\AgentConfig;
-use Odiseo\AiAgentBundle\Execution\ChipComponent;
-use Odiseo\AiAgentBundle\Provider\Fake\FakeProvider;
-use Odiseo\AiAgentBundle\Provider\ProviderCapabilities;
-use Odiseo\AiAgentBundle\Session\SessionContext;
-use Odiseo\AiAgentBundle\Session\TurnState;
-use Odiseo\AiAgentBundle\Streaming\AgentEvent;
-use Odiseo\AiAgentBundle\Streaming\EventType;
-use Odiseo\AiAgentBundle\Tests\Fixture\AgentBuilder;
-use Odiseo\AiAgentBundle\Tests\Fixture\DirectoryCapability;
+use Odiseo\AiConversationalAgentBundle\Agent\Transcript;
+use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
+use Odiseo\AiConversationalAgentBundle\Execution\ChipComponent;
+use Odiseo\AiConversationalAgentBundle\Provider\Fake\FakeProvider;
+use Odiseo\AiConversationalAgentBundle\Provider\ProviderCapabilities;
+use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
+use Odiseo\AiConversationalAgentBundle\Session\TurnState;
+use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
+use Odiseo\AiConversationalAgentBundle\Streaming\EventType;
+use Odiseo\AiConversationalAgentBundle\Tests\Fixture\AgentBuilder;
+use Odiseo\AiConversationalAgentBundle\Tests\Fixture\DirectoryCapability;
 use PHPUnit\Framework\TestCase;
 
 final class AgentLoopTest extends TestCase
@@ -112,14 +112,14 @@ final class AgentLoopTest extends TestCase
     {
         $provider = new FakeProvider([
             FakeProvider::toolCall('find_records', ['query' => 'algo'], 'tu-1'),
-            new \Odiseo\AiAgentBundle\Provider\Response\ProviderResponse(
+            new \Odiseo\AiConversationalAgentBundle\Provider\Response\ProviderResponse(
                 [
                     ['type' => 'tool_use', 'id' => 'tu-2', 'name' => 'present_records', 'input' => (object) ['ids' => ['R-1']]],
                     ['type' => 'tool_use', 'id' => 'tu-3', 'name' => ChipComponent::TOOL, 'input' => (object) ['suggestions' => ['Ver el otro']]],
                 ],
                 [
-                    new \Odiseo\AiAgentBundle\Provider\Response\ToolUse('tu-2', 'present_records', ['ids' => ['R-1']]),
-                    new \Odiseo\AiAgentBundle\Provider\Response\ToolUse('tu-3', ChipComponent::TOOL, ['suggestions' => ['Ver el otro']]),
+                    new \Odiseo\AiConversationalAgentBundle\Provider\Response\ToolUse('tu-2', 'present_records', ['ids' => ['R-1']]),
+                    new \Odiseo\AiConversationalAgentBundle\Provider\Response\ToolUse('tu-3', ChipComponent::TOOL, ['suggestions' => ['Ver el otro']]),
                 ],
                 'tool_use',
             ),

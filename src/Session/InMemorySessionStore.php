@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Session;
+namespace Odiseo\AiConversationalAgentBundle\Session;
 
 /**
  * For tests and single-process runs. Copied both ways, as a real store would: a record's

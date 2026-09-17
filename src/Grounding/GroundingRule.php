@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Grounding;
+namespace Odiseo\AiConversationalAgentBundle\Grounding;
 
-use Odiseo\AiAgentBundle\Session\TurnState;
+use Odiseo\AiConversationalAgentBundle\Session\TurnState;
 
 /**
  * A rule reads the caller's message and names one read tool the turn must start with, so an

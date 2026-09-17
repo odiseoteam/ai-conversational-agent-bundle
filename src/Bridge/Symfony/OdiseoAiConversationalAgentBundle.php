@@ -2,54 +2,54 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Bridge\Symfony;
+namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony;
 
 use Doctrine\DBAL\Connection;
-use Odiseo\AiAgentBundle\Agent\AgentLoop;
-use Odiseo\AiAgentBundle\Agent\ContextProvider;
-use Odiseo\AiAgentBundle\Agent\NullContextProvider;
-use Odiseo\AiAgentBundle\Agent\TurnRunner;
-use Odiseo\AiAgentBundle\Bridge\Symfony\Command\ChatCommand;
-use Odiseo\AiAgentBundle\Bridge\Symfony\Controller\ChatController;
-use Odiseo\AiAgentBundle\Bridge\Symfony\Controller\MemoryController;
-use Odiseo\AiAgentBundle\Bridge\Symfony\Controller\SessionController;
-use Odiseo\AiAgentBundle\Bridge\Symfony\EventListener\SessionWriteBackListener;
-use Odiseo\AiAgentBundle\Budget\BudgetPolicy;
-use Odiseo\AiAgentBundle\Budget\CostTable;
-use Odiseo\AiAgentBundle\Budget\Dbal\DbalSpendLedger;
-use Odiseo\AiAgentBundle\Budget\SpendLedger;
-use Odiseo\AiAgentBundle\Capability\Capability;
-use Odiseo\AiAgentBundle\Capability\CapabilityRegistry;
-use Odiseo\AiAgentBundle\Capability\Limits;
-use Odiseo\AiAgentBundle\Config\AgentConfig;
-use Odiseo\AiAgentBundle\Config\ThinkingEffort;
-use Odiseo\AiAgentBundle\Eval\EvalRunner;
-use Odiseo\AiAgentBundle\Eval\Grader\CodeGrader;
-use Odiseo\AiAgentBundle\Eval\Grader\JudgeGrader;
-use Odiseo\AiAgentBundle\Execution\ExecutorWording;
-use Odiseo\AiAgentBundle\Execution\HostToolInvoker;
-use Odiseo\AiAgentBundle\Execution\ToolExecutor;
-use Odiseo\AiAgentBundle\Execution\ToolSurface;
-use Odiseo\AiAgentBundle\Fencing\Fence;
-use Odiseo\AiAgentBundle\Host\ConsoleEnvironment;
-use Odiseo\AiAgentBundle\Host\NullConsoleEnvironment;
-use Odiseo\AiAgentBundle\Host\NullTurnHook;
-use Odiseo\AiAgentBundle\Host\TurnHook;
-use Odiseo\AiAgentBundle\Memory\Dbal\DbalMemoryStore;
-use Odiseo\AiAgentBundle\Memory\MemoryCapability;
-use Odiseo\AiAgentBundle\Memory\MemoryRuntime;
-use Odiseo\AiAgentBundle\Memory\MemoryStore;
-use Odiseo\AiAgentBundle\Memory\MemoryWriteFilter;
-use Odiseo\AiAgentBundle\Presentation\SuggestionsCapability;
-use Odiseo\AiAgentBundle\Prompt\ContextBlockBuilder;
-use Odiseo\AiAgentBundle\Prompt\StaticPromptBuilder;
-use Odiseo\AiAgentBundle\Provider\Anthropic\AnthropicProvider;
-use Odiseo\AiAgentBundle\Provider\ModelProvider;
-use Odiseo\AiAgentBundle\Session\Dbal\DbalSessionStore;
-use Odiseo\AiAgentBundle\Session\SessionResolver;
-use Odiseo\AiAgentBundle\Session\SessionStore;
-use Odiseo\AiAgentBundle\Skill\SkillCapability;
-use Odiseo\AiAgentBundle\Skill\SkillRegistry;
+use Odiseo\AiConversationalAgentBundle\Agent\AgentLoop;
+use Odiseo\AiConversationalAgentBundle\Agent\ContextProvider;
+use Odiseo\AiConversationalAgentBundle\Agent\NullContextProvider;
+use Odiseo\AiConversationalAgentBundle\Agent\TurnRunner;
+use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Command\ChatCommand;
+use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\ChatController;
+use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\MemoryController;
+use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\SessionController;
+use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\EventListener\SessionWriteBackListener;
+use Odiseo\AiConversationalAgentBundle\Budget\BudgetPolicy;
+use Odiseo\AiConversationalAgentBundle\Budget\CostTable;
+use Odiseo\AiConversationalAgentBundle\Budget\Dbal\DbalSpendLedger;
+use Odiseo\AiConversationalAgentBundle\Budget\SpendLedger;
+use Odiseo\AiConversationalAgentBundle\Capability\Capability;
+use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
+use Odiseo\AiConversationalAgentBundle\Capability\Limits;
+use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
+use Odiseo\AiConversationalAgentBundle\Config\ThinkingEffort;
+use Odiseo\AiConversationalAgentBundle\Eval\EvalRunner;
+use Odiseo\AiConversationalAgentBundle\Eval\Grader\CodeGrader;
+use Odiseo\AiConversationalAgentBundle\Eval\Grader\JudgeGrader;
+use Odiseo\AiConversationalAgentBundle\Execution\ExecutorWording;
+use Odiseo\AiConversationalAgentBundle\Execution\HostToolInvoker;
+use Odiseo\AiConversationalAgentBundle\Execution\ToolExecutor;
+use Odiseo\AiConversationalAgentBundle\Execution\ToolSurface;
+use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
+use Odiseo\AiConversationalAgentBundle\Host\ConsoleEnvironment;
+use Odiseo\AiConversationalAgentBundle\Host\NullConsoleEnvironment;
+use Odiseo\AiConversationalAgentBundle\Host\NullTurnHook;
+use Odiseo\AiConversationalAgentBundle\Host\TurnHook;
+use Odiseo\AiConversationalAgentBundle\Memory\Dbal\DbalMemoryStore;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryCapability;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryRuntime;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryStore;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryWriteFilter;
+use Odiseo\AiConversationalAgentBundle\Presentation\SuggestionsCapability;
+use Odiseo\AiConversationalAgentBundle\Prompt\ContextBlockBuilder;
+use Odiseo\AiConversationalAgentBundle\Prompt\StaticPromptBuilder;
+use Odiseo\AiConversationalAgentBundle\Provider\Anthropic\AnthropicProvider;
+use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
+use Odiseo\AiConversationalAgentBundle\Session\Dbal\DbalSessionStore;
+use Odiseo\AiConversationalAgentBundle\Session\SessionResolver;
+use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
+use Odiseo\AiConversationalAgentBundle\Skill\SkillCapability;
+use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -64,11 +64,11 @@ use function Symfony\Component\DependencyInjection\Loader\Configurator\tagged_it
  * tags them and the registry assembles the tool surface, the prompt fragments, the grounding
  * rules and the components from whatever is registered.
  */
-final class OdiseoAiAgentBundle extends AbstractBundle
+final class OdiseoAiConversationalAgentBundle extends AbstractBundle
 {
-    protected string $extensionAlias = 'odiseo_ai_agent';
+    protected string $extensionAlias = 'odiseo_ai_conversational_agent';
 
-    /** The package root, so `@OdiseoAiAgentBundle/config/…` and `translations/` resolve there. */
+    /** The package root, so `@OdiseoAiConversationalAgentBundle/config/…` and `translations/` resolve there. */
     public function getPath(): string
     {
         return \dirname(__DIR__, 3);
@@ -150,7 +150,7 @@ final class OdiseoAiAgentBundle extends AbstractBundle
     /** @param array<string, mixed> $config */
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
-        $builder->registerForAutoconfiguration(Capability::class)->addTag('odiseo_ai_agent.capability');
+        $builder->registerForAutoconfiguration(Capability::class)->addTag('odiseo_ai_conversational_agent.capability');
 
         $services = $container->services()->defaults()->autowire()->autoconfigure();
 
@@ -178,18 +178,18 @@ final class OdiseoAiAgentBundle extends AbstractBundle
             '$memoryTierOneCap' => $config['memory']['tier_one_cap'],
             '$memoryBlockedPatterns' => $config['memory']['blocked_patterns'],
             '$memoryRetentionDays' => $config['memory']['retention_days'],
-            '$limits' => service('odiseo_ai_agent.limits'),
+            '$limits' => service('odiseo_ai_conversational_agent.limits'),
             '$maxContextChars' => $config['limits']['max_context_chars'],
             '$compactHistoryAboveTokens' => $config['limits']['compact_history_above_tokens'],
         ]);
 
-        $services->set('odiseo_ai_agent.limits', Limits::class)->args([
+        $services->set('odiseo_ai_conversational_agent.limits', Limits::class)->args([
             $config['limits']['max_fenced_chars'],
             $config['limits']['max_results_per_call'],
             $config['limits']['max_components_per_turn'],
             $config['limits']['max_chips_per_turn'],
         ]);
-        $services->alias(Limits::class, 'odiseo_ai_agent.limits');
+        $services->alias(Limits::class, 'odiseo_ai_conversational_agent.limits');
 
         $services->set(Fence::class)->args([$config['fence']['label'], $config['fence']['notice']]);
 
@@ -197,7 +197,7 @@ final class OdiseoAiAgentBundle extends AbstractBundle
             ->factory([SkillRegistry::class, null === $config['skills_dir'] ? '__construct' : 'fromDirectory'])
             ->args(null === $config['skills_dir'] ? [[]] : [$config['skills_dir']]);
 
-        $services->set(CapabilityRegistry::class)->args([tagged_iterator('odiseo_ai_agent.capability')]);
+        $services->set(CapabilityRegistry::class)->args([tagged_iterator('odiseo_ai_conversational_agent.capability')]);
         $services->set(SkillCapability::class);
         $services->set(MemoryCapability::class);
         $services->set(SuggestionsCapability::class);
@@ -260,14 +260,14 @@ final class OdiseoAiAgentBundle extends AbstractBundle
             ->tag('controller.service_arguments');
         $services->set(MemoryController::class)->tag('controller.service_arguments');
         $services->set(ChatCommand::class);
-        $builder->setParameter('odiseo_ai_agent.timezone', $config['sessions']['timezone']);
+        $builder->setParameter('odiseo_ai_conversational_agent.timezone', $config['sessions']['timezone']);
 
         $services->set(CodeGrader::class);
         $services->set(JudgeGrader::class)->args(['$model' => $config['models']['judge']]);
         $services->set(EvalRunner::class);
 
-        $builder->setParameter('odiseo_ai_agent.evals_dir', $config['evals_dir']);
-        $builder->setParameter('odiseo_ai_agent.skills_dir', $config['skills_dir']);
+        $builder->setParameter('odiseo_ai_conversational_agent.evals_dir', $config['evals_dir']);
+        $builder->setParameter('odiseo_ai_conversational_agent.skills_dir', $config['skills_dir']);
     }
 
     private function extractionPrompt(?string $file): string

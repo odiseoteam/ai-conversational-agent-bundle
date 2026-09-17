@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Tests\Fixture;
+namespace Odiseo\AiConversationalAgentBundle\Tests\Fixture;
 
 final class NotServed extends \RuntimeException
 {

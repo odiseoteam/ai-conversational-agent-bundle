@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Execution;
+namespace Odiseo\AiConversationalAgentBundle\Execution;
 
-use Odiseo\AiAgentBundle\Capability\CapabilityRegistry;
-use Odiseo\AiAgentBundle\Capability\ToolContext;
-use Odiseo\AiAgentBundle\Fencing\Sanitizer;
-use Odiseo\AiAgentBundle\Presentation\PartialFrame;
-use Odiseo\AiAgentBundle\Presentation\PresentationComponent;
-use Odiseo\AiAgentBundle\Presentation\PresentationRunner;
-use Odiseo\AiAgentBundle\Streaming\AgentEvent;
-use Odiseo\AiAgentBundle\Streaming\PartialJson;
-use Odiseo\AiAgentBundle\Streaming\ToolOutcome;
+use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
+use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
+use Odiseo\AiConversationalAgentBundle\Fencing\Sanitizer;
+use Odiseo\AiConversationalAgentBundle\Presentation\PartialFrame;
+use Odiseo\AiConversationalAgentBundle\Presentation\PresentationComponent;
+use Odiseo\AiConversationalAgentBundle\Presentation\PresentationRunner;
+use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
+use Odiseo\AiConversationalAgentBundle\Streaming\PartialJson;
+use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Capability;
+namespace Odiseo\AiConversationalAgentBundle\Capability;
 
-use Odiseo\AiAgentBundle\Grounding\GroundingRule;
-use Odiseo\AiAgentBundle\Presentation\PresentationComponent;
-use Odiseo\AiAgentBundle\Streaming\ToolOutcome;
+use Odiseo\AiConversationalAgentBundle\Grounding\GroundingRule;
+use Odiseo\AiConversationalAgentBundle\Presentation\PresentationComponent;
+use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
 
 /**
  * A unit of what an agent can do, declared by a vertical and assembled by the core.

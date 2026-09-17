@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Skill;
+namespace Odiseo\AiConversationalAgentBundle\Skill;
 
 final readonly class Skill
 {

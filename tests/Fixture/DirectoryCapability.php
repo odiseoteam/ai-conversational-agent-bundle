@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Tests\Fixture;
+namespace Odiseo\AiConversationalAgentBundle\Tests\Fixture;
 
-use Odiseo\AiAgentBundle\Capability\Capability;
-use Odiseo\AiAgentBundle\Capability\PromptFragment;
-use Odiseo\AiAgentBundle\Capability\PromptSection;
-use Odiseo\AiAgentBundle\Capability\ToolContext;
-use Odiseo\AiAgentBundle\Capability\ToolSpec;
-use Odiseo\AiAgentBundle\Execution\DomainErrorMapper;
-use Odiseo\AiAgentBundle\Execution\ExecutorWording;
-use Odiseo\AiAgentBundle\Gate\ProvenanceGate;
-use Odiseo\AiAgentBundle\Grounding\GroundingRule;
-use Odiseo\AiAgentBundle\Grounding\Matcher;
-use Odiseo\AiAgentBundle\Presentation\PresentationComponent;
-use Odiseo\AiAgentBundle\Session\SeenRecord;
-use Odiseo\AiAgentBundle\Session\TurnState;
-use Odiseo\AiAgentBundle\Streaming\ToolOutcome;
+use Odiseo\AiConversationalAgentBundle\Capability\Capability;
+use Odiseo\AiConversationalAgentBundle\Capability\PromptFragment;
+use Odiseo\AiConversationalAgentBundle\Capability\PromptSection;
+use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
+use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
+use Odiseo\AiConversationalAgentBundle\Execution\DomainErrorMapper;
+use Odiseo\AiConversationalAgentBundle\Execution\ExecutorWording;
+use Odiseo\AiConversationalAgentBundle\Gate\ProvenanceGate;
+use Odiseo\AiConversationalAgentBundle\Grounding\GroundingRule;
+use Odiseo\AiConversationalAgentBundle\Grounding\Matcher;
+use Odiseo\AiConversationalAgentBundle\Presentation\PresentationComponent;
+use Odiseo\AiConversationalAgentBundle\Session\SeenRecord;
+use Odiseo\AiConversationalAgentBundle\Session\TurnState;
+use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
 
 /** A minimal vertical: one read, one gated write, one card, one grounding rule, one domain error. */
 final class DirectoryCapability implements Capability, DomainErrorMapper
@@ -106,7 +106,7 @@ final class DirectoryCapability implements Capability, DomainErrorMapper
                 }
 
                 if ([] === $items) {
-                    throw new \Odiseo\AiAgentBundle\Presentation\PresentationRefused('nothing to show', ProvenanceGate::NAME);
+                    throw new \Odiseo\AiConversationalAgentBundle\Presentation\PresentationRefused('nothing to show', ProvenanceGate::NAME);
                 }
 
                 return ['items' => $items];

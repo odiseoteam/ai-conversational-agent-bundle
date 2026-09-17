@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Agent;
+namespace Odiseo\AiConversationalAgentBundle\Agent;
 
-use Odiseo\AiAgentBundle\Streaming\ToolOutcome;
+use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
 
 /**
  * The stored conversation: what goes in it, and the repairs a turn may owe it.

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Host;
+namespace Odiseo\AiConversationalAgentBundle\Host;
 
-use Odiseo\AiAgentBundle\Session\SessionContext;
+use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
 
 /**
  * What the host needs done right before a turn streams, on the request that carries it. A

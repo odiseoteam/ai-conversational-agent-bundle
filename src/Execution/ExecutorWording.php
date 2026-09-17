@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Execution;
+namespace Odiseo\AiConversationalAgentBundle\Execution;
 
 /**
  * What a tool result says when the tool itself has nothing to say. A vertical overrides these

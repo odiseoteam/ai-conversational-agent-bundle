@@ -2,30 +2,30 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Tests\Fixture;
+namespace Odiseo\AiConversationalAgentBundle\Tests\Fixture;
 
-use Odiseo\AiAgentBundle\Agent\AgentLoop;
-use Odiseo\AiAgentBundle\Budget\BudgetPolicy;
-use Odiseo\AiAgentBundle\Budget\CostTable;
-use Odiseo\AiAgentBundle\Budget\InMemorySpendLedger;
-use Odiseo\AiAgentBundle\Budget\SpendLedger;
-use Odiseo\AiAgentBundle\Capability\Capability;
-use Odiseo\AiAgentBundle\Capability\CapabilityRegistry;
-use Odiseo\AiAgentBundle\Config\AgentConfig;
-use Odiseo\AiAgentBundle\Execution\ExecutorWording;
-use Odiseo\AiAgentBundle\Execution\ToolExecutor;
-use Odiseo\AiAgentBundle\Execution\ToolSurface;
-use Odiseo\AiAgentBundle\Fencing\Fence;
-use Odiseo\AiAgentBundle\Memory\InMemoryMemoryStore;
-use Odiseo\AiAgentBundle\Memory\MemoryCapability;
-use Odiseo\AiAgentBundle\Memory\MemoryRuntime;
-use Odiseo\AiAgentBundle\Memory\MemoryStore;
-use Odiseo\AiAgentBundle\Presentation\SuggestionsCapability;
-use Odiseo\AiAgentBundle\Prompt\ContextBlockBuilder;
-use Odiseo\AiAgentBundle\Prompt\StaticPromptBuilder;
-use Odiseo\AiAgentBundle\Provider\ModelProvider;
-use Odiseo\AiAgentBundle\Skill\SkillCapability;
-use Odiseo\AiAgentBundle\Skill\SkillRegistry;
+use Odiseo\AiConversationalAgentBundle\Agent\AgentLoop;
+use Odiseo\AiConversationalAgentBundle\Budget\BudgetPolicy;
+use Odiseo\AiConversationalAgentBundle\Budget\CostTable;
+use Odiseo\AiConversationalAgentBundle\Budget\InMemorySpendLedger;
+use Odiseo\AiConversationalAgentBundle\Budget\SpendLedger;
+use Odiseo\AiConversationalAgentBundle\Capability\Capability;
+use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
+use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
+use Odiseo\AiConversationalAgentBundle\Execution\ExecutorWording;
+use Odiseo\AiConversationalAgentBundle\Execution\ToolExecutor;
+use Odiseo\AiConversationalAgentBundle\Execution\ToolSurface;
+use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
+use Odiseo\AiConversationalAgentBundle\Memory\InMemoryMemoryStore;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryCapability;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryRuntime;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryStore;
+use Odiseo\AiConversationalAgentBundle\Presentation\SuggestionsCapability;
+use Odiseo\AiConversationalAgentBundle\Prompt\ContextBlockBuilder;
+use Odiseo\AiConversationalAgentBundle\Prompt\StaticPromptBuilder;
+use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
+use Odiseo\AiConversationalAgentBundle\Skill\SkillCapability;
+use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
 
 /** Assembles a loop over a scripted provider, the way the container assembles the real one. */
 final class AgentBuilder

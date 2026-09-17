@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Prompt;
+namespace Odiseo\AiConversationalAgentBundle\Prompt;
 
-use Odiseo\AiAgentBundle\Capability\CapabilityRegistry;
-use Odiseo\AiAgentBundle\Capability\PromptFragment;
-use Odiseo\AiAgentBundle\Capability\PromptSection;
-use Odiseo\AiAgentBundle\Config\AgentConfig;
-use Odiseo\AiAgentBundle\Execution\ChipComponent;
-use Odiseo\AiAgentBundle\Fencing\Fence;
-use Odiseo\AiAgentBundle\Skill\SkillRegistry;
+use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
+use Odiseo\AiConversationalAgentBundle\Capability\PromptFragment;
+use Odiseo\AiConversationalAgentBundle\Capability\PromptSection;
+use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
+use Odiseo\AiConversationalAgentBundle\Execution\ChipComponent;
+use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
+use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
 
 /**
  * The cached half of the system prompt: identity, the rules that apply on most turns, the

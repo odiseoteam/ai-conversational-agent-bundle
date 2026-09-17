@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Agent;
+namespace Odiseo\AiConversationalAgentBundle\Agent;
 
-use Odiseo\AiAgentBundle\Session\SessionContext;
-use Odiseo\AiAgentBundle\Session\TurnState;
+use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
+use Odiseo\AiConversationalAgentBundle\Session\TurnState;
 
 final class NullContextProvider implements ContextProvider
 {

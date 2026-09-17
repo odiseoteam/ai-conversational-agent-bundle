@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Eval;
+namespace Odiseo\AiConversationalAgentBundle\Eval;
 
-use Odiseo\AiAgentBundle\Skill\SkillCapability;
-use Odiseo\AiAgentBundle\Streaming\AgentEvent;
-use Odiseo\AiAgentBundle\Streaming\EventType;
+use Odiseo\AiConversationalAgentBundle\Skill\SkillCapability;
+use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
+use Odiseo\AiConversationalAgentBundle\Streaming\EventType;
 
 /**
  * What a graded turn produced. Graders read this rather than the transcript, because what is

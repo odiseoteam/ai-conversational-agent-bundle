@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests;
 
-use Odiseo\AiAgentBundle\Config\AgentConfig;
-use Odiseo\AiAgentBundle\Fencing\Fence;
-use Odiseo\AiAgentBundle\Memory\InMemoryMemoryStore;
-use Odiseo\AiAgentBundle\Memory\MemoryCategory;
-use Odiseo\AiAgentBundle\Memory\MemoryFact;
-use Odiseo\AiAgentBundle\Memory\MemoryRuntime;
-use Odiseo\AiAgentBundle\Memory\MemoryWriteFilter;
+use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
+use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
+use Odiseo\AiConversationalAgentBundle\Memory\InMemoryMemoryStore;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryCategory;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryFact;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryRuntime;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryWriteFilter;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

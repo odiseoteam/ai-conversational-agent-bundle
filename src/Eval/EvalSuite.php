@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Eval;
+namespace Odiseo\AiConversationalAgentBundle\Eval;
 
 /** The cases under one directory: one JSON file per flow, an array of cases in each. */
 final class EvalSuite

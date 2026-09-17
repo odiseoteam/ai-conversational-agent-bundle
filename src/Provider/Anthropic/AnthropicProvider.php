@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Provider\Anthropic;
+namespace Odiseo\AiConversationalAgentBundle\Provider\Anthropic;
 
-use Odiseo\AiAgentBundle\Capability\ToolSpec;
-use Odiseo\AiAgentBundle\Provider\AuthenticationException;
-use Odiseo\AiAgentBundle\Provider\ModelProvider;
-use Odiseo\AiAgentBundle\Provider\ProviderCapabilities;
-use Odiseo\AiAgentBundle\Provider\ProviderException;
-use Odiseo\AiAgentBundle\Provider\Request\SystemBlock;
-use Odiseo\AiAgentBundle\Provider\Request\TurnRequest;
-use Odiseo\AiAgentBundle\Provider\Response\ProviderResponse;
-use Odiseo\AiAgentBundle\Provider\Response\ToolUse;
-use Odiseo\AiAgentBundle\Provider\Response\Usage;
-use Odiseo\AiAgentBundle\Provider\Stream\TextChunk;
-use Odiseo\AiAgentBundle\Provider\Stream\ToolCallStarted;
-use Odiseo\AiAgentBundle\Provider\Stream\ToolInputChunk;
-use Odiseo\AiAgentBundle\Provider\Stream\TurnFinished;
+use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
+use Odiseo\AiConversationalAgentBundle\Provider\AuthenticationException;
+use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
+use Odiseo\AiConversationalAgentBundle\Provider\ProviderCapabilities;
+use Odiseo\AiConversationalAgentBundle\Provider\ProviderException;
+use Odiseo\AiConversationalAgentBundle\Provider\Request\SystemBlock;
+use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
+use Odiseo\AiConversationalAgentBundle\Provider\Response\ProviderResponse;
+use Odiseo\AiConversationalAgentBundle\Provider\Response\ToolUse;
+use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
+use Odiseo\AiConversationalAgentBundle\Provider\Stream\TextChunk;
+use Odiseo\AiConversationalAgentBundle\Provider\Stream\ToolCallStarted;
+use Odiseo\AiConversationalAgentBundle\Provider\Stream\ToolInputChunk;
+use Odiseo\AiConversationalAgentBundle\Provider\Stream\TurnFinished;
 use Symfony\AI\Platform\Exception\AuthenticationException as PlatformAuthenticationException;
 use Symfony\AI\Platform\Exception\ExceptionInterface as PlatformException;
 use Symfony\AI\Platform\PlatformInterface;

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Gate;
+namespace Odiseo\AiConversationalAgentBundle\Gate;
 
-use Odiseo\AiAgentBundle\Session\Provenance;
-use Odiseo\AiAgentBundle\Session\TurnState;
-use Odiseo\AiAgentBundle\Streaming\ToolOutcome;
+use Odiseo\AiConversationalAgentBundle\Session\Provenance;
+use Odiseo\AiConversationalAgentBundle\Session\TurnState;
+use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
 
 /**
  * A tool argument or a component field may only name a record some tool returned this session.

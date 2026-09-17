@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Provider\Stream;
+namespace Odiseo\AiConversationalAgentBundle\Provider\Stream;
 
 final readonly class TextChunk implements StreamEvent
 {

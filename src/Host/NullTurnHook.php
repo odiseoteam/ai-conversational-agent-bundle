@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Host;
+namespace Odiseo\AiConversationalAgentBundle\Host;
 
-use Odiseo\AiAgentBundle\Session\SessionContext;
+use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
 
 final class NullTurnHook implements TurnHook
 {

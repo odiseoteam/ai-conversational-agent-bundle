@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Provider\Response;
+namespace Odiseo\AiConversationalAgentBundle\Provider\Response;
 
 /**
  * One completed model call: the assistant message as content blocks the transcript stores, the

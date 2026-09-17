@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Bridge\Symfony\Controller;
+namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller;
 
-use Odiseo\AiAgentBundle\Agent\TurnRunner;
-use Odiseo\AiAgentBundle\Provider\AuthenticationException;
-use Odiseo\AiAgentBundle\Session\SessionResolver;
-use Odiseo\AiAgentBundle\Streaming\SseEncoder;
+use Odiseo\AiConversationalAgentBundle\Agent\TurnRunner;
+use Odiseo\AiConversationalAgentBundle\Provider\AuthenticationException;
+use Odiseo\AiConversationalAgentBundle\Session\SessionResolver;
+use Odiseo\AiConversationalAgentBundle\Streaming\SseEncoder;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;

@@ -1,28 +1,28 @@
 # The agent's HTTP surface, without a base path: the host imports this file with the prefix it
 # wants (`prefix: /agent`) under the firewall that resolves its principal.
-odiseo_ai_agent_session_start:
+odiseo_ai_conversational_agent_session_start:
     path: /session
-    controller: Odiseo\AiAgentBundle\Bridge\Symfony\Controller\SessionController::start
+    controller: Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\SessionController::start
     methods: [POST]
 
-odiseo_ai_agent_chat:
+odiseo_ai_conversational_agent_chat:
     path: /chat
-    controller: Odiseo\AiAgentBundle\Bridge\Symfony\Controller\ChatController::chat
+    controller: Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\ChatController::chat
     methods: [POST]
 
-odiseo_ai_agent_memory_list:
+odiseo_ai_conversational_agent_memory_list:
     path: /memory
-    controller: Odiseo\AiAgentBundle\Bridge\Symfony\Controller\MemoryController::list
+    controller: Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\MemoryController::list
     methods: [GET]
 
-odiseo_ai_agent_memory_forget:
+odiseo_ai_conversational_agent_memory_forget:
     path: /memory/{key}
-    controller: Odiseo\AiAgentBundle\Bridge\Symfony\Controller\MemoryController::forget
+    controller: Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\MemoryController::forget
     methods: [DELETE]
     requirements:
         key: '.+'
 
-odiseo_ai_agent_memory_clear:
+odiseo_ai_conversational_agent_memory_clear:
     path: /memory
-    controller: Odiseo\AiAgentBundle\Bridge\Symfony\Controller\MemoryController::clear
+    controller: Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\MemoryController::clear
     methods: [DELETE]

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Host;
+namespace Odiseo\AiConversationalAgentBundle\Host;
 
 /**
  * What the host needs in place for its tools to work from the console, where no HTTP request

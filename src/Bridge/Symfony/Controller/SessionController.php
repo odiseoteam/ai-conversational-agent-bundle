@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Bridge\Symfony\Controller;
+namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller;
 
-use Odiseo\AiAgentBundle\Host\PrincipalResolver;
-use Odiseo\AiAgentBundle\Session\SessionResolver;
+use Odiseo\AiConversationalAgentBundle\Host\PrincipalResolver;
+use Odiseo\AiConversationalAgentBundle\Session\SessionResolver;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;

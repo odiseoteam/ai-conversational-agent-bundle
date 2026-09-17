@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Grounding;
+namespace Odiseo\AiConversationalAgentBundle\Grounding;
 
 /**
  * The lexicon matchers a grounding rule is written with. The lexicons themselves are

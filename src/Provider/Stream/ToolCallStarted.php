@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Provider\Stream;
+namespace Odiseo\AiConversationalAgentBundle\Provider\Stream;
 
 /** A tool call has begun generating. Eager dispatch and progressive cards start here. */
 final readonly class ToolCallStarted implements StreamEvent

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Capability;
+namespace Odiseo\AiConversationalAgentBundle\Capability;
 
 /**
  * One tool as the model sees it. A capability lists its tools in a fixed order; the surface

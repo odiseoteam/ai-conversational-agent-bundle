@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Bridge\Symfony\Controller;
+namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller;
 
-use Odiseo\AiAgentBundle\Streaming\AgentEvent;
+use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 /**

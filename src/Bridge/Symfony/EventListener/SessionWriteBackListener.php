@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Bridge\Symfony\EventListener;
+namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony\EventListener;
 
-use Odiseo\AiAgentBundle\Session\SessionResolver;
+use Odiseo\AiConversationalAgentBundle\Session\SessionResolver;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpKernel\Event\TerminateEvent;

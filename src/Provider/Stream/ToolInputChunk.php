@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Provider\Stream;
+namespace Odiseo\AiConversationalAgentBundle\Provider\Stream;
 
 /**
  * A fragment of a tool call's arguments as they are written. v1 ignores these; they are what a

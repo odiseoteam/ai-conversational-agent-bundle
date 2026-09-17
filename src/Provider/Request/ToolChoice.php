@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Provider\Request;
+namespace Odiseo\AiConversationalAgentBundle\Provider\Request;
 
 /**
  * How the model may use tools this round. A forced choice is how a grounding rule pins the

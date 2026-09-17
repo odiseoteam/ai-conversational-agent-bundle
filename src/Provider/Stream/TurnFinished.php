@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Provider\Stream;
+namespace Odiseo\AiConversationalAgentBundle\Provider\Stream;
 
-use Odiseo\AiAgentBundle\Provider\Response\ProviderResponse;
+use Odiseo\AiConversationalAgentBundle\Provider\Response\ProviderResponse;
 
 final readonly class TurnFinished implements StreamEvent
 {

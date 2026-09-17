@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Capability;
+namespace Odiseo\AiConversationalAgentBundle\Capability;
 
-use Odiseo\AiAgentBundle\Execution\TurnScope;
-use Odiseo\AiAgentBundle\Fencing\Fence;
-use Odiseo\AiAgentBundle\Session\SessionContext;
-use Odiseo\AiAgentBundle\Session\TurnState;
-use Odiseo\AiAgentBundle\Streaming\AgentEvent;
+use Odiseo\AiConversationalAgentBundle\Execution\TurnScope;
+use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
+use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
+use Odiseo\AiConversationalAgentBundle\Session\TurnState;
+use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
 
 /**
  * What a capability's handler works with. It carries the caller (never a user id supplied by

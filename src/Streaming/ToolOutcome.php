@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Streaming;
+namespace Odiseo\AiConversationalAgentBundle\Streaming;
 
 /**
  * One tool call's product: $resultText for the model, $events for the host. $blocked names

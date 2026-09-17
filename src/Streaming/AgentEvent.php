@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Streaming;
+namespace Odiseo\AiConversationalAgentBundle\Streaming;
 
 final readonly class AgentEvent
 {

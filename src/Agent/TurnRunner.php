@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Agent;
+namespace Odiseo\AiConversationalAgentBundle\Agent;
 
-use Odiseo\AiAgentBundle\Host\TurnHook;
-use Odiseo\AiAgentBundle\Session\SessionContext;
-use Odiseo\AiAgentBundle\Session\SessionRecord;
-use Odiseo\AiAgentBundle\Streaming\AgentEvent;
-use Odiseo\AiAgentBundle\Streaming\EventType;
+use Odiseo\AiConversationalAgentBundle\Host\TurnHook;
+use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
+use Odiseo\AiConversationalAgentBundle\Session\SessionRecord;
+use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
+use Odiseo\AiConversationalAgentBundle\Streaming\EventType;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 

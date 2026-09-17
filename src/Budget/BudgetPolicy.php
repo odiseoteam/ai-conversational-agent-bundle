@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Budget;
+namespace Odiseo\AiConversationalAgentBundle\Budget;
 
-use Odiseo\AiAgentBundle\Config\AgentConfig;
-use Odiseo\AiAgentBundle\Provider\Response\Usage;
+use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
+use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 

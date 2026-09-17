@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Bridge\Symfony\Controller;
+namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller;
 
-use Odiseo\AiAgentBundle\Memory\MemoryFact;
-use Odiseo\AiAgentBundle\Memory\MemoryStore;
-use Odiseo\AiAgentBundle\Session\SessionResolver;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryFact;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryStore;
+use Odiseo\AiConversationalAgentBundle\Session\SessionResolver;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 

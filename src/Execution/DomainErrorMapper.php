@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Execution;
+namespace Odiseo\AiConversationalAgentBundle\Execution;
 
-use Odiseo\AiAgentBundle\Streaming\ToolOutcome;
+use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
 
 /**
  * A capability that has exceptions of its own maps them here, so the model is told what is

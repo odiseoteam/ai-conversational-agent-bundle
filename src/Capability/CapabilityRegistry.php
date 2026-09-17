@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Capability;
+namespace Odiseo\AiConversationalAgentBundle\Capability;
 
-use Odiseo\AiAgentBundle\Grounding\GroundingRule;
-use Odiseo\AiAgentBundle\Presentation\PresentationComponent;
+use Odiseo\AiConversationalAgentBundle\Grounding\GroundingRule;
+use Odiseo\AiConversationalAgentBundle\Presentation\PresentationComponent;
 
 /**
  * The capabilities one deployment registered, and the surfaces derived from them. Built once

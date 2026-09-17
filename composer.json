@@ -1,5 +1,5 @@
 {
-    "name": "odiseoteam/ai-agent-bundle",
+    "name": "odiseoteam/ai-conversational-agent-bundle",
     "description": "Vertical-agnostic core for conversational agents: capabilities, turn loop, gates, sessions, streaming and evals.",
     "type": "symfony-bundle",
     "license": "proprietary",
@@ -29,12 +29,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Odiseo\\AiAgentBundle\\": "src/"
+            "Odiseo\\AiConversationalAgentBundle\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Odiseo\\AiAgentBundle\\Tests\\": "tests/"
+            "Odiseo\\AiConversationalAgentBundle\\Tests\\": "tests/"
         }
     },
     "config": {

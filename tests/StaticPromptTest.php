@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests;
 
-use Odiseo\AiAgentBundle\Capability\CapabilityRegistry;
-use Odiseo\AiAgentBundle\Config\AgentConfig;
-use Odiseo\AiAgentBundle\Fencing\Fence;
-use Odiseo\AiAgentBundle\Prompt\StaticPromptBuilder;
-use Odiseo\AiAgentBundle\Skill\Skill;
-use Odiseo\AiAgentBundle\Skill\SkillRegistry;
-use Odiseo\AiAgentBundle\Tests\Fixture\DirectoryCapability;
+use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
+use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
+use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
+use Odiseo\AiConversationalAgentBundle\Prompt\StaticPromptBuilder;
+use Odiseo\AiConversationalAgentBundle\Skill\Skill;
+use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
+use Odiseo\AiConversationalAgentBundle\Tests\Fixture\DirectoryCapability;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -69,10 +69,10 @@ final class StaticPromptTest extends TestCase
         self::assertSame(str_replace('Odiseo', 'Otra', $baseline), $renamed);
     }
 
-    /** @param list<\Odiseo\AiAgentBundle\Capability\Capability>|null $capabilities */
+    /** @param list<\Odiseo\AiConversationalAgentBundle\Capability\Capability>|null $capabilities */
     private function builder(?AgentConfig $config = null, ?array $capabilities = null, ?SkillRegistry $skills = null): StaticPromptBuilder
     {
-        $capabilities ??= [new DirectoryCapability(), new \Odiseo\AiAgentBundle\Presentation\SuggestionsCapability(($config ?? $this->config())->limits)];
+        $capabilities ??= [new DirectoryCapability(), new \Odiseo\AiConversationalAgentBundle\Presentation\SuggestionsCapability(($config ?? $this->config())->limits)];
 
         return new StaticPromptBuilder(
             $config ?? $this->config(),

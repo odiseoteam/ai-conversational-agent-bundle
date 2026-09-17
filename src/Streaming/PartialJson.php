@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Streaming;
+namespace Odiseo\AiConversationalAgentBundle\Streaming;
 
 /**
  * Best-effort decoding of a tool call's arguments while they are still streaming in.

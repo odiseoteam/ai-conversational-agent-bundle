@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Provider;
+namespace Odiseo\AiConversationalAgentBundle\Provider;
 
-use Odiseo\AiAgentBundle\Provider\Request\TurnRequest;
-use Odiseo\AiAgentBundle\Provider\Response\ProviderResponse;
-use Odiseo\AiAgentBundle\Provider\Stream\StreamEvent;
+use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
+use Odiseo\AiConversationalAgentBundle\Provider\Response\ProviderResponse;
+use Odiseo\AiConversationalAgentBundle\Provider\Stream\StreamEvent;
 
 /**
  * A model behind one adapter. The interface is defined by what this product needs — streaming,

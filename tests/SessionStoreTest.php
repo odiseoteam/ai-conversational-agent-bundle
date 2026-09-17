@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests;
 
-use Odiseo\AiAgentBundle\Agent\Transcript;
-use Odiseo\AiAgentBundle\Session\InMemorySessionStore;
-use Odiseo\AiAgentBundle\Session\SeenRecord;
-use Odiseo\AiAgentBundle\Session\SessionConflictException;
+use Odiseo\AiConversationalAgentBundle\Agent\Transcript;
+use Odiseo\AiConversationalAgentBundle\Session\InMemorySessionStore;
+use Odiseo\AiConversationalAgentBundle\Session\SeenRecord;
+use Odiseo\AiConversationalAgentBundle\Session\SessionConflictException;
 use PHPUnit\Framework\TestCase;
 
 final class SessionStoreTest extends TestCase

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Eval;
+namespace Odiseo\AiConversationalAgentBundle\Eval;
 
 final readonly class EvalResult
 {

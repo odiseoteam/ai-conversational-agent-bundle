@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Budget\Dbal;
+namespace Odiseo\AiConversationalAgentBundle\Budget\Dbal;
 
 use Doctrine\DBAL\Connection;
-use Odiseo\AiAgentBundle\Budget\SpendLedger;
+use Odiseo\AiConversationalAgentBundle\Budget\SpendLedger;
 
 /**
  * One row per charged model call, so a day's spend and a session's spend are both a sum and

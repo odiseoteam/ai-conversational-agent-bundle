@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Provider\Request;
+namespace Odiseo\AiConversationalAgentBundle\Provider\Request;
 
-use Odiseo\AiAgentBundle\Capability\ToolSpec;
-use Odiseo\AiAgentBundle\Config\ThinkingEffort;
+use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
+use Odiseo\AiConversationalAgentBundle\Config\ThinkingEffort;
 
 /**
  * One model call, in this product's own vocabulary. An adapter maps it to its provider's

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiAgentBundle\Presentation;
+namespace Odiseo\AiConversationalAgentBundle\Presentation;
 
-use Odiseo\AiAgentBundle\Gate\ProvenanceGate;
-use Odiseo\AiAgentBundle\Session\Provenance;
-use Odiseo\AiAgentBundle\Session\SeenRecord;
+use Odiseo\AiConversationalAgentBundle\Gate\ProvenanceGate;
+use Odiseo\AiConversationalAgentBundle\Session\Provenance;
+use Odiseo\AiConversationalAgentBundle\Session\SeenRecord;
 
 /**
  * What a validator and an enrich hook do to the model's arguments before they become a
