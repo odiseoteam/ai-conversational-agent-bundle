@@ -117,11 +117,12 @@ final class MemoryRuntime
 
     /**
      * Extract what the finished turn taught and store it. Runs once the reply has streamed;
-     * never raises, because a memory failure must not surface as a failed turn.
+     * never raises, because a memory failure must not surface as a failed turn. The caller
+     * sees the model's response through $onResponse, to charge and log it like any round.
      *
      * @return list<MemoryFact>
      */
-    public function extract(ModelProvider $provider, string $subject, string $sessionTag, string $transcript): array
+    public function extract(ModelProvider $provider, string $subject, string $sessionTag, string $transcript, ?\Closure $onResponse = null): array
     {
         if (!$this->config->enableMemory || '' === trim($transcript)) {
             return [];
@@ -140,6 +141,9 @@ final class MemoryRuntime
                 timeoutSeconds: $this->config->requestTimeoutSeconds,
                 cacheTools: false,
             ));
+            if (null !== $onResponse) {
+                $onResponse($response);
+            }
 
             $written = [];
             foreach ($this->decodeFacts($response->text()) as $candidate) {

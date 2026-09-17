@@ -26,10 +26,15 @@ final class CostTable
     /** @return array<string, ModelPrice> */
     public static function defaults(): array
     {
+        // List prices of the first-party API; a dated id costs the same as its alias.
         return [
-            'claude-opus-5' => new ModelPrice(15.0, 75.0),
-            'claude-sonnet-5' => new ModelPrice(3.0, 15.0),
-            'claude-fable-5' => new ModelPrice(3.0, 15.0),
+            'claude-fable-5-1' => new ModelPrice(10.0, 50.0),
+            'claude-fable-5' => new ModelPrice(10.0, 50.0),
+            'claude-opus-5' => new ModelPrice(5.0, 25.0),
+            'claude-opus-4-8' => new ModelPrice(5.0, 25.0),
+            'claude-sonnet-5' => new ModelPrice(2.0, 10.0),
+            'claude-sonnet-4-6' => new ModelPrice(3.0, 15.0),
+            'claude-haiku-4-5' => new ModelPrice(1.0, 5.0),
             'claude-haiku-4-5-20251001' => new ModelPrice(1.0, 5.0),
         ];
     }

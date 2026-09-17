@@ -277,6 +277,10 @@ final class AgentLoop
             $session->principalId,
             $session->sessionTag(),
             Transcript::text(Transcript::latestExchange($messages)),
+            function (ProviderResponse $response) use ($session): void {
+                $this->budget->charge($session->sessionId, $this->config->memoryModel, $response->usage, new \DateTimeImmutable());
+                $this->log($session, 'memory', $response, $this->config->memoryModel);
+            },
         );
     }
 
@@ -313,12 +317,12 @@ final class AgentLoop
         ];
     }
 
-    private function log(SessionContext $session, int $round, ProviderResponse $response): void
+    private function log(SessionContext $session, int|string $round, ProviderResponse $response, ?string $model = null): void
     {
         $this->logger->info('model call', [
             'session' => $session->sessionTag(),
             'round' => $round,
-            'model' => $this->config->model,
+            'model' => $model ?? $this->config->model,
             'stop_reason' => $response->stopReason,
             'usage' => $response->usage->toArray(),
             'tool_calls' => array_map(static fn ($call): string => $call->name, $response->toolUses),
