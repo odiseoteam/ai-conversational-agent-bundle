@@ -1,0 +1,41 @@
+{
+    "name": "odiseoteam/ai-agent-bundle",
+    "description": "Vertical-agnostic core for conversational agents: capabilities, turn loop, gates, sessions, streaming and evals.",
+    "type": "symfony-bundle",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.2",
+        "psr/log": "^3.0",
+        "symfony/config": "^7.3|^8.0",
+        "symfony/dependency-injection": "^7.3|^8.0",
+        "symfony/http-foundation": "^7.3|^8.0",
+        "symfony/http-kernel": "^7.3|^8.0",
+        "symfony/uid": "^7.3|^8.0",
+        "symfony/yaml": "^7.3|^8.0"
+    },
+    "require-dev": {
+        "doctrine/dbal": "^4.2",
+        "friendsofphp/php-cs-fixer": "^3.68",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^11.5",
+        "symfony/ai-anthropic-platform": "^0.13"
+    },
+    "suggest": {
+        "doctrine/dbal": "For the DBAL session, memory and spend-ledger stores",
+        "symfony/ai-anthropic-platform": "For the Anthropic model provider adapter"
+    },
+    "autoload": {
+        "psr-4": {
+            "Odiseo\\AiAgentBundle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Odiseo\\AiAgentBundle\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable"
+}

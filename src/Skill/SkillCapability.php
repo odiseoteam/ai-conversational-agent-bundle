@@ -1,0 +1,84 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Odiseo\AiAgentBundle\Skill;
+
+use Odiseo\AiAgentBundle\Capability\Capability;
+use Odiseo\AiAgentBundle\Capability\ToolContext;
+use Odiseo\AiAgentBundle\Capability\ToolSpec;
+use Odiseo\AiAgentBundle\Streaming\ToolOutcome;
+
+/**
+ * The flows' rules, loaded on demand. The static prompt carries only the index, so a rule that
+ * applies to one flow costs nothing on the turns that are not that flow.
+ */
+final class SkillCapability implements Capability
+{
+    public const TOOL = 'load_skill';
+
+    public function __construct(private readonly SkillRegistry $skills)
+    {
+    }
+
+    public function name(): string
+    {
+        return 'core.skills';
+    }
+
+    public function tools(): array
+    {
+        $names = $this->skills->names();
+        if ([] === $names) {
+            return [];
+        }
+
+        return [new ToolSpec(
+            self::TOOL,
+            'Load the rules of the flow whose entry in the skill index the request matches; they are not in your prompt. Call it in the same round as the flow\'s first read and follow them for the rest of the flow.',
+            [
+                'type' => 'object',
+                'properties' => [
+                    'skill_name' => [
+                        'type' => 'string',
+                        'enum' => $names,
+                        'description' => 'Name of the skill as listed in the index.',
+                    ],
+                ],
+                'required' => ['skill_name'],
+                'additionalProperties' => false,
+            ],
+        )];
+    }
+
+    public function promptFragments(): array
+    {
+        return [];
+    }
+
+    public function groundingRules(): array
+    {
+        return [];
+    }
+
+    public function components(): array
+    {
+        return [];
+    }
+
+    public function execute(string $tool, array $input, ToolContext $context): ToolOutcome
+    {
+        $name = (string) ($input['skill_name'] ?? '');
+        $body = $this->skills->instructions($name);
+
+        if (null === $body) {
+            return ToolOutcome::error(\sprintf(
+                'No skill named "%s". Available: %s',
+                $name,
+                implode(', ', $this->skills->names()),
+            ));
+        }
+
+        return new ToolOutcome($body);
+    }
+}
