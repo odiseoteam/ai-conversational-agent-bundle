@@ -9,12 +9,14 @@ use Odiseo\AiConversationalAgentBundle\Agent\AgentLoop;
 use Odiseo\AiConversationalAgentBundle\Agent\ContextProvider;
 use Odiseo\AiConversationalAgentBundle\Agent\NullContextProvider;
 use Odiseo\AiConversationalAgentBundle\Agent\TurnRunner;
+use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Budget\RequestClientKeyResolver;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Command\ChatCommand;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\ChatController;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\MemoryController;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\SessionController;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\EventListener\SessionWriteBackListener;
 use Odiseo\AiConversationalAgentBundle\Budget\BudgetPolicy;
+use Odiseo\AiConversationalAgentBundle\Budget\ClientKeyResolver;
 use Odiseo\AiConversationalAgentBundle\Budget\CostTable;
 use Odiseo\AiConversationalAgentBundle\Budget\Dbal\DbalSpendLedger;
 use Odiseo\AiConversationalAgentBundle\Budget\SpendLedger;
@@ -22,7 +24,6 @@ use Odiseo\AiConversationalAgentBundle\Capability\Capability;
 use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
 use Odiseo\AiConversationalAgentBundle\Capability\Limits;
 use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
-use Odiseo\AiConversationalAgentBundle\Config\ThinkingEffort;
 use Odiseo\AiConversationalAgentBundle\Eval\EvalRunner;
 use Odiseo\AiConversationalAgentBundle\Eval\Grader\CodeGrader;
 use Odiseo\AiConversationalAgentBundle\Eval\Grader\JudgeGrader;
@@ -111,6 +112,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                     ->integerNode('max_tool_iterations')->defaultValue(8)->end()
                     ->floatNode('request_timeout')->defaultValue(120.0)->end()
                     ->floatNode('session_usd')->defaultValue(0.5)->end()
+                    ->floatNode('client_usd')->defaultNull()->info('Per client (IP) and day; null turns it off.')->end()
                     ->floatNode('daily_usd')->defaultValue(20.0)->end()
                 ->end()->end()
                 ->arrayNode('limits')->addDefaultsIfNotSet()->children()
@@ -163,13 +165,13 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
             '$replyLanguage' => $config['identity']['reply_language'],
             '$model' => $config['models']['turn'],
             '$memoryModel' => $config['models']['memory'],
-            '$thinkingEffort' => 'off' === $config['models']['thinking_effort']
-                ? null
-                : ThinkingEffort::from($config['models']['thinking_effort']),
+            // Left as a string: resolved by AgentConfig so an env placeholder works here.
+            '$thinkingEffort' => $config['models']['thinking_effort'],
             '$maxTokens' => $config['budgets']['max_tokens'],
             '$maxToolIterations' => $config['budgets']['max_tool_iterations'],
             '$requestTimeoutSeconds' => $config['budgets']['request_timeout'],
             '$sessionBudgetUsd' => $config['budgets']['session_usd'],
+            '$clientBudgetUsd' => $config['budgets']['client_usd'],
             '$dailyBudgetUsd' => $config['budgets']['daily_usd'],
             '$eagerToolDispatch' => $config['latency']['eager_tool_dispatch'],
             '$rollingConversationCache' => $config['latency']['rolling_conversation_cache'],
@@ -220,6 +222,8 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
         }
 
         $services->set(CostTable::class);
+        $services->set(RequestClientKeyResolver::class);
+        $services->alias(ClientKeyResolver::class, RequestClientKeyResolver::class);
         $services->set(BudgetPolicy::class);
 
         $services->set(DbalSessionStore::class)->args([

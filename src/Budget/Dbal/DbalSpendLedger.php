@@ -17,15 +17,15 @@ final class DbalSpendLedger implements SpendLedger
     {
     }
 
-    public function record(string $sessionId, \DateTimeImmutable $at, float $usd): void
+    public function record(string $sessionId, \DateTimeImmutable $at, float $usd, ?string $clientKey = null): void
     {
         if ($usd <= 0.0) {
             return;
         }
 
         $this->connection->executeStatement(
-            'INSERT INTO agent_spend_ledger (session_id, spent_on, usd, created_at) VALUES (:id, CAST(:day AS date), :usd, NOW())',
-            ['id' => $sessionId, 'day' => $at->format('Y-m-d'), 'usd' => $usd],
+            'INSERT INTO agent_spend_ledger (session_id, client_key, spent_on, usd, created_at) VALUES (:id, :client, CAST(:day AS date), :usd, NOW())',
+            ['id' => $sessionId, 'client' => $clientKey, 'day' => $at->format('Y-m-d'), 'usd' => $usd],
         );
     }
 
@@ -34,6 +34,14 @@ final class DbalSpendLedger implements SpendLedger
         return (float) $this->connection->fetchOne(
             'SELECT COALESCE(SUM(usd), 0) FROM agent_spend_ledger WHERE session_id = :id',
             ['id' => $sessionId],
+        );
+    }
+
+    public function clientSpend(string $clientKey, \DateTimeImmutable $day): float
+    {
+        return (float) $this->connection->fetchOne(
+            'SELECT COALESCE(SUM(usd), 0) FROM agent_spend_ledger WHERE client_key = :client AND spent_on = CAST(:day AS date)',
+            ['client' => $clientKey, 'day' => $day->format('Y-m-d')],
         );
     }
 

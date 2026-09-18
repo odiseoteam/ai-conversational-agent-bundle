@@ -211,6 +211,40 @@ final class AgentLoopTest extends TestCase
         self::assertSame([], $provider->requests(), 'the model is never called');
     }
 
+    public function testTheClientBudgetSurvivesAFreshSession(): void
+    {
+        $config = new AgentConfig(sessionBudgetUsd: 1.0, clientBudgetUsd: 0.5);
+        $provider = new FakeProvider([FakeProvider::text('hola')]);
+        $builder = new AgentBuilder($provider, $config);
+        $builder->clientKey = '203.0.113.7';
+        // The budget day is the session's local day, so the spend is recorded on that clock.
+        $session = new SessionContext('s-2', 'visitor-2', 'America/Argentina/Buenos_Aires');
+        $builder->ledger->record('s-1', $session->localNow() ?? new \DateTimeImmutable(), 0.5, '203.0.113.7');
+
+        $messages = [Transcript::userMessage('hola')];
+        $events = iterator_to_array($builder->loop()->streamTurn($messages, $session, new TurnState()), false);
+
+        self::assertSame(EventType::Error, $events[0]->type);
+        self::assertSame('budget', $this->last($events)->data['stop_reason']);
+        self::assertSame([], $provider->requests(), 'the model is never called');
+    }
+
+    public function testTheClientBudgetIgnoresOtherClientsAndConsoleRuns(): void
+    {
+        $config = new AgentConfig(sessionBudgetUsd: 1.0, clientBudgetUsd: 0.5);
+        $builder = new AgentBuilder(new FakeProvider([FakeProvider::text('hola'), FakeProvider::text('hola')]), $config);
+        $session = new SessionContext('s-2', 'visitor-2', 'America/Argentina/Buenos_Aires');
+        $builder->ledger->record('s-1', $session->localNow() ?? new \DateTimeImmutable(), 0.5, '203.0.113.7');
+
+        foreach (['198.51.100.9', null] as $client) {
+            $builder->clientKey = $client;
+            $messages = [Transcript::userMessage('hola')];
+            $events = iterator_to_array($builder->loop()->streamTurn($messages, $session, new TurnState()), false);
+
+            self::assertSame('end_turn', $this->last($events)->data['stop_reason']);
+        }
+    }
+
     public function testAnAbandonedTurnLeavesNoUnansweredToolCall(): void
     {
         $builder = new AgentBuilder(

@@ -20,6 +20,7 @@ final class BudgetPolicy
         private readonly AgentConfig $config,
         private readonly SpendLedger $ledger,
         private readonly CostTable $costs = new CostTable(),
+        private readonly ClientKeyResolver $client = new NullClientKeyResolver(),
         private readonly LoggerInterface $logger = new NullLogger(),
     ) {
     }
@@ -28,6 +29,12 @@ final class BudgetPolicy
     {
         if ($this->ledger->sessionSpend($sessionId) >= $this->config->sessionBudgetUsd) {
             return BudgetExceeded::Session;
+        }
+
+        $cap = $this->config->clientBudgetUsd;
+        $client = null === $cap ? null : $this->client->clientKey();
+        if (null !== $cap && null !== $client && $this->ledger->clientSpend($client, $at) >= $cap) {
+            return BudgetExceeded::Client;
         }
 
         if ($this->ledger->daySpend($at) >= $this->config->dailyBudgetUsd) {
@@ -46,7 +53,7 @@ final class BudgetPolicy
         }
 
         $cost = $this->costs->costOf($model, $usage);
-        $this->ledger->record($sessionId, $at, $cost);
+        $this->ledger->record($sessionId, $at, $cost, $this->client->clientKey());
 
         return $cost;
     }

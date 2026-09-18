@@ -10,18 +10,29 @@ final class InMemorySpendLedger implements SpendLedger
     private array $bySession = [];
 
     /** @var array<string, float> */
+    private array $byClientDay = [];
+
+    /** @var array<string, float> */
     private array $byDay = [];
 
-    public function record(string $sessionId, \DateTimeImmutable $at, float $usd): void
+    public function record(string $sessionId, \DateTimeImmutable $at, float $usd, ?string $clientKey = null): void
     {
         $this->bySession[$sessionId] = ($this->bySession[$sessionId] ?? 0.0) + $usd;
         $day = $at->format('Y-m-d');
         $this->byDay[$day] = ($this->byDay[$day] ?? 0.0) + $usd;
+        if (null !== $clientKey) {
+            $this->byClientDay[$clientKey.'|'.$day] = ($this->byClientDay[$clientKey.'|'.$day] ?? 0.0) + $usd;
+        }
     }
 
     public function sessionSpend(string $sessionId): float
     {
         return $this->bySession[$sessionId] ?? 0.0;
+    }
+
+    public function clientSpend(string $clientKey, \DateTimeImmutable $day): float
+    {
+        return $this->byClientDay[$clientKey.'|'.$day->format('Y-m-d')] ?? 0.0;
     }
 
     public function daySpend(\DateTimeImmutable $day): float

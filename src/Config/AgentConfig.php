@@ -15,10 +15,15 @@ use Odiseo\AiConversationalAgentBundle\Capability\Limits;
  */
 final readonly class AgentConfig
 {
+    /** Effort for the turn model; null disables thinking (Haiku has no effort control). */
+    public ?ThinkingEffort $thinkingEffort;
+
     /**
      * @param string $scope         (prompt) what this agent is for, in one clause
      * @param string $replyLanguage (prompt) the language the agent answers in, worded in English
      *                              because it completes an English sentence
+     * @param ThinkingEffort|string|null $thinkingEffort a case, its value, or 'off'/null; taken as a
+     *                                                   string so it can come from an env var
      */
     public function __construct(
         // -- Identity (prompt)
@@ -32,7 +37,7 @@ final readonly class AgentConfig
         // -- Models. The turn loop runs on $model and post-turn extraction on $memoryModel.
         public string $model = 'claude-sonnet-5',
         public string $memoryModel = 'claude-haiku-4-5-20251001',
-        public ?ThinkingEffort $thinkingEffort = ThinkingEffort::Low,
+        ThinkingEffort|string|null $thinkingEffort = ThinkingEffort::Low,
 
         // -- Budgets. The iteration cap is a runaway guard: a multi-part request has to finish
         // well inside it, because once the cap forces a tool-less round the model tends to
@@ -42,8 +47,11 @@ final readonly class AgentConfig
         public float $requestTimeoutSeconds = 120.0,
 
         // -- Spend caps, in USD. The ledger stops a turn that would cross one. These are cost
-        // controls: abuse is stopped by the rate limiter at the edge, not here.
+        // controls: abuse is stopped by the rate limiter at the edge, not here. The client cap
+        // is per client key (the IP) and day, so a fresh session does not reset the spend;
+        // null turns it off.
         public float $sessionBudgetUsd = 0.50,
+        public ?float $clientBudgetUsd = null,
         public float $dailyBudgetUsd = 20.0,
 
         // -- Latency switches, each independent so a problem can be bisected. Eager dispatch
@@ -73,6 +81,9 @@ final readonly class AgentConfig
          */
         public int $compactHistoryAboveTokens = 100_000,
     ) {
+        $this->thinkingEffort = \is_string($thinkingEffort)
+            ? ('off' === $thinkingEffort ? null : ThinkingEffort::from($thinkingEffort))
+            : $thinkingEffort;
     }
 
     /** @param array<string, mixed> $changes */

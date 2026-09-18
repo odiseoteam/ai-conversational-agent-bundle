@@ -6,6 +6,7 @@ namespace Odiseo\AiConversationalAgentBundle\Tests\Fixture;
 
 use Odiseo\AiConversationalAgentBundle\Agent\AgentLoop;
 use Odiseo\AiConversationalAgentBundle\Budget\BudgetPolicy;
+use Odiseo\AiConversationalAgentBundle\Budget\ClientKeyResolver;
 use Odiseo\AiConversationalAgentBundle\Budget\CostTable;
 use Odiseo\AiConversationalAgentBundle\Budget\InMemorySpendLedger;
 use Odiseo\AiConversationalAgentBundle\Budget\SpendLedger;
@@ -37,6 +38,8 @@ final class AgentBuilder
     public MemoryStore $memoryStore;
     public MemoryRuntime $memory;
     public SpendLedger $ledger;
+    /** The client the budget charges; null is a console run. */
+    public ?string $clientKey = null;
     public StaticPromptBuilder $prompt;
 
     /** @param list<Capability> $extra */
@@ -77,7 +80,16 @@ final class AgentBuilder
             new ContextBlockBuilder($this->fence),
             $this->fence,
             $this->memory,
-            new BudgetPolicy($this->config, $this->ledger, new CostTable()),
+            new BudgetPolicy($this->config, $this->ledger, new CostTable(), new class($this) implements ClientKeyResolver {
+                public function __construct(private readonly AgentBuilder $builder)
+                {
+                }
+
+                public function clientKey(): ?string
+                {
+                    return $this->builder->clientKey;
+                }
+            }),
         );
     }
 }
