@@ -37,11 +37,14 @@ final class Orm
     public static function entityManager(): EntityManagerInterface
     {
         $config = ORMSetup::createConfiguration(isDevMode: true);
-        $config->enableNativeLazyObjects(true);
         $chain = new MappingDriverChain();
         $chain->addDriver(new SimplifiedXmlDriver([\dirname(__DIR__, 2).'/config/orm' => 'Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model']), 'Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model');
         $chain->addDriver(new AttributeDriver([__DIR__.'/Entity']), 'Odiseo\AiConversationalAgentBundle\Tests\Fixture\Entity');
         $config->setMetadataDriverImpl($chain);
+
+        if (\PHP_VERSION_ID >= 80400) {
+            $config->enableNativeLazyObjects(true);
+        }
 
         $em = new EntityManager(DriverManager::getConnection(self::connection(), $config), $config);
 
