@@ -6,6 +6,8 @@ namespace Odiseo\AiConversationalAgentBundle\Tests;
 
 use Doctrine\ORM\EntityManager;
 use Odiseo\AiConversationalAgentBundle\Agent\Transcript;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\ConversationInitializer;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\ConversationInterface;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmSessionStore;
 use Odiseo\AiConversationalAgentBundle\Session\SessionConflictException;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Entity\TestConversation;
@@ -73,6 +75,35 @@ final class OrmSessionStoreTest extends TestCase
         self::assertSame('assistant', $rows[1]->getRole());
         self::assertNull($rows[1]->getText());
         self::assertSame('t1', $rows[1]->getPayload()['content'][0]['id']);
+    }
+
+    public function testTheHostFillsInItsOwnColumnsWhenTheConversationIsCreated(): void
+    {
+        $em = Orm::entityManager();
+        $initializer = new class implements ConversationInitializer {
+            /** @var list<class-string> */
+            public array $seen = [];
+
+            public function initialize(ConversationInterface $conversation): void
+            {
+                $this->seen[] = $conversation::class;
+                if ($conversation instanceof TestConversation) {
+                    $conversation->setLabel('principal: '.$conversation->getPrincipalId());
+                }
+            }
+        };
+        $store = Orm::sessionStore($em, initializer: $initializer);
+
+        $record = $store->start('visitor-1');
+        $record->messages[] = Transcript::userMessage('hola');
+        $store->save($record);
+        $em->clear();
+
+        /** @var TestConversation $row */
+        $row = $em->getRepository(TestConversation::class)->findOneBy(['sessionId' => $record->sessionId]);
+        self::assertSame('principal: visitor-1', $row->getLabel());
+        // Only on the insert, and on the configured entity: a turn never overwrites what the host set.
+        self::assertSame([TestConversation::class], $initializer->seen);
     }
 
     public function testResetLeavesNoRows(): void

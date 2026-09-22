@@ -6,7 +6,7 @@ namespace Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
-use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\MemoryFact as MemoryFactEntity;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\MemoryFactInterface;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryFact;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryStore;
 
@@ -17,7 +17,7 @@ use Odiseo\AiConversationalAgentBundle\Memory\MemoryStore;
  */
 final class OrmMemoryStore implements MemoryStore
 {
-    /** @param class-string<MemoryFactEntity> $factClass */
+    /** @param class-string<MemoryFactInterface> $factClass */
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly string $factClass,
@@ -26,7 +26,7 @@ final class OrmMemoryStore implements MemoryStore
 
     public function save(string $subject, MemoryFact $fact): void
     {
-        /** @var MemoryFactEntity|null $row */
+        /** @var MemoryFactInterface|null $row */
         $row = $this->em->getRepository($this->factClass)->findOneBy(['subject' => $subject, 'factKey' => $fact->key]);
         if (null === $row) {
             $row = new $this->factClass();
@@ -95,12 +95,12 @@ final class OrmMemoryStore implements MemoryStore
     }
 
     /**
-     * @param list<MemoryFactEntity> $rows
+     * @param list<MemoryFactInterface> $rows
      *
      * @return list<MemoryFact>
      */
     private function hydrate(array $rows): array
     {
-        return array_map(static fn (MemoryFactEntity $row): MemoryFact => $row->toFact(), $rows);
+        return array_map(static fn (MemoryFactInterface $row): MemoryFact => $row->toFact(), $rows);
     }
 }

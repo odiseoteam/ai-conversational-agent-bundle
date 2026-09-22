@@ -11,4 +11,17 @@ use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\Conversation;
 #[ORM\Table(name: 'test_agent_conversation')]
 class TestConversation extends Conversation
 {
+    /** What a host adds of its own; here only so a ConversationInitializer has something to set. */
+    #[ORM\Column(type: 'string', length: 64, nullable: true)]
+    protected ?string $label = null;
+
+    public function getLabel(): ?string
+    {
+        return $this->label;
+    }
+
+    public function setLabel(?string $label): void
+    {
+        $this->label = $label;
+    }
 }

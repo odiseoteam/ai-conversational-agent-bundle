@@ -12,6 +12,8 @@ use Doctrine\ORM\Mapping\Driver\SimplifiedXmlDriver;
 use Doctrine\ORM\ORMSetup;
 use Doctrine\ORM\Tools\SchemaTool;
 use Doctrine\Persistence\Mapping\Driver\MappingDriverChain;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\ConversationInitializer;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\NullConversationInitializer;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmMemoryStore;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmSessionStore;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmSpendLedger;
@@ -30,7 +32,7 @@ final class Orm
     {
         $config = ORMSetup::createConfiguration(isDevMode: true);
         $chain = new MappingDriverChain();
-        $chain->addDriver(new SimplifiedXmlDriver([\dirname(__DIR__, 2).'/config/doctrine' => 'Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model']), 'Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model');
+        $chain->addDriver(new SimplifiedXmlDriver([\dirname(__DIR__, 2).'/config/orm' => 'Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model']), 'Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model');
         $chain->addDriver(new AttributeDriver([__DIR__.'/Entity']), 'Odiseo\AiConversationalAgentBundle\Tests\Fixture\Entity');
         $config->setMetadataDriverImpl($chain);
 
@@ -40,9 +42,15 @@ final class Orm
         return $em;
     }
 
-    public static function sessionStore(?EntityManagerInterface $em = null, int $retentionDays = 30): OrmSessionStore
+    public static function sessionStore(?EntityManagerInterface $em = null, int $retentionDays = 30, ?ConversationInitializer $initializer = null): OrmSessionStore
     {
-        return new OrmSessionStore($em ?? self::entityManager(), TestConversation::class, TestMessage::class, $retentionDays);
+        return new OrmSessionStore(
+            $em ?? self::entityManager(),
+            TestConversation::class,
+            TestMessage::class,
+            $retentionDays,
+            $initializer ?? new NullConversationInitializer(),
+        );
     }
 
     public static function memoryStore(?EntityManagerInterface $em = null): OrmMemoryStore

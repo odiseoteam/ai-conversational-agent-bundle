@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Tests\Fixture\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\Conversation;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\ConversationInterface;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\Message;
 
 #[ORM\Entity]
@@ -15,5 +15,5 @@ class TestMessage extends Message
 {
     #[ORM\ManyToOne(targetEntity: TestConversation::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    protected ?Conversation $conversation = null;
+    protected ?ConversationInterface $conversation = null;
 }

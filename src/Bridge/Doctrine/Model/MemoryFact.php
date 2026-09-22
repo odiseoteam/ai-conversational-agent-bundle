@@ -11,9 +11,9 @@ use Odiseo\AiConversationalAgentBundle\Memory\MemoryFact as Fact;
  * One long-term fact, keyed by subject and key. No relation to anything: the subject is a
  * string that outlives any conversation and the core does not know who it names.
  *
- * Mapped superclass (config/doctrine/MemoryFact.orm.xml).
+ * Mapped superclass (config/orm/MemoryFact.orm.xml).
  */
-abstract class MemoryFact
+abstract class MemoryFact implements MemoryFactInterface
 {
     protected ?int $id = null;
     protected string $subject = '';

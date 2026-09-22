@@ -8,8 +8,11 @@ use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\OptimisticLockException;
-use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\Conversation;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\ConversationInitializer;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\ConversationInterface;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\Message;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\MessageInterface;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\NullConversationInitializer;
 use Odiseo\AiConversationalAgentBundle\Session\SessionConflictException;
 use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
 
@@ -25,14 +28,15 @@ use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
 final class OrmSessionStore extends SessionStore
 {
     /**
-     * @param class-string<Conversation> $conversationClass
-     * @param class-string<Message>      $messageClass
+     * @param class-string<ConversationInterface> $conversationClass
+     * @param class-string<MessageInterface>      $messageClass
      */
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly string $conversationClass,
         private readonly string $messageClass,
         private readonly int $retentionDays = 30,
+        private readonly ConversationInitializer $initializer = new NullConversationInitializer(),
     ) {
     }
 
@@ -76,7 +80,7 @@ final class OrmSessionStore extends SessionStore
             return [];
         }
 
-        /** @var list<Message> $rows */
+        /** @var list<MessageInterface> $rows */
         $rows = $this->em->createQueryBuilder()
             ->select('m')
             ->from($this->messageClass, 'm')
@@ -86,7 +90,7 @@ final class OrmSessionStore extends SessionStore
             ->getQuery()
             ->getResult();
 
-        return array_map(static fn (Message $row): array => $row->getPayload(), $rows);
+        return array_map(static fn (MessageInterface $row): array => $row->getPayload(), $rows);
     }
 
     public function writeMessages(string $sessionId, array $messages, int $start): void
@@ -148,7 +152,7 @@ final class OrmSessionStore extends SessionStore
     /** Drop what has expired. Called by a prune command, not on the request path. */
     public function prune(): int
     {
-        /** @var list<Conversation> $expired */
+        /** @var list<ConversationInterface> $expired */
         $expired = $this->em->createQueryBuilder()
             ->select('c')
             ->from($this->conversationClass, 'c')
@@ -177,6 +181,7 @@ final class OrmSessionStore extends SessionStore
         $conversation->setSessionId($sessionId);
         $conversation->setPrincipalId((string) ($document['principal_id'] ?? ''));
         self::fill($conversation, $document, $this->expiry());
+        $this->initializer->initialize($conversation);
 
         try {
             $this->em->persist($conversation);
@@ -186,15 +191,15 @@ final class OrmSessionStore extends SessionStore
         }
     }
 
-    private function find(string $sessionId): ?Conversation
+    private function find(string $sessionId): ?ConversationInterface
     {
-        /** @var Conversation|null $conversation */
+        /** @var ConversationInterface|null $conversation */
         $conversation = $this->em->getRepository($this->conversationClass)->findOneBy(['sessionId' => $sessionId]);
 
         return $conversation;
     }
 
-    /** @param list<Conversation> $conversations */
+    /** @param list<ConversationInterface> $conversations */
     private function deleteMessagesOf(array $conversations): void
     {
         $this->em->createQueryBuilder()
@@ -206,7 +211,7 @@ final class OrmSessionStore extends SessionStore
     }
 
     /** @param array<string, mixed> $document */
-    private static function fill(Conversation $conversation, array $document, \DateTimeImmutable $expiresAt): void
+    private static function fill(ConversationInterface $conversation, array $document, \DateTimeImmutable $expiresAt): void
     {
         $conversation->setState(\is_array($document['state'] ?? null) ? $document['state'] : []);
         $conversation->setPendingAppEvents(array_values(array_map(
@@ -218,7 +223,7 @@ final class OrmSessionStore extends SessionStore
     }
 
     /** @return array<string, mixed> */
-    private static function document(Conversation $conversation): array
+    private static function document(ConversationInterface $conversation): array
     {
         return [
             'principal_id' => $conversation->getPrincipalId(),

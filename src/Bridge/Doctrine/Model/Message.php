@@ -8,13 +8,13 @@ namespace Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model;
  * One message of a transcript. $payload is the API message as the loop rereads it; $text is
  * its text blocks joined, for a person or a search to read without parsing JSON.
  *
- * Mapped superclass (config/doctrine/Message.orm.xml); the host's entity names the table and
+ * Mapped superclass (config/orm/Message.orm.xml); the host's entity names the table and
  * the conversation class it belongs to.
  */
-abstract class Message
+abstract class Message implements MessageInterface
 {
     protected ?int $id = null;
-    protected ?Conversation $conversation = null;
+    protected ?ConversationInterface $conversation = null;
     protected int $position = 0;
     protected string $role = '';
     protected ?string $text = null;
@@ -32,12 +32,12 @@ abstract class Message
         return $this->id;
     }
 
-    public function getConversation(): ?Conversation
+    public function getConversation(): ?ConversationInterface
     {
         return $this->conversation;
     }
 
-    public function setConversation(?Conversation $conversation): void
+    public function setConversation(?ConversationInterface $conversation): void
     {
         $this->conversation = $conversation;
     }

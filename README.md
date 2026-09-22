@@ -37,10 +37,11 @@ budgets, memory, fence, sessions, skills and evals directories. The Anthropic pr
 ### Storage
 
 Sessions, transcripts, memory facts and the spend ledger persist through Doctrine ORM, on any
-platform it supports. The core ships four mapped superclasses in `Bridge\Doctrine\Model`
-(`Conversation`, `Message`, `MemoryFact`, `SpendEntry`) with their XML mappings; the host
-extends each one, names the table and adds whatever it relates to, and points the bundle at
-its classes:
+platform it supports. The stores work against the four interfaces in `Bridge\Doctrine\Model`
+(`ConversationInterface`, `MessageInterface`, `MemoryFactInterface`, `SpendEntryInterface`) and
+never name a concrete class. Beside each one is a mapped superclass implementing it, with its
+XML mapping; the host extends that, names the table and adds whatever it relates to, and points
+the bundle at its classes:
 
 ```php
 #[ORM\Entity]
@@ -55,7 +56,7 @@ class AgentMessage extends \Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\M
 {
     #[ORM\ManyToOne(targetEntity: AgentConversation::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    protected ?\Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\Conversation $conversation = null;
+    protected ?\Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\ConversationInterface $conversation = null;
 }
 ```
 
@@ -69,8 +70,25 @@ odiseo_ai_conversational_agent:
             spend_entry: App\Entity\AgentSpendEntry
 ```
 
-`doctrine:migrations:diff` then produces the schema. Without `doctrine/orm` (or with
-`orm.enabled: false`) the stores are in memory and nothing outlives the process.
+A conversation the core creates carries the session id, the principal and the state document.
+Anything else the host's schema relates it to it sets through a `ConversationInitializer`,
+called on the new entity before it is persisted, while the request still knows who is asking:
+
+```php
+final class LinkTheCustomer implements ConversationInitializer
+{
+    public function initialize(ConversationInterface $conversation): void
+    {
+        // $conversation is the host's own entity, still unsaved.
+    }
+}
+```
+
+Point `ConversationInitializer` at it and the core will call it; unset, nothing happens.
+
+`doctrine:migrations:diff` then produces the schema: the mappings ship here, the migration
+belongs to the application that runs them. Without `doctrine/orm` (or with `orm.enabled: false`)
+the stores are in memory and nothing outlives the process.
 
 ## Development
 

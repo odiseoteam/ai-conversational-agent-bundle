@@ -8,10 +8,10 @@ namespace Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model;
  * One session as the ORM keeps it: the principal, the turn state and the pending app events
  * that SessionStore reads as a document, under an optimistic lock on $version.
  *
- * Mapped superclass (config/doctrine/Conversation.orm.xml): a host extends it, names the
+ * Mapped superclass (config/orm/Conversation.orm.xml): a host extends it, names the
  * table and adds what it relates to (a customer, an order). The core only knows strings.
  */
-abstract class Conversation
+abstract class Conversation implements ConversationInterface
 {
     protected ?int $id = null;
     protected string $sessionId = '';

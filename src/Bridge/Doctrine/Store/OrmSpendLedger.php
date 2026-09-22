@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\SpendEntry;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\SpendEntryInterface;
 use Odiseo\AiConversationalAgentBundle\Budget\SpendLedger;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
 
@@ -16,7 +16,7 @@ use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
  */
 final class OrmSpendLedger implements SpendLedger
 {
-    /** @param class-string<SpendEntry> $entryClass */
+    /** @param class-string<SpendEntryInterface> $entryClass */
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly string $entryClass,

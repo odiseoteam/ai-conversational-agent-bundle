@@ -8,9 +8,9 @@ namespace Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model;
  * One charged model call. The session is a string, not a relation: the daily and per-client
  * caps are sums over this table and must survive the session being reset or pruned.
  *
- * Mapped superclass (config/doctrine/SpendEntry.orm.xml).
+ * Mapped superclass (config/orm/SpendEntry.orm.xml).
  */
-abstract class SpendEntry
+abstract class SpendEntry implements SpendEntryInterface
 {
     protected ?int $id = null;
     protected string $sessionId = '';

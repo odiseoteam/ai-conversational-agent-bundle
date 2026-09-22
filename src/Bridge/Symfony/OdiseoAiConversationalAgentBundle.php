@@ -10,6 +10,8 @@ use Odiseo\AiConversationalAgentBundle\Agent\AgentLoop;
 use Odiseo\AiConversationalAgentBundle\Agent\ContextProvider;
 use Odiseo\AiConversationalAgentBundle\Agent\NullContextProvider;
 use Odiseo\AiConversationalAgentBundle\Agent\TurnRunner;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\ConversationInitializer;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\NullConversationInitializer;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmMemoryStore;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmSessionStore;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmSpendLedger;
@@ -86,7 +88,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
 
         if (class_exists(DoctrineOrmMappingsPass::class)) {
             $container->addCompilerPass(DoctrineOrmMappingsPass::createXmlMappingDriver([
-                $this->getPath().'/config/doctrine' => 'Odiseo\\AiConversationalAgentBundle\\Bridge\\Doctrine\\Model',
+                $this->getPath().'/config/orm' => 'Odiseo\\AiConversationalAgentBundle\\Bridge\\Doctrine\\Model',
             ]));
         }
     }
@@ -161,7 +163,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                     ->scalarNode('timezone')->defaultNull()->end()
                 ->end()->end()
                 ->arrayNode('orm')->addDefaultsIfNotSet()
-                    ->info('The stores over Doctrine ORM. The host extends the four mapped superclasses in Bridge\\Doctrine\\Model and names its entities here; off, the stores are in memory and nothing outlives the process.')
+                    ->info('The stores over Doctrine ORM. The host names four entities that implement the model interfaces in Bridge\\Doctrine\\Model, usually by extending the mapped superclasses beside them; off, the stores are in memory and nothing outlives the process.')
                     ->children()
                         ->booleanNode('enabled')->defaultValue(interface_exists(EntityManagerInterface::class))->end()
                         ->arrayNode('classes')->addDefaultsIfNotSet()->children()
@@ -173,7 +175,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                     ->end()
                     ->validate()
                         ->ifTrue(static fn (array $orm): bool => $orm['enabled'] && \in_array(null, $orm['classes'], true))
-                        ->thenInvalid('orm.classes needs the four entity classes (conversation, message, memory_fact, spend_entry) that extend the core\'s mapped superclasses, or orm.enabled: false.')
+                        ->thenInvalid('orm.classes needs the four entity classes (conversation, message, memory_fact, spend_entry) that implement the core\'s model interfaces, or orm.enabled: false.')
                     ->end()
                 ->end()
                 ->scalarNode('skills_dir')->defaultNull()->end()
@@ -260,11 +262,17 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
 
         if ($config['orm']['enabled']) {
             $classes = $config['orm']['classes'];
+            // The host fills in what its own schema relates a conversation to by pointing
+            // this alias at its own implementation.
+            $services->set(NullConversationInitializer::class);
+            $services->alias(ConversationInitializer::class, NullConversationInitializer::class);
+
             $services->set(OrmSessionStore::class)->args([
                 service(EntityManagerInterface::class),
                 $classes['conversation'],
                 $classes['message'],
                 $config['sessions']['retention_days'],
+                service(ConversationInitializer::class),
             ]);
             $services->alias(SessionStore::class, OrmSessionStore::class);
 
