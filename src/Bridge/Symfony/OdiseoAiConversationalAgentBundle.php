@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony;
 
-use Doctrine\DBAL\Connection;
+use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\DoctrineOrmMappingsPass;
+use Doctrine\ORM\EntityManagerInterface;
 use Odiseo\AiConversationalAgentBundle\Agent\AgentLoop;
 use Odiseo\AiConversationalAgentBundle\Agent\ContextProvider;
 use Odiseo\AiConversationalAgentBundle\Agent\NullContextProvider;
 use Odiseo\AiConversationalAgentBundle\Agent\TurnRunner;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmMemoryStore;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmSessionStore;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmSpendLedger;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Budget\RequestClientKeyResolver;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Command\ChatCommand;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\ChatController;
@@ -18,7 +22,7 @@ use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\EventListener\SessionWrite
 use Odiseo\AiConversationalAgentBundle\Budget\BudgetPolicy;
 use Odiseo\AiConversationalAgentBundle\Budget\ClientKeyResolver;
 use Odiseo\AiConversationalAgentBundle\Budget\CostTable;
-use Odiseo\AiConversationalAgentBundle\Budget\Dbal\DbalSpendLedger;
+use Odiseo\AiConversationalAgentBundle\Budget\InMemorySpendLedger;
 use Odiseo\AiConversationalAgentBundle\Budget\SpendLedger;
 use Odiseo\AiConversationalAgentBundle\Capability\Capability;
 use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
@@ -36,7 +40,7 @@ use Odiseo\AiConversationalAgentBundle\Host\ConsoleEnvironment;
 use Odiseo\AiConversationalAgentBundle\Host\NullConsoleEnvironment;
 use Odiseo\AiConversationalAgentBundle\Host\NullTurnHook;
 use Odiseo\AiConversationalAgentBundle\Host\TurnHook;
-use Odiseo\AiConversationalAgentBundle\Memory\Dbal\DbalMemoryStore;
+use Odiseo\AiConversationalAgentBundle\Memory\InMemoryMemoryStore;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryCapability;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryRuntime;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryStore;
@@ -46,7 +50,7 @@ use Odiseo\AiConversationalAgentBundle\Prompt\ContextBlockBuilder;
 use Odiseo\AiConversationalAgentBundle\Prompt\StaticPromptBuilder;
 use Odiseo\AiConversationalAgentBundle\Provider\Anthropic\AnthropicProvider;
 use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
-use Odiseo\AiConversationalAgentBundle\Session\Dbal\DbalSessionStore;
+use Odiseo\AiConversationalAgentBundle\Session\InMemorySessionStore;
 use Odiseo\AiConversationalAgentBundle\Session\SessionResolver;
 use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillCapability;
@@ -73,6 +77,18 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
     public function getPath(): string
     {
         return \dirname(__DIR__, 3);
+    }
+
+    /** The ORM mappings of the core's mapped superclasses, when DoctrineBundle is installed. */
+    public function build(ContainerBuilder $container): void
+    {
+        parent::build($container);
+
+        if (class_exists(DoctrineOrmMappingsPass::class)) {
+            $container->addCompilerPass(DoctrineOrmMappingsPass::createXmlMappingDriver([
+                $this->getPath().'/config/doctrine' => 'Odiseo\\AiConversationalAgentBundle\\Bridge\\Doctrine\\Model',
+            ]));
+        }
     }
 
     /** The rate limiters the agent's routes consume; a host tunes them by redefining the same names. */
@@ -144,6 +160,22 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                     // The clock the model reads; null is PHP's default timezone.
                     ->scalarNode('timezone')->defaultNull()->end()
                 ->end()->end()
+                ->arrayNode('orm')->addDefaultsIfNotSet()
+                    ->info('The stores over Doctrine ORM. The host extends the four mapped superclasses in Bridge\\Doctrine\\Model and names its entities here; off, the stores are in memory and nothing outlives the process.')
+                    ->children()
+                        ->booleanNode('enabled')->defaultValue(interface_exists(EntityManagerInterface::class))->end()
+                        ->arrayNode('classes')->addDefaultsIfNotSet()->children()
+                            ->scalarNode('conversation')->defaultNull()->end()
+                            ->scalarNode('message')->defaultNull()->end()
+                            ->scalarNode('memory_fact')->defaultNull()->end()
+                            ->scalarNode('spend_entry')->defaultNull()->end()
+                        ->end()->end()
+                    ->end()
+                    ->validate()
+                        ->ifTrue(static fn (array $orm): bool => $orm['enabled'] && \in_array(null, $orm['classes'], true))
+                        ->thenInvalid('orm.classes needs the four entity classes (conversation, message, memory_fact, spend_entry) that extend the core\'s mapped superclasses, or orm.enabled: false.')
+                    ->end()
+                ->end()
                 ->scalarNode('skills_dir')->defaultNull()->end()
                 ->scalarNode('evals_dir')->defaultNull()->end()
             ->end();
@@ -226,17 +258,29 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
         $services->alias(ClientKeyResolver::class, RequestClientKeyResolver::class);
         $services->set(BudgetPolicy::class);
 
-        $services->set(DbalSessionStore::class)->args([
-            service(Connection::class),
-            $config['sessions']['retention_days'],
-        ]);
-        $services->alias(SessionStore::class, DbalSessionStore::class);
+        if ($config['orm']['enabled']) {
+            $classes = $config['orm']['classes'];
+            $services->set(OrmSessionStore::class)->args([
+                service(EntityManagerInterface::class),
+                $classes['conversation'],
+                $classes['message'],
+                $config['sessions']['retention_days'],
+            ]);
+            $services->alias(SessionStore::class, OrmSessionStore::class);
 
-        $services->set(DbalMemoryStore::class)->args([service(Connection::class)]);
-        $services->alias(MemoryStore::class, DbalMemoryStore::class);
+            $services->set(OrmMemoryStore::class)->args([service(EntityManagerInterface::class), $classes['memory_fact']]);
+            $services->alias(MemoryStore::class, OrmMemoryStore::class);
 
-        $services->set(DbalSpendLedger::class)->args([service(Connection::class)]);
-        $services->alias(SpendLedger::class, DbalSpendLedger::class);
+            $services->set(OrmSpendLedger::class)->args([service(EntityManagerInterface::class), $classes['spend_entry']]);
+            $services->alias(SpendLedger::class, OrmSpendLedger::class);
+        } else {
+            $services->set(InMemorySessionStore::class);
+            $services->alias(SessionStore::class, InMemorySessionStore::class);
+            $services->set(InMemoryMemoryStore::class);
+            $services->alias(MemoryStore::class, InMemoryMemoryStore::class);
+            $services->set(InMemorySpendLedger::class);
+            $services->alias(SpendLedger::class, InMemorySpendLedger::class);
+        }
 
         $services->set(AnthropicProvider::class)->args([new Reference('ai.platform.anthropic')]);
         $services->alias(ModelProvider::class, AnthropicProvider::class);

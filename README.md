@@ -17,7 +17,7 @@ it knows about commerce.
   ends on text, on a budget limit or on the tool-iteration cap.
 - **Gates** — fencing of external text (`Fence`), grounding rules that force a tool when the
   message matches a lexicon, provenance checks and payload guards on what is presented.
-- **Sessions and memory** — DBAL stores for session state, transcript, long-term facts per
+- **Sessions and memory** — ORM stores for session state, transcript, long-term facts per
   subject, and a spend ledger; memory extraction runs after the turn with a cheaper model.
 - **Presentation** — `ui` events carrying components the host renders; the model only names
   them.
@@ -32,8 +32,45 @@ composer require odiseoteam/ai-conversational-agent-bundle
 Register `Odiseo\AiConversationalAgentBundle\Bridge\Symfony\OdiseoAiConversationalAgentBundle` and configure
 `odiseo_ai_conversational_agent` (`bin/console config:dump-reference odiseo_ai_conversational_agent`): identity, models,
 budgets, memory, fence, sessions, skills and evals directories. The Anthropic provider needs
-`symfony/ai-anthropic-platform`; the DBAL stores need `doctrine/dbal` and the tables
-`agent_session_state`, `agent_session_message`, `agent_memory_fact`, `agent_spend_ledger`.
+`symfony/ai-anthropic-platform`.
+
+### Storage
+
+Sessions, transcripts, memory facts and the spend ledger persist through Doctrine ORM, on any
+platform it supports. The core ships four mapped superclasses in `Bridge\Doctrine\Model`
+(`Conversation`, `Message`, `MemoryFact`, `SpendEntry`) with their XML mappings; the host
+extends each one, names the table and adds whatever it relates to, and points the bundle at
+its classes:
+
+```php
+#[ORM\Entity]
+#[ORM\Table(name: 'app_agent_conversation')]
+class AgentConversation extends \Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\Conversation
+{
+}
+
+#[ORM\Entity]
+#[ORM\Table(name: 'app_agent_message')]
+class AgentMessage extends \Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\Message
+{
+    #[ORM\ManyToOne(targetEntity: AgentConversation::class)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    protected ?\Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\Conversation $conversation = null;
+}
+```
+
+```yaml
+odiseo_ai_conversational_agent:
+    orm:
+        classes:
+            conversation: App\Entity\AgentConversation
+            message: App\Entity\AgentMessage
+            memory_fact: App\Entity\AgentMemoryFact
+            spend_entry: App\Entity\AgentSpendEntry
+```
+
+`doctrine:migrations:diff` then produces the schema. Without `doctrine/orm` (or with
+`orm.enabled: false`) the stores are in memory and nothing outlives the process.
 
 ## Development
 

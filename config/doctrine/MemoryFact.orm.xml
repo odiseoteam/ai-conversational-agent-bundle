@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                                      http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <mapped-superclass name="Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\MemoryFact">
+        <unique-constraints>
+            <unique-constraint name="uniq_agent_memory_fact_subject_key" columns="subject,fact_key" />
+        </unique-constraints>
+        <indexes>
+            <index name="idx_agent_memory_fact_updated" columns="subject,updated_at" />
+        </indexes>
+
+        <id name="id" column="id" type="integer">
+            <generator strategy="AUTO" />
+        </id>
+
+        <field name="subject" column="subject" type="string" length="255" />
+        <field name="factKey" column="fact_key" type="string" length="255" />
+        <field name="factValue" column="fact_value" type="text" />
+        <field name="category" column="category" type="string" length="32" />
+        <field name="sourceSession" column="source_session" type="string" length="64" nullable="true" />
+        <field name="updatedAt" column="updated_at" type="datetime_immutable" />
+    </mapped-superclass>
+</doctrine-mapping>
