@@ -1,4 +1,4 @@
-# AI Agent Bundle
+# AI Conversational Agent Bundle
 
 A vertical-agnostic core for conversational agents in Symfony: the turn loop, tool
 execution, gates, sessions, streaming, memory, budgets and evals. Verticals (a shopping
