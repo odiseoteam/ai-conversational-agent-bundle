@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Tests\Fixture;
 
 use Doctrine\DBAL\DriverManager;
+use Doctrine\DBAL\Tools\DsnParser;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\Driver\AttributeDriver;
@@ -23,8 +24,13 @@ use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Entity\TestMessage;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Entity\TestSpendEntry;
 
 /**
- * An entity manager over SQLite in memory with the core's XML mappings and the test entities
- * that extend them, schema created: what the ORM stores need and nothing of Symfony.
+ * An entity manager with the core's XML mappings and the test entities that extend them,
+ * schema created: what the ORM stores need and nothing of Symfony.
+ *
+ * SQLite in memory by default, so the suite needs no server. AGENT_TEST_DATABASE_URL points it
+ * at a real one instead; the CI matrix runs the same tests on MySQL and on PostgreSQL, where
+ * the JSON columns, the optimistic lock and the collation of the memory search behave like
+ * they will in a shop.
  */
 final class Orm
 {
@@ -36,10 +42,33 @@ final class Orm
         $chain->addDriver(new AttributeDriver([__DIR__.'/Entity']), 'Odiseo\AiConversationalAgentBundle\Tests\Fixture\Entity');
         $config->setMetadataDriverImpl($chain);
 
-        $em = new EntityManager(DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true], $config), $config);
-        (new SchemaTool($em))->createSchema($em->getMetadataFactory()->getAllMetadata());
+        $em = new EntityManager(DriverManager::getConnection(self::connection(), $config), $config);
+
+        // A server keeps what the last test left; in-memory SQLite is new every time and the
+        // drop is a no-op. SchemaTool ignores a statement that finds nothing to drop.
+        $metadata = $em->getMetadataFactory()->getAllMetadata();
+        $tool = new SchemaTool($em);
+        $tool->dropSchema($metadata);
+        $tool->createSchema($metadata);
 
         return $em;
+    }
+
+    /** @return array<string, mixed> */
+    private static function connection(): array
+    {
+        $dsn = getenv('AGENT_TEST_DATABASE_URL');
+        if (!\is_string($dsn) || '' === $dsn) {
+            return ['driver' => 'pdo_sqlite', 'memory' => true];
+        }
+
+        return (new DsnParser([
+            'mysql' => 'pdo_mysql',
+            'mariadb' => 'pdo_mysql',
+            'postgres' => 'pdo_pgsql',
+            'postgresql' => 'pdo_pgsql',
+            'sqlite' => 'pdo_sqlite',
+        ]))->parse($dsn);
     }
 
     public static function sessionStore(?EntityManagerInterface $em = null, int $retentionDays = 30, ?ConversationInitializer $initializer = null): OrmSessionStore

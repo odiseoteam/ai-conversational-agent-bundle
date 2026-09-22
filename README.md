@@ -99,6 +99,13 @@ vendor/bin/phpstan analyse
 vendor/bin/php-cs-fixer fix --dry-run --diff
 ```
 
+The suite runs on SQLite in memory and needs no server. `AGENT_TEST_DATABASE_URL` points the
+ORM tests at a real one, which is what CI does for MySQL and PostgreSQL:
+
+```bash
+AGENT_TEST_DATABASE_URL=postgresql://user:pass@127.0.0.1:5432/agent_test vendor/bin/phpunit
+```
+
 ## License
 
 Proprietary, see `LICENSE`.
