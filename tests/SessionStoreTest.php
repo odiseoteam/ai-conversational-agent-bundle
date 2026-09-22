@@ -8,13 +8,26 @@ use Odiseo\AiConversationalAgentBundle\Agent\Transcript;
 use Odiseo\AiConversationalAgentBundle\Session\InMemorySessionStore;
 use Odiseo\AiConversationalAgentBundle\Session\SeenRecord;
 use Odiseo\AiConversationalAgentBundle\Session\SessionConflictException;
+use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
+use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Orm;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+/** The contract every session store keeps, run against the in-memory one and the ORM one. */
 final class SessionStoreTest extends TestCase
 {
-    public function testAStartedSessionIsFoundAgainWithItsPrincipal(): void
+    /** @return iterable<string, array{0: \Closure(): SessionStore}> */
+    public static function stores(): iterable
     {
-        $store = new InMemorySessionStore();
+        yield 'memory' => [static fn (): SessionStore => new InMemorySessionStore()];
+        yield 'orm' => [static fn (): SessionStore => Orm::sessionStore()];
+    }
+
+    /** @param \Closure(): SessionStore $make */
+    #[DataProvider('stores')]
+    public function testAStartedSessionIsFoundAgainWithItsPrincipal(\Closure $make): void
+    {
+        $store = $make();
         $record = $store->start('visitor-1');
 
         $loaded = $store->require($record->sessionId);
@@ -23,9 +36,11 @@ final class SessionStoreTest extends TestCase
         self::assertNotSame('', $record->sessionId);
     }
 
-    public function testTheTranscriptAndTheStateSurviveARoundTrip(): void
+    /** @param \Closure(): SessionStore $make */
+    #[DataProvider('stores')]
+    public function testTheTranscriptAndTheStateSurviveARoundTrip(\Closure $make): void
     {
-        $store = new InMemorySessionStore();
+        $store = $make();
         $record = $store->start('visitor-1');
 
         $record->messages[] = Transcript::userMessage('hola');
@@ -39,9 +54,11 @@ final class SessionStoreTest extends TestCase
         self::assertSame('Primero', $loaded->state->seen('R-1')?->data['title']);
     }
 
-    public function testASaveThatChangedNothingWritesNothing(): void
+    /** @param \Closure(): SessionStore $make */
+    #[DataProvider('stores')]
+    public function testASaveThatChangedNothingWritesNothing(\Closure $make): void
     {
-        $store = new InMemorySessionStore();
+        $store = $make();
         $record = $store->start('visitor-1');
         $version = $record->version;
 
@@ -50,9 +67,11 @@ final class SessionStoreTest extends TestCase
         self::assertSame($version, $record->version);
     }
 
-    public function testTheSecondWriterOfTheSameVersionIsRefused(): void
+    /** @param \Closure(): SessionStore $make */
+    #[DataProvider('stores')]
+    public function testTheSecondWriterOfTheSameVersionIsRefused(\Closure $make): void
     {
-        $store = new InMemorySessionStore();
+        $store = $make();
         $record = $store->start('visitor-1');
 
         $first = $store->require($record->sessionId);
@@ -66,9 +85,11 @@ final class SessionStoreTest extends TestCase
         $store->save($second);
     }
 
-    public function testACompactedTranscriptIsRewrittenWhole(): void
+    /** @param \Closure(): SessionStore $make */
+    #[DataProvider('stores')]
+    public function testACompactedTranscriptIsRewrittenWhole(\Closure $make): void
     {
-        $store = new InMemorySessionStore();
+        $store = $make();
         $record = $store->start('visitor-1');
         $record->messages = [Transcript::userMessage('uno'), Transcript::userMessage('dos')];
         $store->save($record);

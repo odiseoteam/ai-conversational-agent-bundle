@@ -19,9 +19,9 @@ final readonly class AgentConfig
     public ?ThinkingEffort $thinkingEffort;
 
     /**
-     * @param string $scope         (prompt) what this agent is for, in one clause
-     * @param string $replyLanguage (prompt) the language the agent answers in, worded in English
-     *                              because it completes an English sentence
+     * @param string                     $scope          (prompt) what this agent is for, in one clause
+     * @param string                     $replyLanguage  (prompt) the language the agent answers in, worded in English
+     *                                                   because it completes an English sentence
      * @param ThinkingEffort|string|null $thinkingEffort a case, its value, or 'off'/null; taken as a
      *                                                   string so it can come from an env var
      */

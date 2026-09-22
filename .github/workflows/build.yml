@@ -2,13 +2,23 @@ name: Build
 
 on:
     push:
-        branches: [main, master]
-    pull_request: ~
+        branches-ignore:
+            - 'dependabot/**'
+        paths-ignore:
+            - "*.md"
+    pull_request:
+        paths-ignore:
+            - "*.md"
+    workflow_dispatch: ~
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
 
 jobs:
     tests:
         runs-on: ubuntu-latest
-        name: "PHP ${{ matrix.php }}"
+        name: "PHP ${{ matrix.php }}, SQLite"
         strategy:
             fail-fast: false
             matrix:
@@ -27,3 +37,59 @@ jobs:
             - run: vendor/bin/php-cs-fixer fix --dry-run --diff
             - run: vendor/bin/phpstan analyse
             - run: vendor/bin/phpunit
+
+    # The ORM stores are the only thing here that speaks SQL, and SQLite hides what the other
+    # two do with JSON columns, the optimistic lock and the collation of the memory search.
+    # One PHP version is enough: what is under test is the database, not the language.
+    databases:
+        runs-on: ubuntu-latest
+        name: "PHP 8.3, ${{ matrix.database }}"
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - database: "MySQL 8.4"
+                      dsn: "mysql://root:root@127.0.0.1:3306/agent_test"
+                    - database: "PostgreSQL 16"
+                      dsn: "postgresql://postgres:postgres@127.0.0.1:5432/agent_test"
+
+        services:
+            mysql:
+                image: mysql:8.4
+                env:
+                    MYSQL_ROOT_PASSWORD: root
+                    MYSQL_DATABASE: agent_test
+                ports: ["3306:3306"]
+                options: >-
+                    --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+                    --health-interval=10s
+                    --health-timeout=5s
+                    --health-retries=10
+            postgres:
+                image: postgres:16
+                env:
+                    POSTGRES_PASSWORD: postgres
+                    POSTGRES_DB: agent_test
+                ports: ["5432:5432"]
+                options: >-
+                    --health-cmd=pg_isready
+                    --health-interval=10s
+                    --health-timeout=5s
+                    --health-retries=10
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: shivammathur/setup-php@v2
+              with:
+                  php-version: "8.3"
+                  extensions: intl, pdo_mysql, pdo_pgsql
+                  tools: composer:v2
+                  coverage: none
+
+            - run: composer install --no-interaction --no-progress --prefer-dist
+
+            - name: "Run the suite against ${{ matrix.database }}"
+              env:
+                  AGENT_TEST_DATABASE_URL: "${{ matrix.dsn }}"
+              run: vendor/bin/phpunit

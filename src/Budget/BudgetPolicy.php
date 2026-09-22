@@ -53,7 +53,7 @@ final class BudgetPolicy
         }
 
         $cost = $this->costs->costOf($model, $usage);
-        $this->ledger->record($sessionId, $at, $cost, $this->client->clientKey());
+        $this->ledger->record($sessionId, $at, $cost, $this->client->clientKey(), $model, $usage);
 
         return $cost;
     }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Budget;
 
+use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
+
 final class InMemorySpendLedger implements SpendLedger
 {
     /** @var array<string, float> */
@@ -15,7 +17,7 @@ final class InMemorySpendLedger implements SpendLedger
     /** @var array<string, float> */
     private array $byDay = [];
 
-    public function record(string $sessionId, \DateTimeImmutable $at, float $usd, ?string $clientKey = null): void
+    public function record(string $sessionId, \DateTimeImmutable $at, float $usd, ?string $clientKey = null, ?string $model = null, ?Usage $usage = null): void
     {
         $this->bySession[$sessionId] = ($this->bySession[$sessionId] ?? 0.0) + $usd;
         $day = $at->format('Y-m-d');

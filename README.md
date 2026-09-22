@@ -1,4 +1,4 @@
-# AI Agent Bundle
+# AI Conversational Agent Bundle
 
 A vertical-agnostic core for conversational agents in Symfony: the turn loop, tool
 execution, gates, sessions, streaming, memory, budgets and evals. Verticals (a shopping
@@ -17,7 +17,7 @@ it knows about commerce.
   ends on text, on a budget limit or on the tool-iteration cap.
 - **Gates** — fencing of external text (`Fence`), grounding rules that force a tool when the
   message matches a lexicon, provenance checks and payload guards on what is presented.
-- **Sessions and memory** — DBAL stores for session state, transcript, long-term facts per
+- **Sessions and memory** — ORM stores for session state, transcript, long-term facts per
   subject, and a spend ledger; memory extraction runs after the turn with a cheaper model.
 - **Presentation** — `ui` events carrying components the host renders; the model only names
   them.
@@ -32,8 +32,63 @@ composer require odiseoteam/ai-conversational-agent-bundle
 Register `Odiseo\AiConversationalAgentBundle\Bridge\Symfony\OdiseoAiConversationalAgentBundle` and configure
 `odiseo_ai_conversational_agent` (`bin/console config:dump-reference odiseo_ai_conversational_agent`): identity, models,
 budgets, memory, fence, sessions, skills and evals directories. The Anthropic provider needs
-`symfony/ai-anthropic-platform`; the DBAL stores need `doctrine/dbal` and the tables
-`agent_session_state`, `agent_session_message`, `agent_memory_fact`, `agent_spend_ledger`.
+`symfony/ai-anthropic-platform`.
+
+### Storage
+
+Sessions, transcripts, memory facts and the spend ledger persist through Doctrine ORM, on any
+platform it supports. The stores work against the four interfaces in `Bridge\Doctrine\Model`
+(`ConversationInterface`, `MessageInterface`, `MemoryFactInterface`, `SpendEntryInterface`) and
+never name a concrete class. Beside each one is a mapped superclass implementing it, with its
+XML mapping; the host extends that, names the table and adds whatever it relates to, and points
+the bundle at its classes:
+
+```php
+#[ORM\Entity]
+#[ORM\Table(name: 'app_agent_conversation')]
+class AgentConversation extends \Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\Conversation
+{
+}
+
+#[ORM\Entity]
+#[ORM\Table(name: 'app_agent_message')]
+class AgentMessage extends \Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\Message
+{
+    #[ORM\ManyToOne(targetEntity: AgentConversation::class)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    protected ?\Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\ConversationInterface $conversation = null;
+}
+```
+
+```yaml
+odiseo_ai_conversational_agent:
+    orm:
+        classes:
+            conversation: App\Entity\AgentConversation
+            message: App\Entity\AgentMessage
+            memory_fact: App\Entity\AgentMemoryFact
+            spend_entry: App\Entity\AgentSpendEntry
+```
+
+A conversation the core creates carries the session id, the principal and the state document.
+Anything else the host's schema relates it to it sets through a `ConversationInitializer`,
+called on the new entity before it is persisted, while the request still knows who is asking:
+
+```php
+final class LinkTheCustomer implements ConversationInitializer
+{
+    public function initialize(ConversationInterface $conversation): void
+    {
+        // $conversation is the host's own entity, still unsaved.
+    }
+}
+```
+
+Point `ConversationInitializer` at it and the core will call it; unset, nothing happens.
+
+`doctrine:migrations:diff` then produces the schema: the mappings ship here, the migration
+belongs to the application that runs them. Without `doctrine/orm` (or with `orm.enabled: false`)
+the stores are in memory and nothing outlives the process.
 
 ## Development
 
@@ -42,6 +97,13 @@ composer install
 vendor/bin/phpunit
 vendor/bin/phpstan analyse
 vendor/bin/php-cs-fixer fix --dry-run --diff
+```
+
+The suite runs on SQLite in memory and needs no server. `AGENT_TEST_DATABASE_URL` points the
+ORM tests at a real one, which is what CI does for MySQL and PostgreSQL:
+
+```bash
+AGENT_TEST_DATABASE_URL=postgresql://user:pass@127.0.0.1:5432/agent_test vendor/bin/phpunit
 ```
 
 ## License

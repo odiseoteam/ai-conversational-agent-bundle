@@ -17,14 +17,16 @@
         "symfony/yaml": "^7.3|^8.0"
     },
     "require-dev": {
-        "doctrine/dbal": "^4.2",
+        "doctrine/doctrine-bundle": "^2.13",
+        "doctrine/orm": "^3.3",
         "friendsofphp/php-cs-fixer": "^3.68",
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^11.5",
         "symfony/ai-anthropic-platform": "^0.13"
     },
     "suggest": {
-        "doctrine/dbal": "For the DBAL session, memory and spend-ledger stores",
+        "doctrine/doctrine-bundle": "Registers the ORM mappings",
+        "doctrine/orm": "For the ORM session, memory and spend-ledger stores",
         "symfony/ai-anthropic-platform": "For the Anthropic model provider adapter"
     },
     "autoload": {
