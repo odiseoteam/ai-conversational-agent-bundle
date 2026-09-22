@@ -32,6 +32,12 @@ use Odiseo\AiConversationalAgentBundle\Execution\HostToolInvoker;
 use Odiseo\AiConversationalAgentBundle\Execution\ToolExecutor;
 use Odiseo\AiConversationalAgentBundle\Execution\ToolSurface;
 use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
+use Odiseo\AiConversationalAgentBundle\Handoff\Dbal\DbalHandoffStore;
+use Odiseo\AiConversationalAgentBundle\Handoff\HandoffCapability;
+use Odiseo\AiConversationalAgentBundle\Handoff\HandoffChannel;
+use Odiseo\AiConversationalAgentBundle\Handoff\HandoffSettings;
+use Odiseo\AiConversationalAgentBundle\Handoff\HandoffStore;
+use Odiseo\AiConversationalAgentBundle\Handoff\LoggingHandoffChannel;
 use Odiseo\AiConversationalAgentBundle\Host\ConsoleEnvironment;
 use Odiseo\AiConversationalAgentBundle\Host\NullConsoleEnvironment;
 use Odiseo\AiConversationalAgentBundle\Host\NullTurnHook;
@@ -58,6 +64,7 @@ use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
+use function Symfony\Component\DependencyInjection\Loader\Configurator\service_closure;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\tagged_iterator;
 
 /**
@@ -144,6 +151,13 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                     // The clock the model reads; null is PHP's default timezone.
                     ->scalarNode('timezone')->defaultNull()->end()
                 ->end()->end()
+                ->arrayNode('handoff')->addDefaultsIfNotSet()->children()
+                    ->booleanNode('enabled')->defaultFalse()->info('Exposes request_human_help and present_handoff; read at runtime, so an env placeholder works.')->end()
+                    ->scalarNode('channel')->defaultValue(LoggingHandoffChannel::class)->info('Service id of the HandoffChannel the requests go to.')->end()
+                    ->booleanNode('contact_required_for_guests')->defaultTrue()->end()
+                    ->scalarNode('expectation')->defaultValue('The team reads it and gets back to you.')->info('What the person is told happens next, unless the channel says otherwise.')->end()
+                    ->integerNode('excerpt_messages')->defaultValue(12)->end()
+                ->end()->end()
                 ->scalarNode('skills_dir')->defaultNull()->end()
                 ->scalarNode('evals_dir')->defaultNull()->end()
             ->end();
@@ -200,7 +214,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
             ->args(null === $config['skills_dir'] ? [[]] : [$config['skills_dir']]);
 
         $services->set(CapabilityRegistry::class)->args([tagged_iterator('odiseo_ai_conversational_agent.capability')]);
-        $services->set(SkillCapability::class);
+        $services->set(SkillCapability::class)->args(['$registry' => service_closure(CapabilityRegistry::class)]);
         $services->set(MemoryCapability::class);
         $services->set(SuggestionsCapability::class);
 
@@ -237,6 +251,20 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
 
         $services->set(DbalSpendLedger::class)->args([service(Connection::class)]);
         $services->alias(SpendLedger::class, DbalSpendLedger::class);
+
+        $services->set(DbalHandoffStore::class)->args([service(Connection::class)]);
+        $services->alias(HandoffStore::class, DbalHandoffStore::class);
+        $services->set(LoggingHandoffChannel::class);
+        if (!$builder->hasAlias(HandoffChannel::class)) {
+            $services->alias(HandoffChannel::class, $config['handoff']['channel']);
+        }
+        $services->set(HandoffSettings::class)->args([
+            $config['handoff']['enabled'],
+            $config['handoff']['contact_required_for_guests'],
+            $config['handoff']['expectation'],
+            $config['handoff']['excerpt_messages'],
+        ]);
+        $services->set(HandoffCapability::class);
 
         $services->set(AnthropicProvider::class)->args([new Reference('ai.platform.anthropic')]);
         $services->alias(ModelProvider::class, AnthropicProvider::class);

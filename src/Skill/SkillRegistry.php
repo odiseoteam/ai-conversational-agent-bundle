@@ -100,7 +100,20 @@ final class SkillRegistry
             throw new SkillLoadError(\sprintf('%s: frontmatter needs `name` and `description`', $where));
         }
 
-        return new Skill($name, trim($description), trim($parts[2]));
+        $requires = \is_array($meta['requires'] ?? null) ? array_values(array_map('strval', $meta['requires'])) : [];
+
+        return new Skill($name, trim($description), trim($parts[2]), $requires);
+    }
+
+    /**
+     * The skills whose required tools are all on the surface: a flow that leans on a tool the
+     * deployment turned off is neither indexed nor loadable.
+     *
+     * @param list<string> $tools
+     */
+    public function availableWith(array $tools): self
+    {
+        return new self(array_filter($this->skills, static fn (Skill $skill): bool => $skill->availableWith($tools)));
     }
 
     /** @return list<string> */

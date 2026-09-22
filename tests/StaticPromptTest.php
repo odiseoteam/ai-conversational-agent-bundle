@@ -10,6 +10,12 @@ use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
 use Odiseo\AiConversationalAgentBundle\Prompt\StaticPromptBuilder;
 use Odiseo\AiConversationalAgentBundle\Skill\Skill;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
+use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
+use Odiseo\AiConversationalAgentBundle\Provider\Fake\FakeProvider;
+use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
+use Odiseo\AiConversationalAgentBundle\Session\TurnState;
+use Odiseo\AiConversationalAgentBundle\Skill\SkillCapability;
+use Odiseo\AiConversationalAgentBundle\Tests\Fixture\AgentBuilder;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\DirectoryCapability;
 use PHPUnit\Framework\TestCase;
 
@@ -50,6 +56,29 @@ final class StaticPromptTest extends TestCase
     public function testTheChipsRuleAppearsOnlyWhenTheChipsToolIsRegistered(): void
     {
         self::assertStringNotContainsString('present_suggestions', $this->builder(capabilities: [])->build());
+    }
+
+    public function testASkillThatRequiresAMissingToolIsNeitherIndexedNorLoadable(): void
+    {
+        $gated = new Skill('refunds', 'Refund flow.', 'Rules.', ['issue_refund']);
+        $plain = new Skill('service-discovery', 'Find a service.', 'Rules.');
+        $registry = new SkillRegistry([$gated, $plain]);
+
+        $text = $this->builder(skills: $registry)->build();
+        self::assertStringContainsString('service-discovery', $text);
+        self::assertStringNotContainsString('refunds', $text);
+
+        $builder = new AgentBuilder(new FakeProvider([]), skills: $registry);
+        $capability = null;
+        foreach ($builder->capabilities->all() as $candidate) {
+            if ($candidate instanceof SkillCapability) {
+                $capability = $candidate;
+            }
+        }
+        self::assertNotNull($capability);
+        self::assertSame(['service-discovery'], $capability->tools()[0]->inputSchema['properties']['skill_name']['enum']);
+        $context = new ToolContext(new SessionContext('s', 'p'), new TurnState(), $builder->fence, $builder->config->limits);
+        self::assertTrue($capability->execute(SkillCapability::TOOL, ['skill_name' => 'refunds'], $context)->isError);
     }
 
     public function testTheSkillsSectionIsAbsentWithoutSkills(): void

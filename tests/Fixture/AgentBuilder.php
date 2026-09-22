@@ -54,7 +54,7 @@ final class AgentBuilder
         $this->memory = new MemoryRuntime($this->memoryStore, $config, $this->fence, 'Return []');
 
         $capabilities = [
-            new SkillCapability($skills),
+            new SkillCapability($skills, fn (): CapabilityRegistry => $this->capabilities),
             new MemoryCapability($this->memory),
             new SuggestionsCapability($config->limits),
             ...$extra,

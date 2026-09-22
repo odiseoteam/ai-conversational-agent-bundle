@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Skill;
 
 use Odiseo\AiConversationalAgentBundle\Capability\Capability;
+use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
 use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
@@ -17,8 +18,34 @@ final class SkillCapability implements Capability
 {
     public const TOOL = 'load_skill';
 
-    public function __construct(private readonly SkillRegistry $skills)
+    /**
+     * @param (\Closure(): CapabilityRegistry)|null $registry deferred, since the registry holds this capability too;
+     *                                                        null offers every skill
+     */
+    public function __construct(
+        private readonly SkillRegistry $skills,
+        private readonly ?\Closure $registry = null,
+    ) {
+    }
+
+    /** The skills whose required tools the other capabilities provide. */
+    public function available(): SkillRegistry
     {
+        if (null === $this->registry) {
+            return $this->skills;
+        }
+
+        $tools = [];
+        foreach (($this->registry)()->all() as $capability) {
+            if ($capability === $this) {
+                continue;
+            }
+            foreach ($capability->tools() as $tool) {
+                $tools[] = $tool->name;
+            }
+        }
+
+        return $this->skills->availableWith($tools);
     }
 
     public function name(): string
@@ -28,7 +55,7 @@ final class SkillCapability implements Capability
 
     public function tools(): array
     {
-        $names = $this->skills->names();
+        $names = $this->available()->names();
         if ([] === $names) {
             return [];
         }
@@ -69,13 +96,14 @@ final class SkillCapability implements Capability
     public function execute(string $tool, array $input, ToolContext $context): ToolOutcome
     {
         $name = (string) ($input['skill_name'] ?? '');
-        $body = $this->skills->instructions($name);
+        $skills = $this->available();
+        $body = $skills->instructions($name);
 
         if (null === $body) {
             return ToolOutcome::error(\sprintf(
                 'No skill named "%s". Available: %s',
                 $name,
-                implode(', ', $this->skills->names()),
+                implode(', ', $skills->names()),
             ));
         }
 

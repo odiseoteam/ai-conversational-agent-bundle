@@ -21,6 +21,10 @@ it knows about commerce.
   subject, and a spend ledger; memory extraction runs after the turn with a cheaper model.
 - **Presentation** — `ui` events carrying components the host renders; the model only names
   them.
+- **Handoff** — `request_human_help` opens a request on a `HandoffChannel` (a mailbox, a
+  ticketing system, a webhook, a live desk); the record is kept in a `HandoffStore` and the
+  `handoff` component shows the reference. Off until `handoff.enabled` is set; the default
+  channel only logs, a deployment names its own in `handoff.channel`.
 - **Evals** — YAML cases run against a scripted or live provider with a judge model.
 
 ## Installation
@@ -33,7 +37,8 @@ Register `Odiseo\AiConversationalAgentBundle\Bridge\Symfony\OdiseoAiConversation
 `odiseo_ai_conversational_agent` (`bin/console config:dump-reference odiseo_ai_conversational_agent`): identity, models,
 budgets, memory, fence, sessions, skills and evals directories. The Anthropic provider needs
 `symfony/ai-anthropic-platform`; the DBAL stores need `doctrine/dbal` and the tables
-`agent_session_state`, `agent_session_message`, `agent_memory_fact`, `agent_spend_ledger`.
+`agent_session_state`, `agent_session_message`, `agent_memory_fact`, `agent_spend_ledger`,
+`agent_handoff`.
 
 ## Development
 
