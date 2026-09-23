@@ -80,17 +80,24 @@ final class OrmSpendLedger implements SpendLedger
         return $this->sum('e.spentOn = :day', ['day' => $day->format('Y-m-d')]);
     }
 
-    /** @param array<string, mixed> $parameters */
+    /**
+     * The sum is selected bare and defaulted in PHP on purpose: hosts may install a DQL walker
+     * that appends ORDER BY on the identifier and skips it only when the first select expression
+     * is an aggregate (Sylius ships one). Wrapping it in COALESCE hides the aggregate, and the
+     * appended ORDER BY makes PostgreSQL reject the query.
+     *
+     * @param array<string, mixed> $parameters
+     */
     private function sum(string $where, array $parameters): float
     {
         $qb = $this->em->createQueryBuilder()
-            ->select('COALESCE(SUM(e.usd), 0)')
+            ->select('SUM(e.usd)')
             ->from($this->entryClass, 'e')
             ->where($where);
         foreach ($parameters as $name => $value) {
             $qb->setParameter($name, $value);
         }
 
-        return (float) $qb->getQuery()->getSingleScalarResult();
+        return (float) ($qb->getQuery()->getSingleScalarResult() ?? 0.0);
     }
 }
