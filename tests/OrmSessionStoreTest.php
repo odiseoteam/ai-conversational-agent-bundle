@@ -15,7 +15,7 @@ use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Entity\TestMessage;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Orm;
 use PHPUnit\Framework\TestCase;
 
-/** What only the ORM store has to prove: the lock across processes, expiry, the message rows. */
+/** What only the ORM store has to prove: the lock across processes, expiry and retention, the message rows. */
 final class OrmSessionStoreTest extends TestCase
 {
     public function testAWriterOnAnotherManagerLosesTheRaceToTheOptimisticLock(): void
@@ -38,7 +38,7 @@ final class OrmSessionStoreTest extends TestCase
         $store2->save($second);
     }
 
-    public function testAnExpiredSessionIsNotFoundAndPruneDropsItWithItsMessages(): void
+    public function testAnExpiredSessionIsNotServedButKeptUntilPruned(): void
     {
         $em = Orm::entityManager();
         $store = Orm::sessionStore($em, retentionDays: 0);
@@ -51,7 +51,11 @@ final class OrmSessionStoreTest extends TestCase
         self::assertNull($store->readState($record->sessionId));
         self::assertSame([], $store->sessionIdsForPrincipal('visitor-1'));
 
-        self::assertSame(1, $store->prune());
+        self::assertSame([], $store->prune(new \DateTimeImmutable('-1 day')));
+        self::assertSame([$record->sessionId], $store->prune(new \DateTimeImmutable('+1 day'), dryRun: true));
+        self::assertCount(1, $em->getRepository(TestConversation::class)->findAll());
+
+        self::assertSame([$record->sessionId], $store->prune(new \DateTimeImmutable('+1 day')));
         self::assertCount(0, $em->getRepository(TestConversation::class)->findAll());
         self::assertCount(0, $em->getRepository(TestMessage::class)->findAll());
     }

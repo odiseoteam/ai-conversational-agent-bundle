@@ -55,4 +55,18 @@ final class SpendLedgerTest extends TestCase
         self::assertSame('0.012346', $rows[0]->getUsd());
         self::assertSame([1000, 200, 300, 4000], [$rows[0]->getInputTokens(), $rows[0]->getOutputTokens(), $rows[0]->getCacheCreationTokens(), $rows[0]->getCacheReadTokens()]);
     }
+
+    public function testTheOrmLedgerForgetsTheSessionsItIsGiven(): void
+    {
+        $em = Orm::entityManager();
+        $ledger = Orm::spendLedger($em);
+        $ledger->record('old', new \DateTimeImmutable('2026-03-01'), 0.01);
+        $ledger->record('old', new \DateTimeImmutable('2026-03-01'), 0.02);
+        $ledger->record('new', new \DateTimeImmutable('2026-09-22'), 0.03);
+
+        self::assertSame(2, $ledger->forget(['old'], dryRun: true));
+        self::assertSame(2, $ledger->forget(['old']));
+        self::assertEqualsWithDelta(0.0, $ledger->sessionSpend('old'), 1e-9);
+        self::assertEqualsWithDelta(0.03, $ledger->sessionSpend('new'), 1e-9);
+    }
 }

@@ -43,6 +43,28 @@ final class OrmSpendLedger implements SpendLedger
         $this->em->flush();
     }
 
+    /**
+     * Drop the entries of sessions the host no longer keeps; the caps only sum recent ones.
+     *
+     * @param list<string> $sessionIds
+     */
+    public function forget(array $sessionIds, bool $dryRun = false): int
+    {
+        $total = 0;
+        foreach (array_chunk($sessionIds, 500) as $chunk) {
+            $qb = $this->em->createQueryBuilder()
+                ->from($this->entryClass, 'e')
+                ->where('e.sessionId IN (:ids)')
+                ->setParameter('ids', $chunk);
+
+            $total += $dryRun
+                ? (int) $qb->select('COUNT(e.id)')->getQuery()->getSingleScalarResult()
+                : (int) $qb->delete()->getQuery()->execute();
+        }
+
+        return $total;
+    }
+
     public function sessionSpend(string $sessionId): float
     {
         return $this->sum('e.sessionId = :id', ['id' => $sessionId]);
