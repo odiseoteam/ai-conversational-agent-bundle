@@ -60,6 +60,19 @@ final class OrmMemoryStore implements MemoryStore
         return $this->hydrate($qb->andWhere($or)->getQuery()->getResult());
     }
 
+    /** Drop the facts not saved again since $before: the same cutoff the runtime reads with. */
+    public function prune(\DateTimeImmutable $before, bool $dryRun = false): int
+    {
+        $qb = $this->em->createQueryBuilder()
+            ->from($this->factClass, 'f')
+            ->where('f.updatedAt < :before')
+            ->setParameter('before', $before);
+
+        return $dryRun
+            ? (int) $qb->select('COUNT(f.id)')->getQuery()->getSingleScalarResult()
+            : (int) $qb->delete()->getQuery()->execute();
+    }
+
     public function forget(string $subject, string $key): bool
     {
         $deleted = $this->em->createQueryBuilder()

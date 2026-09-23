@@ -31,7 +31,7 @@ composer require odiseoteam/ai-conversational-agent-bundle
 
 Register `Odiseo\AiConversationalAgentBundle\Bridge\Symfony\OdiseoAiConversationalAgentBundle` and configure
 `odiseo_ai_conversational_agent` (`bin/console config:dump-reference odiseo_ai_conversational_agent`): identity, models,
-budgets, memory, fence, sessions, skills and evals directories. The Anthropic provider needs
+budgets, memory, fence, sessions, conversations, skills and evals directories. The Anthropic provider needs
 `symfony/ai-anthropic-platform`.
 
 ### Storage
@@ -89,6 +89,15 @@ Point `ConversationInitializer` at it and the core will call it; unset, nothing 
 `doctrine:migrations:diff` then produces the schema: the mappings ship here, the migration
 belongs to the application that runs them. Without `doctrine/orm` (or with `orm.enabled: false`)
 the stores are in memory and nothing outlives the process.
+
+### Retention
+
+Two clocks. `sessions.retention_days` (30) is how long a session is served after its last
+activity; past it the widget starts a new one, but the conversation stays for the host to read.
+`conversations.retention_days` (180) is how long it is kept; `memory.retention_days` (null)
+does the same for memory facts. Null keeps them. `bin/console agent:prune` applies both,
+dropping the conversations with their messages and spend; `--dry-run` only counts. Run it
+from a daily cron.
 
 ## Development
 

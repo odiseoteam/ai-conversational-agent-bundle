@@ -23,10 +23,14 @@ use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
  * The compare-and-set on the version is Doctrine's optimistic lock: the UPDATE carries
  * `WHERE version = :expected` and a lost race surfaces as OptimisticLockException, here as
  * SessionConflictException. Two starts racing on one id meet the unique constraint instead.
- * Expiry is a column and prune(), not a background sweep.
+ *
+ * Two clocks: `expires_at` is how long the session is served, prune() how long the
+ * conversation is kept for the host to read. Neither is a background sweep.
  */
 final class OrmSessionStore extends SessionStore
 {
+    private const PRUNE_CHUNK = 500;
+
     /**
      * @param class-string<ConversationInterface> $conversationClass
      * @param class-string<MessageInterface>      $messageClass
@@ -149,29 +153,51 @@ final class OrmSessionStore extends SessionStore
         return array_map('strval', $ids);
     }
 
-    /** Drop what has expired. Called by a prune command, not on the request path. */
-    public function prune(): int
+    /**
+     * Drop the conversations with no activity since $before, with their messages. Called by the
+     * prune command, not on the request path.
+     *
+     * @return list<string> the session ids dropped, or those that would be on a dry run
+     */
+    public function prune(\DateTimeImmutable $before, bool $dryRun = false): array
     {
-        /** @var list<ConversationInterface> $expired */
-        $expired = $this->em->createQueryBuilder()
-            ->select('c')
+        /** @var list<string> $ids */
+        $ids = array_map('strval', $this->em->createQueryBuilder()
+            ->select('c.sessionId')
             ->from($this->conversationClass, 'c')
-            ->where('c.expiresAt <= :now')
-            ->setParameter('now', new \DateTimeImmutable())
+            ->where('c.updatedAt < :before')
+            ->setParameter('before', $before)
             ->getQuery()
-            ->getResult();
+            ->getSingleColumnResult());
 
-        if ([] === $expired) {
-            return 0;
+        if ($dryRun) {
+            return $ids;
         }
 
-        $this->deleteMessagesOf($expired);
-        foreach ($expired as $conversation) {
-            $this->em->remove($conversation);
-        }
-        $this->em->flush();
+        foreach (array_chunk($ids, self::PRUNE_CHUNK) as $chunk) {
+            $this->em->wrapInTransaction(function () use ($chunk): void {
+                $conversations = $this->em->createQueryBuilder()
+                    ->select('p.id')
+                    ->from($this->conversationClass, 'p')
+                    ->where('p.sessionId IN (:ids)');
 
-        return \count($expired);
+                $this->em->createQueryBuilder()
+                    ->delete($this->messageClass, 'm')
+                    ->where(\sprintf('m.conversation IN (%s)', $conversations->getDQL()))
+                    ->setParameter('ids', $chunk)
+                    ->getQuery()
+                    ->execute();
+
+                $this->em->createQueryBuilder()
+                    ->delete($this->conversationClass, 'c')
+                    ->where('c.sessionId IN (:ids)')
+                    ->setParameter('ids', $chunk)
+                    ->getQuery()
+                    ->execute();
+            });
+        }
+
+        return $ids;
     }
 
     /** @param array<string, mixed> $document */

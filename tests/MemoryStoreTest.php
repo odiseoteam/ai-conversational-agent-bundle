@@ -82,4 +82,15 @@ final class MemoryStoreTest extends TestCase
         self::assertSame([], $store->all('s1'));
         self::assertCount(1, $store->all('s2'));
     }
+
+    public function testTheOrmStorePrunesTheFactsNotSavedSince(): void
+    {
+        $store = Orm::memoryStore();
+        $store->save('s1', new MemoryFact('size', '42', MemoryCategory::Preference, new \DateTimeImmutable('2026-01-01')));
+        $store->save('s1', new MemoryFact('colour', 'blue', MemoryCategory::Preference, new \DateTimeImmutable('2026-09-01')));
+
+        self::assertSame(1, $store->prune(new \DateTimeImmutable('2026-06-01'), dryRun: true));
+        self::assertSame(1, $store->prune(new \DateTimeImmutable('2026-06-01')));
+        self::assertSame(['colour'], array_map(static fn (MemoryFact $f): string => $f->key, $store->all('s1')));
+    }
 }
