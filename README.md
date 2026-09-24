@@ -31,8 +31,17 @@ composer require odiseoteam/ai-conversational-agent-bundle
 
 Register `Odiseo\AiConversationalAgentBundle\Bridge\Symfony\OdiseoAiConversationalAgentBundle` and configure
 `odiseo_ai_conversational_agent` (`bin/console config:dump-reference odiseo_ai_conversational_agent`): identity, models,
-budgets, memory, fence, sessions, conversations, skills and evals directories. The Anthropic provider needs
-`symfony/ai-anthropic-platform`.
+budgets, memory, fence, sessions, conversations, skills and evals directories.
+
+For Claude, install `symfony/ai-bundle` and `symfony/ai-anthropic-platform`, register `Symfony\AI\AiBundle\AiBundle`
+(Flex does it) and configure the platform; the bundle wraps its `ai.platform.anthropic` service:
+
+```yaml
+ai:
+    platform:
+        anthropic:
+            api_key: '%env(ANTHROPIC_API_KEY)%'
+```
 
 ### Storage
 
@@ -93,7 +102,8 @@ The classes and ports a host uses are aliases, and a host replaces a port by red
 alias: `ModelProvider`, `ContextProvider`, `PrincipalResolver`, `TurnHook`,
 `ConsoleEnvironment`, `ConversationInitializer`, `SessionStore`, `MemoryStore` and
 `SpendLedger`. The Anthropic adapter is registered only when `symfony/ai-anthropic-platform` is
-installed; without it, alias `ModelProvider` to your own provider. Capabilities are collected
+installed, and it needs the AI bundle's `ai.platform.anthropic`; without them, alias
+`ModelProvider` to your own provider. Capabilities are collected
 by the `odiseo_ai_conversational_agent.capability` tag.
 
 `doctrine:migrations:diff` then produces the schema: the mappings ship here, the migration
