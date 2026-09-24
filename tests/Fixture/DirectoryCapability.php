@@ -26,7 +26,7 @@ final class DirectoryCapability implements Capability, DomainErrorMapper
     public array $runs = [];
 
     /** @param array<string, string> $records id => title */
-    public function __construct(private readonly array $records = ['R-1' => 'Primero', 'R-2' => 'Segundo'])
+    public function __construct(private readonly array $records = ['R-1' => 'First', 'R-2' => 'Second'])
     {
     }
 
@@ -66,7 +66,7 @@ final class DirectoryCapability implements Capability, DomainErrorMapper
 
     public function promptFragments(): array
     {
-        return [new PromptFragment(PromptSection::Tools, '- Buscá antes de responder.', priority: 5)];
+        return [new PromptFragment(PromptSection::Tools, '- Search before answering.', priority: 5)];
     }
 
     public function groundingRules(): array
@@ -74,7 +74,7 @@ final class DirectoryCapability implements Capability, DomainErrorMapper
         return [new GroundingRule(
             'directory',
             'find_records',
-            static fn (string $text, TurnState $state): ?array => Matcher::matchesTermsAndCues($text, ['registro'], ['?'])
+            static fn (string $text, TurnState $state): ?array => Matcher::matchesTermsAndCues($text, ['record'], ['?'])
                 ? ['query' => $text]
                 : null,
             static fn (array $input): string => 'Prefetched:',
@@ -111,7 +111,7 @@ final class DirectoryCapability implements Capability, DomainErrorMapper
 
                 return ['items' => $items];
             },
-            // Parcial: los ids ya completos que la sesión vio, sin notas ni rechazo.
+            // Partial: the complete ids the session saw, with no notes or refusal.
             static function (array $input, $context): array {
                 $items = [];
                 foreach (\is_array($input['ids'] ?? null) ? $input['ids'] : [] as $id) {

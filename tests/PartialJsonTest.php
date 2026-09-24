@@ -19,14 +19,14 @@ final class PartialJsonTest extends TestCase
 
     public function testACompleteObjectDecodesDirectly(): void
     {
-        self::assertSame(['status' => 'Buscando'], PartialJson::decode('{"status": "Buscando"}'));
+        self::assertSame(['status' => 'Searching'], PartialJson::decode('{"status": "Searching"}'));
     }
 
     public function testAStatusThatFinishedBeforeLaterFieldsStartIsAvailable(): void
     {
-        $decoded = PartialJson::decode('{"status": "Buscando servicios de Sylius", "query": "syl');
+        $decoded = PartialJson::decode('{"status": "Searching Sylius services", "query": "syl');
 
-        self::assertSame('Buscando servicios de Sylius', $decoded['status'] ?? null);
+        self::assertSame('Searching Sylius services', $decoded['status'] ?? null);
         self::assertArrayNotHasKey('query', $decoded, 'a value still being written is left out with its key');
     }
 
@@ -41,9 +41,9 @@ final class PartialJsonTest extends TestCase
 
     public function testATrailingCommaIsDroppedAndClosingRetried(): void
     {
-        $decoded = PartialJson::decode('{"status": "Buscando",');
+        $decoded = PartialJson::decode('{"status": "Searching",');
 
-        self::assertSame(['status' => 'Buscando'], $decoded);
+        self::assertSame(['status' => 'Searching'], $decoded);
     }
 
     public function testATrailingKeyWithNoColonYetFailsToDecode(): void
@@ -52,7 +52,7 @@ final class PartialJsonTest extends TestCase
         // what remains ends in a bare key with no colon before the closing brace, which is not
         // valid JSON either, so this one chunk decodes to null. It costs nothing in practice —
         // the status was already extracted from an earlier chunk before "query" started.
-        self::assertNull(PartialJson::decode('{"status": "Buscando", "query":'));
+        self::assertNull(PartialJson::decode('{"status": "Searching", "query":'));
     }
 
     public function testNestedObjectsAreClosedInOrder(): void
@@ -65,9 +65,9 @@ final class PartialJsonTest extends TestCase
 
     public function testAnEscapedQuoteInsideTheOpenStringIsNotMistakenForItsEnd(): void
     {
-        $decoded = PartialJson::decode('{"status": "Buscando \\"marketplace\\" ahora", "query": "unf');
+        $decoded = PartialJson::decode('{"status": "Searching \\"marketplace\\" now", "query": "unf');
 
-        self::assertSame('Buscando "marketplace" ahora', $decoded['status'] ?? null);
+        self::assertSame('Searching "marketplace" now', $decoded['status'] ?? null);
         self::assertArrayNotHasKey('query', $decoded);
     }
 

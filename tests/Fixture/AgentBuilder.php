@@ -45,7 +45,7 @@ final class AgentBuilder
     /** @param list<Capability> $extra */
     public function __construct(
         public readonly ModelProvider $provider,
-        public readonly AgentConfig $config = new AgentConfig(brandName: 'Odiseo', assistantName: 'el asistente'),
+        public readonly AgentConfig $config = new AgentConfig(brandName: 'Odiseo', assistantName: 'the assistant'),
         array $extra = [],
         public readonly SkillRegistry $skills = new SkillRegistry(),
     ) {

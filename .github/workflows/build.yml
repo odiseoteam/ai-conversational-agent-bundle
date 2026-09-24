@@ -9,6 +9,9 @@ on:
     pull_request:
         paths-ignore:
             - "*.md"
+    schedule:
+        -
+            cron: "0 1 * * 6" # Run at 1am every Saturday: dependencies move without a push
     workflow_dispatch: ~
 
 concurrency:
@@ -36,6 +39,9 @@ jobs:
             - run: composer install --no-interaction --no-progress --prefer-dist
             - run: vendor/bin/php-cs-fixer fix --dry-run --diff
             - run: vendor/bin/phpstan analyse
+            - run: vendor/bin/deptrac analyse --no-progress
+            - run: vendor/bin/composer-dependency-analyser
+            - run: composer validate --strict
             - run: vendor/bin/phpunit
 
     # The ORM stores are the only thing here that speaks SQL, and SQLite hides what the other

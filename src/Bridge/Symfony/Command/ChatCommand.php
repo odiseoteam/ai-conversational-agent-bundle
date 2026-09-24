@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Command;
 
 use Odiseo\AiConversationalAgentBundle\Agent\TurnRunner;
+use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Session\SessionResolver;
 use Odiseo\AiConversationalAgentBundle\Host\ConsoleEnvironment;
 use Odiseo\AiConversationalAgentBundle\Provider\AuthenticationException;
-use Odiseo\AiConversationalAgentBundle\Session\SessionResolver;
 use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
 use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
 use Odiseo\AiConversationalAgentBundle\Streaming\EventType;

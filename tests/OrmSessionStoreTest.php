@@ -44,7 +44,7 @@ final class OrmSessionStoreTest extends TestCase
         $store = Orm::sessionStore($em, retentionDays: 0);
 
         $record = $store->start('visitor-1');
-        $record->messages[] = Transcript::userMessage('hola');
+        $record->messages[] = Transcript::userMessage('hi');
         $store->save($record);
         $em->clear();
 
@@ -66,7 +66,7 @@ final class OrmSessionStoreTest extends TestCase
         $store = Orm::sessionStore($em);
 
         $record = $store->start('visitor-1');
-        $record->messages[] = Transcript::userMessage('hola');
+        $record->messages[] = Transcript::userMessage('hi');
         $record->messages[] = ['role' => 'assistant', 'content' => [['type' => 'tool_use', 'id' => 't1', 'name' => 'search', 'input' => []]]];
         $store->save($record);
         $em->clear();
@@ -75,7 +75,7 @@ final class OrmSessionStoreTest extends TestCase
         $rows = $em->getRepository(TestMessage::class)->findBy([], ['position' => 'ASC']);
         self::assertCount(2, $rows);
         self::assertSame('user', $rows[0]->getRole());
-        self::assertSame('hola', $rows[0]->getText());
+        self::assertSame('hi', $rows[0]->getText());
         self::assertSame('assistant', $rows[1]->getRole());
         self::assertNull($rows[1]->getText());
         self::assertSame('t1', $rows[1]->getPayload()['content'][0]['id']);
@@ -99,7 +99,7 @@ final class OrmSessionStoreTest extends TestCase
         $store = Orm::sessionStore($em, initializer: $initializer);
 
         $record = $store->start('visitor-1');
-        $record->messages[] = Transcript::userMessage('hola');
+        $record->messages[] = Transcript::userMessage('hi');
         $store->save($record);
         $em->clear();
 
@@ -116,7 +116,7 @@ final class OrmSessionStoreTest extends TestCase
         $store = Orm::sessionStore($em);
 
         $record = $store->start('visitor-1');
-        $record->messages[] = Transcript::userMessage('hola');
+        $record->messages[] = Transcript::userMessage('hi');
         $store->save($record);
         $store->reset($record);
 
