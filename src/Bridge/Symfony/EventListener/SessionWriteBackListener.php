@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony\EventListener;
 
-use Odiseo\AiConversationalAgentBundle\Session\SessionResolver;
+use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Session\SessionResolver;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpKernel\Event\TerminateEvent;

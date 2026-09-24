@@ -2,9 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiConversationalAgentBundle\Session;
+namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Session;
 
 use Odiseo\AiConversationalAgentBundle\Host\PrincipalResolver;
+use Odiseo\AiConversationalAgentBundle\Session\SessionConflictException;
+use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
+use Odiseo\AiConversationalAgentBundle\Session\SessionRecord;
+use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
+use Odiseo\AiConversationalAgentBundle\Session\UnknownSessionException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;

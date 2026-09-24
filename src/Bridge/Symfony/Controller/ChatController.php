@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller;
 
 use Odiseo\AiConversationalAgentBundle\Agent\TurnRunner;
+use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Session\SessionResolver;
 use Odiseo\AiConversationalAgentBundle\Provider\AuthenticationException;
-use Odiseo\AiConversationalAgentBundle\Session\SessionResolver;
 use Odiseo\AiConversationalAgentBundle\Streaming\SseEncoder;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -48,8 +48,9 @@ final class ChatController
 
         $response = new StreamedResponse(function () use ($record, $session, $message): void {
             // An open output buffer (the SAPI's output_buffering) holds the events until the
-            // turn ends; it is closed before the first one.
-            while (ob_get_level() > 0) {
+            // turn ends; it is closed before the first one. On the CLI the buffers belong to the
+            // caller (a test client capturing the stream).
+            while (\PHP_SAPI !== 'cli' && ob_get_level() > 0) {
                 ob_end_flush();
             }
 

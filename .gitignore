@@ -5,3 +5,4 @@
 /.php-cs-fixer.cache
 /phpstan.neon
 /phpunit.xml
+/.deptrac.cache

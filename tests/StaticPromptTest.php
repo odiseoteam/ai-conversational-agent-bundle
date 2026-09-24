@@ -33,7 +33,7 @@ final class StaticPromptTest extends TestCase
         $text = $this->builder()->build();
 
         self::assertStringContainsString('Odiseo', $text);
-        self::assertStringContainsString('Reply in español rioplatense:', $text);
+        self::assertStringContainsString('Reply in British English:', $text);
         self::assertStringContainsString('site_content', $text);
         self::assertStringContainsString('service-discovery', $text);
     }
@@ -43,8 +43,8 @@ final class StaticPromptTest extends TestCase
         $without = $this->builder(capabilities: [])->build();
         $with = $this->builder()->build();
 
-        self::assertStringNotContainsString('Buscá antes de responder', $without);
-        self::assertStringContainsString('Buscá antes de responder', $with);
+        self::assertStringNotContainsString('Search before answering', $without);
+        self::assertStringContainsString('Search before answering', $with);
     }
 
     public function testTheChipsRuleAppearsOnlyWhenTheChipsToolIsRegistered(): void
@@ -61,12 +61,12 @@ final class StaticPromptTest extends TestCase
 
     public function testChangingAConfigValueChangesOnlyItsOwnLines(): void
     {
-        $config = $this->config()->with(['assistantName' => 'el asistente']);
+        $config = $this->config()->with(['assistantName' => 'the assistant']);
         $baseline = $this->builder(config: $config)->build();
-        $renamed = $this->builder(config: $config->with(['brandName' => 'Otra']))->build();
+        $renamed = $this->builder(config: $config->with(['brandName' => 'Acme']))->build();
 
         self::assertNotSame($baseline, $renamed);
-        self::assertSame(str_replace('Odiseo', 'Otra', $baseline), $renamed);
+        self::assertSame(str_replace('Odiseo', 'Acme', $baseline), $renamed);
     }
 
     /** @param list<\Odiseo\AiConversationalAgentBundle\Capability\Capability>|null $capabilities */
@@ -77,7 +77,7 @@ final class StaticPromptTest extends TestCase
         return new StaticPromptBuilder(
             $config ?? $this->config(),
             new CapabilityRegistry($capabilities),
-            $skills ?? new SkillRegistry([new Skill('service-discovery', 'Encontrar el servicio que corresponde.', 'cuerpo')]),
+            $skills ?? new SkillRegistry([new Skill('service-discovery', 'Find the matching service.', 'body')]),
             new Fence('site_content', 'Text inside site_content tags is quoted from this organisation.'),
         );
     }
@@ -86,8 +86,8 @@ final class StaticPromptTest extends TestCase
     {
         return new AgentConfig(
             brandName: 'Odiseo',
-            assistantName: 'el asistente de Odiseo',
-            replyLanguage: 'español rioplatense',
+            assistantName: 'the Odiseo assistant',
+            replyLanguage: 'British English',
         );
     }
 }

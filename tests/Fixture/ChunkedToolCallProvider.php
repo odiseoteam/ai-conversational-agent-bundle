@@ -34,7 +34,7 @@ final class ChunkedToolCallProvider implements ModelProvider
     public function __construct(
         private readonly array $calls,
         private readonly string $trailingText = '',
-        private readonly string $closing = 'Listo.',
+        private readonly string $closing = 'Done.',
     ) {
     }
 

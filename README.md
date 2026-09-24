@@ -84,7 +84,17 @@ final class LinkTheCustomer implements ConversationInitializer
 }
 ```
 
-Point `ConversationInitializer` at it and the core will call it; unset, nothing happens.
+Point the `ConversationInitializer` alias at it and the core will call it; unset, nothing happens.
+
+### Services
+
+Every service is registered as `odiseo_ai_conversational_agent.*` with explicit arguments.
+The classes and ports a host uses are aliases, and a host replaces a port by redefining its
+alias: `ModelProvider`, `ContextProvider`, `PrincipalResolver`, `TurnHook`,
+`ConsoleEnvironment`, `ConversationInitializer`, `SessionStore`, `MemoryStore` and
+`SpendLedger`. The Anthropic adapter is registered only when `symfony/ai-anthropic-platform` is
+installed; without it, alias `ModelProvider` to your own provider. Capabilities are collected
+by the `odiseo_ai_conversational_agent.capability` tag.
 
 `doctrine:migrations:diff` then produces the schema: the mappings ship here, the migration
 belongs to the application that runs them. Without `doctrine/orm` (or with `orm.enabled: false`)
@@ -103,10 +113,11 @@ from a daily cron.
 
 ```bash
 composer install
-vendor/bin/phpunit
-vendor/bin/phpstan analyse
-vendor/bin/php-cs-fixer fix --dry-run --diff
+make check     # php-cs-fixer, phpstan, deptrac, composer-dependency-analyser, phpunit
 ```
+
+Deptrac keeps the agent free of Symfony and Doctrine: they are reached only through `Bridge/`
+and `Provider/Anthropic/`.
 
 The suite runs on SQLite in memory and needs no server. `AGENT_TEST_DATABASE_URL` points the
 ORM tests at a real one, which is what CI does for MySQL and PostgreSQL:

@@ -21,12 +21,12 @@ final class AgentLoopTest extends TestCase
 {
     public function testAPlainTurnStreamsTextAndCompletes(): void
     {
-        $builder = new AgentBuilder(new FakeProvider([FakeProvider::text('Hola, ¿en qué te ayudo?')]));
-        $messages = [Transcript::userMessage('hola')];
+        $builder = new AgentBuilder(new FakeProvider([FakeProvider::text('Hi, how can I help?')]));
+        $messages = [Transcript::userMessage('hi')];
 
         $events = $this->collect($builder, $messages);
 
-        self::assertSame('Hola, ¿en qué te ayudo?', $this->text($events));
+        self::assertSame('Hi, how can I help?', $this->text($events));
         self::assertSame('end_turn', $this->last($events)->data['stop_reason']);
         self::assertSame('assistant', $messages[1]['role']);
     }
@@ -35,19 +35,19 @@ final class AgentLoopTest extends TestCase
     {
         $builder = new AgentBuilder(
             new FakeProvider([
-                FakeProvider::toolCall('find_records', ['query' => 'algo', 'status' => 'Buscando'], 'tu-1'),
-                FakeProvider::text('Encontré dos.'),
+                FakeProvider::toolCall('find_records', ['query' => 'something', 'status' => 'Searching'], 'tu-1'),
+                FakeProvider::text('Found two.'),
             ]),
             extra: [new DirectoryCapability()],
         );
 
-        $messages = [Transcript::userMessage('mostrame lo que hay')];
+        $messages = [Transcript::userMessage('show me what you have')];
         $state = new TurnState();
         $events = $this->collect($builder, $messages, $state);
 
         $call = $this->ofType($events, EventType::ToolCall)[0];
         self::assertSame('find_records', $call->data['tool']);
-        self::assertSame('Buscando', $call->data['label'], 'the status line reaches the host as a label');
+        self::assertSame('Searching', $call->data['label'], 'the status line reaches the host as a label');
         self::assertArrayNotHasKey('status', $call->data['input'], 'and never reaches the tool');
 
         self::assertTrue($state->hasSeen('R-1'));
@@ -59,18 +59,18 @@ final class AgentLoopTest extends TestCase
         $builder = new AgentBuilder(
             new FakeProvider([
                 FakeProvider::toolCall('break_things', [], 'tu-1'),
-                FakeProvider::text('No pude consultarlo.'),
+                FakeProvider::text('I could not look it up.'),
             ]),
             extra: [new DirectoryCapability()],
         );
 
-        $messages = [Transcript::userMessage('probá algo')];
+        $messages = [Transcript::userMessage('try something')];
         $events = $this->collect($builder, $messages);
 
         $result = $this->ofType($events, EventType::ToolResult)[0];
         self::assertTrue($result->data['is_error']);
         self::assertStringContainsString('temporarily unavailable', $messages[2]['content'][0]['content']);
-        self::assertSame('No pude consultarlo.', $this->text($events));
+        self::assertSame('I could not look it up.', $this->text($events));
     }
 
     public function testADomainErrorIsRelayedInItsOwnWords(): void
@@ -78,12 +78,12 @@ final class AgentLoopTest extends TestCase
         $builder = new AgentBuilder(
             new FakeProvider([
                 FakeProvider::toolCall('find_records', ['query' => 'boom'], 'tu-1'),
-                FakeProvider::text('Eso no lo cubrimos.'),
+                FakeProvider::text('We do not cover that.'),
             ]),
             extra: [new DirectoryCapability()],
         );
 
-        $messages = [Transcript::userMessage('algo')];
+        $messages = [Transcript::userMessage('something')];
         $this->collect($builder, $messages);
 
         self::assertStringContainsString('not something this organisation covers', $messages[2]['content'][0]['content']);
@@ -94,12 +94,12 @@ final class AgentLoopTest extends TestCase
         $builder = new AgentBuilder(
             new FakeProvider([
                 FakeProvider::toolCall('present_records', ['ids' => ['R-9']], 'tu-1'),
-                FakeProvider::text('Perdón, me confundí.'),
+                FakeProvider::text('Sorry, my mistake.'),
             ]),
             extra: [new DirectoryCapability()],
         );
 
-        $messages = [Transcript::userMessage('mostrame R-9')];
+        $messages = [Transcript::userMessage('show me R-9')];
         $events = $this->collect($builder, $messages);
 
         $result = $this->ofType($events, EventType::ToolResult)[0];
@@ -111,22 +111,22 @@ final class AgentLoopTest extends TestCase
     public function testACleanPresentationRoundWithChipsEndsTheTurn(): void
     {
         $provider = new FakeProvider([
-            FakeProvider::toolCall('find_records', ['query' => 'algo'], 'tu-1'),
+            FakeProvider::toolCall('find_records', ['query' => 'something'], 'tu-1'),
             new \Odiseo\AiConversationalAgentBundle\Provider\Response\ProviderResponse(
                 [
                     ['type' => 'tool_use', 'id' => 'tu-2', 'name' => 'present_records', 'input' => (object) ['ids' => ['R-1']]],
-                    ['type' => 'tool_use', 'id' => 'tu-3', 'name' => ChipComponent::TOOL, 'input' => (object) ['suggestions' => ['Ver el otro']]],
+                    ['type' => 'tool_use', 'id' => 'tu-3', 'name' => ChipComponent::TOOL, 'input' => (object) ['suggestions' => ['See the other one']]],
                 ],
                 [
                     new \Odiseo\AiConversationalAgentBundle\Provider\Response\ToolUse('tu-2', 'present_records', ['ids' => ['R-1']]),
-                    new \Odiseo\AiConversationalAgentBundle\Provider\Response\ToolUse('tu-3', ChipComponent::TOOL, ['suggestions' => ['Ver el otro']]),
+                    new \Odiseo\AiConversationalAgentBundle\Provider\Response\ToolUse('tu-3', ChipComponent::TOOL, ['suggestions' => ['See the other one']]),
                 ],
                 'tool_use',
             ),
         ]);
         $builder = new AgentBuilder($provider, extra: [new DirectoryCapability()]);
 
-        $messages = [Transcript::userMessage('mostrame')];
+        $messages = [Transcript::userMessage('show me')];
         $events = $this->collect($builder, $messages);
 
         self::assertSame('end_turn', $this->last($events)->data['stop_reason']);
@@ -137,12 +137,12 @@ final class AgentLoopTest extends TestCase
     public function testTheFirstRoundIsPinnedToTheGroundingRead(): void
     {
         $provider = new FakeProvider([
-            FakeProvider::toolCall('find_records', ['query' => '¿tienen registro?'], 'tu-1'),
-            FakeProvider::text('Sí.'),
+            FakeProvider::toolCall('find_records', ['query' => 'any record?'], 'tu-1'),
+            FakeProvider::text('Yes.'),
         ]);
         $builder = new AgentBuilder($provider, extra: [new DirectoryCapability()]);
 
-        $messages = [Transcript::userMessage('¿tienen algún registro de esto?')];
+        $messages = [Transcript::userMessage('do you have a record of this?')];
         $this->collect($builder, $messages);
 
         $first = $provider->requests()[0];
@@ -153,34 +153,34 @@ final class AgentLoopTest extends TestCase
     public function testAProviderThatCannotForceGetsThePrefetchInstead(): void
     {
         $provider = new FakeProvider(
-            [FakeProvider::text('Sí, tenemos dos.')],
+            [FakeProvider::text('Yes, we have two.')],
             new ProviderCapabilities(forcedToolChoice: false),
         );
         $builder = new AgentBuilder($provider, extra: [new DirectoryCapability()]);
 
-        $messages = [Transcript::userMessage('¿tienen algún registro de esto?')];
+        $messages = [Transcript::userMessage('do you have a record of this?')];
         $this->collect($builder, $messages);
 
         // The read the host did for it goes in above the visitor's message, introduced as the
         // host's own work rather than as something the visitor said.
         self::assertStringContainsString('Prefetched:', $messages[0]['content'][0]['text']);
         self::assertStringContainsString('R-1', $messages[0]['content'][0]['text']);
-        self::assertStringContainsString('registro', $messages[1]['content'][0]['text']);
+        self::assertStringContainsString('record of this', $messages[1]['content'][0]['text']);
         self::assertSame('auto', $provider->requests()[0]->toolChoice->type);
     }
 
     public function testTheRollingMarkerIsSkippedOnAForcedRound(): void
     {
         $provider = new FakeProvider([
-            FakeProvider::toolCall('find_records', ['query' => '¿tienen registro?'], 'tu-1'),
-            FakeProvider::text('Sí.'),
+            FakeProvider::toolCall('find_records', ['query' => 'any record?'], 'tu-1'),
+            FakeProvider::text('Yes.'),
         ]);
         $builder = new AgentBuilder($provider, extra: [new DirectoryCapability()]);
 
         $messages = [
-            Transcript::userMessage('hola'),
-            ['role' => 'assistant', 'content' => [['type' => 'text', 'text' => 'buenas']]],
-            Transcript::userMessage('¿tienen algún registro?'),
+            Transcript::userMessage('hi'),
+            ['role' => 'assistant', 'content' => [['type' => 'text', 'text' => 'hello']]],
+            Transcript::userMessage('do you have a record?'),
         ];
         $this->collect($builder, $messages);
 
@@ -195,11 +195,11 @@ final class AgentLoopTest extends TestCase
     public function testTheTurnStopsOnTheSessionBudget(): void
     {
         $config = new AgentConfig(sessionBudgetUsd: 0.0001);
-        $provider = new FakeProvider([FakeProvider::text('hola')]);
+        $provider = new FakeProvider([FakeProvider::text('hi')]);
         $builder = new AgentBuilder($provider, $config);
         $builder->ledger->record('s-1', new \DateTimeImmutable(), 1.0);
 
-        $messages = [Transcript::userMessage('hola')];
+        $messages = [Transcript::userMessage('hi')];
         $events = iterator_to_array($builder->loop()->streamTurn(
             $messages,
             new SessionContext('s-1', 'visitor-1', 'America/Argentina/Buenos_Aires'),
@@ -214,14 +214,14 @@ final class AgentLoopTest extends TestCase
     public function testTheClientBudgetSurvivesAFreshSession(): void
     {
         $config = new AgentConfig(sessionBudgetUsd: 1.0, clientBudgetUsd: 0.5);
-        $provider = new FakeProvider([FakeProvider::text('hola')]);
+        $provider = new FakeProvider([FakeProvider::text('hi')]);
         $builder = new AgentBuilder($provider, $config);
         $builder->clientKey = '203.0.113.7';
         // The budget day is the session's local day, so the spend is recorded on that clock.
         $session = new SessionContext('s-2', 'visitor-2', 'America/Argentina/Buenos_Aires');
         $builder->ledger->record('s-1', $session->localNow() ?? new \DateTimeImmutable(), 0.5, '203.0.113.7');
 
-        $messages = [Transcript::userMessage('hola')];
+        $messages = [Transcript::userMessage('hi')];
         $events = iterator_to_array($builder->loop()->streamTurn($messages, $session, new TurnState()), false);
 
         self::assertSame(EventType::Error, $events[0]->type);
@@ -232,13 +232,13 @@ final class AgentLoopTest extends TestCase
     public function testTheClientBudgetIgnoresOtherClientsAndConsoleRuns(): void
     {
         $config = new AgentConfig(sessionBudgetUsd: 1.0, clientBudgetUsd: 0.5);
-        $builder = new AgentBuilder(new FakeProvider([FakeProvider::text('hola'), FakeProvider::text('hola')]), $config);
+        $builder = new AgentBuilder(new FakeProvider([FakeProvider::text('hi'), FakeProvider::text('hi')]), $config);
         $session = new SessionContext('s-2', 'visitor-2', 'America/Argentina/Buenos_Aires');
         $builder->ledger->record('s-1', $session->localNow() ?? new \DateTimeImmutable(), 0.5, '203.0.113.7');
 
         foreach (['198.51.100.9', null] as $client) {
             $builder->clientKey = $client;
-            $messages = [Transcript::userMessage('hola')];
+            $messages = [Transcript::userMessage('hi')];
             $events = iterator_to_array($builder->loop()->streamTurn($messages, $session, new TurnState()), false);
 
             self::assertSame('end_turn', $this->last($events)->data['stop_reason']);
@@ -248,11 +248,11 @@ final class AgentLoopTest extends TestCase
     public function testAnAbandonedTurnLeavesNoUnansweredToolCall(): void
     {
         $builder = new AgentBuilder(
-            new FakeProvider([FakeProvider::toolCall('find_records', ['query' => 'algo'], 'tu-1')]),
+            new FakeProvider([FakeProvider::toolCall('find_records', ['query' => 'something'], 'tu-1')]),
             extra: [new DirectoryCapability()],
         );
 
-        $messages = [Transcript::userMessage('algo')];
+        $messages = [Transcript::userMessage('something')];
         $turn = $builder->loop()->streamTurn(
             $messages,
             new SessionContext('s-1', 'visitor-1'),
@@ -299,15 +299,15 @@ final class AgentLoopTest extends TestCase
             tool: 'find_records',
             id: 'tu-1',
             chunks: [
-                '{"status": "Buscando',
-                ' en el sitio"',
+                '{"status": "Searching',
+                ' the site"',
                 ', "query": "sylius ecommerce"}',
             ],
-            finalInput: ['status' => 'Buscando en el sitio', 'query' => 'sylius ecommerce'],
+            finalInput: ['status' => 'Searching the site', 'query' => 'sylius ecommerce'],
         );
         $builder = new AgentBuilder($provider, extra: [new DirectoryCapability()]);
 
-        $messages = [Transcript::userMessage('algo')];
+        $messages = [Transcript::userMessage('something')];
         $events = iterator_to_array($builder->loop()->streamTurn(
             $messages,
             new SessionContext('s-1', 'visitor-1', 'America/Argentina/Buenos_Aires'),
@@ -316,7 +316,7 @@ final class AgentLoopTest extends TestCase
 
         $progress = $this->ofType($events, EventType::Progress);
         self::assertNotSame([], $progress, 'a progress event was emitted while the call was still streaming');
-        self::assertSame('Buscando en el sitio', $progress[0]->data['message']);
+        self::assertSame('Searching the site', $progress[0]->data['message']);
         self::assertSame('find_records', $progress[0]->data['tool']);
 
         $toolCallIndex = array_search(EventType::ToolCall, array_map(static fn (AgentEvent $e): EventType => $e->type, $events), true);
@@ -330,13 +330,13 @@ final class AgentLoopTest extends TestCase
         $provider = Fixture\ChunkedToolCallProvider::single(
             'find_records',
             'tu-1',
-            ['{"query": "al', 'go"}'],
-            ['query' => 'algo'],
-            trailingText: 'y mientras tanto sigo escribiendo',
+            ['{"query": "some', 'thing"}'],
+            ['query' => 'something'],
+            trailingText: 'and meanwhile I keep writing',
         );
         $builder = new AgentBuilder($provider, extra: [$directory]);
 
-        $messages = [Transcript::userMessage('algo')];
+        $messages = [Transcript::userMessage('something')];
         $events = $this->collect($builder, $messages);
         $types = array_map(static fn (AgentEvent $e): EventType => $e->type, $events);
 
@@ -347,7 +347,7 @@ final class AgentLoopTest extends TestCase
         self::assertLessThan($trailing, $result, 'the tool ran and reported before the text that followed its block streamed');
         self::assertSame(1, $directory->runs['find_records'] ?? 0, 'the join did not run it a second time');
         self::assertCount(1, $this->ofType($events, EventType::ToolCall));
-        self::assertSame('y mientras tanto sigo escribiendoListo.', $this->text($events, after: $result), 'everything the model wrote after the block came after the result');
+        self::assertSame('and meanwhile I keep writingDone.', $this->text($events, after: $result), 'everything the model wrote after the block came after the result');
     }
 
     public function testWithoutEagerDispatchTheRoundIsAnnouncedThenRunAfterTheStream(): void
@@ -356,13 +356,13 @@ final class AgentLoopTest extends TestCase
         $provider = Fixture\ChunkedToolCallProvider::single(
             'find_records',
             'tu-1',
-            ['{"query": "algo"}'],
-            ['query' => 'algo'],
-            trailingText: 'cola',
+            ['{"query": "something"}'],
+            ['query' => 'something'],
+            trailingText: 'tail',
         );
         $builder = new AgentBuilder($provider, new AgentConfig(eagerToolDispatch: false), extra: [$directory]);
 
-        $messages = [Transcript::userMessage('algo')];
+        $messages = [Transcript::userMessage('something')];
         $events = $this->collect($builder, $messages);
         $types = array_map(static fn (AgentEvent $e): EventType => $e->type, $events);
 
@@ -375,12 +375,12 @@ final class AgentLoopTest extends TestCase
     {
         $directory = new DirectoryCapability();
         $provider = new Fixture\ChunkedToolCallProvider([
-            ['find_records', 'tu-1', ['{"query": "algo"}'], ['query' => 'algo']],
+            ['find_records', 'tu-1', ['{"query": "something"}'], ['query' => 'something']],
             ['present_records', 'tu-2', ['{"ids": ["R-', '1"', ', "R-2"', ']}'], ['ids' => ['R-1', 'R-2']]],
         ]);
         $builder = new AgentBuilder($provider, extra: [$directory]);
 
-        $messages = [Transcript::userMessage('algo')];
+        $messages = [Transcript::userMessage('something')];
         $events = $this->collect($builder, $messages);
 
         $partials = $this->ofType($events, EventType::UiPartial);

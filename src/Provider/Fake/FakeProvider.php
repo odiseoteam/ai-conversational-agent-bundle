@@ -62,6 +62,12 @@ final class FakeProvider implements ModelProvider
         );
     }
 
+    /** Adds responses after the ones already scripted, for a provider built by a container. */
+    public function queue(ProviderResponse ...$responses): void
+    {
+        array_push($this->responses, ...$responses);
+    }
+
     public function capabilities(): ProviderCapabilities
     {
         return $this->capabilities;

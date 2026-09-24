@@ -43,15 +43,15 @@ final class SessionStoreTest extends TestCase
         $store = $make();
         $record = $store->start('visitor-1');
 
-        $record->messages[] = Transcript::userMessage('hola');
-        $record->state->remember(new SeenRecord('R-1', 'record', ['title' => 'Primero']));
+        $record->messages[] = Transcript::userMessage('hi');
+        $record->state->remember(new SeenRecord('R-1', 'record', ['title' => 'First']));
         $store->save($record);
 
         $loaded = $store->require($record->sessionId);
 
         self::assertCount(1, $loaded->messages);
         self::assertTrue($loaded->state->hasSeen('R-1'));
-        self::assertSame('Primero', $loaded->state->seen('R-1')?->data['title']);
+        self::assertSame('First', $loaded->state->seen('R-1')?->data['title']);
     }
 
     /** @param \Closure(): SessionStore $make */

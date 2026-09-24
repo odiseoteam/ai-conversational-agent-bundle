@@ -1,0 +1,49 @@
+# The agent itself knows no framework: it runs on PSR logging and a YAML parser for skills.
+# Symfony, Doctrine and the model providers are reached through Bridge/ and Provider/Anthropic.
+deptrac:
+    paths:
+        - ./src
+
+    layers:
+        - name: Agent
+          collectors:
+              - type: bool
+                must:
+                    - type: directory
+                      value: src/.*
+                must_not:
+                    - type: directory
+                      value: src/Bridge/.*
+                    - type: directory
+                      value: src/Provider/Anthropic/.*
+
+        - name: Bridge
+          collectors:
+              - type: directory
+                value: src/Bridge/.*
+
+        - name: Anthropic
+          collectors:
+              - type: directory
+                value: src/Provider/Anthropic/.*
+
+        - name: Framework
+          collectors:
+              - type: classNameRegex
+                value: '#^(Symfony\\(?!Component\\Yaml\\|AI\\)|Doctrine\\)#'
+
+        - name: SymfonyAi
+          collectors:
+              - type: classNameRegex
+                value: '#^Symfony\\AI\\#'
+
+    ruleset:
+        Agent: ~
+        Bridge:
+            - Agent
+            - Anthropic
+            - Framework
+            - SymfonyAi
+        Anthropic:
+            - Agent
+            - SymfonyAi

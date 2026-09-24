@@ -27,8 +27,8 @@ final class PromptAssemblerTest extends TestCase
     public function testTheRollingMarkerLandsOnTheNewestBlock(): void
     {
         $messages = [
-            ['role' => 'user', 'content' => [['type' => 'text', 'text' => 'hola']]],
-            ['role' => 'assistant', 'content' => [['type' => 'text', 'text' => 'buenas']]],
+            ['role' => 'user', 'content' => [['type' => 'text', 'text' => 'hi']]],
+            ['role' => 'assistant', 'content' => [['type' => 'text', 'text' => 'hello']]],
         ];
 
         $request = PromptAssembler::requestMessages($messages);
@@ -40,7 +40,7 @@ final class PromptAssemblerTest extends TestCase
     public function testASingleMessageGetsNoMarker(): void
     {
         $request = PromptAssembler::requestMessages([
-            ['role' => 'user', 'content' => [['type' => 'text', 'text' => 'hola']]],
+            ['role' => 'user', 'content' => [['type' => 'text', 'text' => 'hi']]],
         ]);
 
         self::assertArrayNotHasKey('cache_hint', $request[0]['content'][0]);
@@ -49,8 +49,8 @@ final class PromptAssemblerTest extends TestCase
     public function testAForcedRoundGetsNoMarker(): void
     {
         $messages = [
-            ['role' => 'user', 'content' => [['type' => 'text', 'text' => 'hola']]],
-            ['role' => 'assistant', 'content' => [['type' => 'text', 'text' => 'buenas']]],
+            ['role' => 'user', 'content' => [['type' => 'text', 'text' => 'hi']]],
+            ['role' => 'assistant', 'content' => [['type' => 'text', 'text' => 'hello']]],
         ];
 
         $request = PromptAssembler::requestMessages($messages, rollingBreakpoint: false);
@@ -61,8 +61,8 @@ final class PromptAssemblerTest extends TestCase
     public function testAnEarlierMarkerIsStripped(): void
     {
         $messages = [
-            ['role' => 'user', 'content' => [['type' => 'text', 'text' => 'hola', 'cache_hint' => true]]],
-            ['role' => 'assistant', 'content' => [['type' => 'text', 'text' => 'buenas']]],
+            ['role' => 'user', 'content' => [['type' => 'text', 'text' => 'hi', 'cache_hint' => true]]],
+            ['role' => 'assistant', 'content' => [['type' => 'text', 'text' => 'hello']]],
         ];
 
         $request = PromptAssembler::requestMessages($messages);

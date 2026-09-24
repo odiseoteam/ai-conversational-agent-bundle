@@ -2,27 +2,27 @@
 # wants (`prefix: /agent`) under the firewall that resolves its principal.
 odiseo_ai_conversational_agent_session_start:
     path: /session
-    controller: Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\SessionController::start
+    controller: odiseo_ai_conversational_agent.controller.session::start
     methods: [POST]
 
 odiseo_ai_conversational_agent_chat:
     path: /chat
-    controller: Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\ChatController::chat
+    controller: odiseo_ai_conversational_agent.controller.chat::chat
     methods: [POST]
 
 odiseo_ai_conversational_agent_memory_list:
     path: /memory
-    controller: Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\MemoryController::list
+    controller: odiseo_ai_conversational_agent.controller.memory::list
     methods: [GET]
 
 odiseo_ai_conversational_agent_memory_forget:
     path: /memory/{key}
-    controller: Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\MemoryController::forget
+    controller: odiseo_ai_conversational_agent.controller.memory::forget
     methods: [DELETE]
     requirements:
         key: '.+'
 
 odiseo_ai_conversational_agent_memory_clear:
     path: /memory
-    controller: Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\MemoryController::clear
+    controller: odiseo_ai_conversational_agent.controller.memory::clear
     methods: [DELETE]

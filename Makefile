@@ -1,4 +1,4 @@
-.PHONY: install test phpstan cs cs-fix check
+.PHONY: install test phpstan cs cs-fix deptrac composer-unused check
 
 install:
 	composer install
@@ -15,4 +15,10 @@ cs:
 cs-fix:
 	vendor/bin/php-cs-fixer fix
 
-check: cs phpstan test
+deptrac:
+	vendor/bin/deptrac analyse --no-progress
+
+composer-unused:
+	vendor/bin/composer-dependency-analyser
+
+check: cs phpstan deptrac composer-unused test
