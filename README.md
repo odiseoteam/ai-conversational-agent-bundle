@@ -1,4 +1,15 @@
-# AI Conversational Agent Bundle
+<h1 align="center">AI Conversational Agent Bundle</h1>
+
+<p align="center">
+    <a href="https://packagist.org/packages/odiseoteam/ai-conversational-agent-bundle"><img src="https://img.shields.io/packagist/v/odiseoteam/ai-conversational-agent-bundle.svg?style=flat-square" alt="Version" /></a>
+    <a href="https://packagist.org/packages/odiseoteam/ai-conversational-agent-bundle"><img src="https://img.shields.io/packagist/dt/odiseoteam/ai-conversational-agent-bundle.svg?style=flat-square" alt="Downloads" /></a>
+    <a href="https://github.com/odiseoteam/ai-conversational-agent-bundle/actions/workflows/build.yml"><img src="https://img.shields.io/github/actions/workflow/status/odiseoteam/ai-conversational-agent-bundle/build.yml?branch=master&style=flat-square" alt="Build status" /></a>
+    <img src="https://img.shields.io/badge/symfony-7.3%20%7C%207.4%20%7C%208.x-1abb9c?style=flat-square" alt="Symfony versions" />
+    <img src="https://img.shields.io/packagist/dependency-v/odiseoteam/ai-conversational-agent-bundle/php?style=flat-square" alt="PHP version" />
+    <a href="LICENSE"><img src="https://img.shields.io/packagist/l/odiseoteam/ai-conversational-agent-bundle.svg?style=flat-square" alt="License" /></a>
+</p>
+
+---
 
 A vertical-agnostic core for conversational agents in Symfony: the turn loop, tool
 execution, gates, sessions, streaming, memory, budgets and evals. Verticals (a shopping
@@ -7,6 +18,22 @@ assistant, an institutional assistant) are built on top of it as capabilities.
 It ports the `commerce_common` layer of Anthropic's
 [commerce-agents](https://github.com/anthropics/commerce-agents) reference to PHP; nothing in
 it knows about commerce.
+
+## What you get
+
+- **A streaming turn loop**: Model rounds, tool calls and UI components reach the browser as
+  server-sent events while the model is still writing.
+- **Tools the model can't misuse**: JSON-schema validation, provenance checks (it can only act on
+  ids a tool returned) and grounding rules that force a lookup before it answers.
+- **Prompt-injection fencing**: Site content and tool results are quoted, never read as
+  instructions.
+- **Memory across sessions**: Facts about the visitor, extracted after the turn by a cheaper
+  model, with a filter that keeps identifiers and credentials out.
+- **Budgets and costs**: Spend limits per session, per client and per day, rate limits on the
+  endpoints, and a ledger of what every turn spent.
+- **Persistence on Doctrine**: Conversations, transcripts, memory and spend, with retention and a
+  prune command.
+- **Evals**: YAML cases run against a scripted or live model, graded by code and by a judge.
 
 ## Concepts
 
@@ -119,6 +146,14 @@ does the same for memory facts. Null keeps them. `bin/console agent:prune` appli
 dropping the conversations with their messages and spend; `--dry-run` only counts. Run it
 from a daily cron.
 
+## Compatibility
+
+| Bundle | PHP             | Symfony         | Database                             | Model                                  |
+| ------ | --------------- | --------------- | ------------------------------------ | -------------------------------------- |
+| `0.x`  | 8.2 · 8.3 · 8.4 | 7.3 · 7.4 · 8.x | Any Doctrine ORM platform; CI covers SQLite, MySQL and PostgreSQL | Claude, through Symfony AI; or your own `ModelProvider` |
+
+The bundle is in `0.x`: minor versions may break the API until `1.0`.
+
 ## Development
 
 ```bash
@@ -136,6 +171,14 @@ ORM tests at a real one, which is what CI does for MySQL and PostgreSQL:
 AGENT_TEST_DATABASE_URL=postgresql://user:pass@127.0.0.1:5432/agent_test vendor/bin/phpunit
 ```
 
+## Demo
+
+Want a live walkthrough of this bundle? [Get in touch](https://odiseo.io/en/contact-us?utm_source=github&utm_medium=readme&utm_campaign=ai-conversational-agent-bundle), or see what else we build at [odiseo.io](https://odiseo.io/en?utm_source=github&utm_medium=readme&utm_campaign=ai-conversational-agent-bundle).
+
+## Credits
+
+This bundle is maintained by [Odiseo](https://odiseo.io/en?utm_source=github&utm_medium=readme&utm_campaign=ai-conversational-agent-bundle). Want us to help you build an agent on it, or with any Symfony or Sylius project? [Get in touch](https://odiseo.io/en/contact-us?utm_source=github&utm_medium=readme&utm_campaign=ai-conversational-agent-bundle).
+
 ## License
 
-Proprietary, see `LICENSE`.
+[MIT](LICENSE).

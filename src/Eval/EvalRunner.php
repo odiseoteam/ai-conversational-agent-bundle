@@ -29,7 +29,7 @@ final class EvalRunner
         private readonly MemoryStore $memory,
         private readonly CodeGrader $grader = new CodeGrader(),
         private readonly ?JudgeGrader $judge = null,
-        private readonly string $timezone = 'America/Argentina/Buenos_Aires',
+        private readonly string $timezone = 'UTC',
     ) {
     }
 
