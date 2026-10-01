@@ -25,6 +25,8 @@ All notable changes to this project are documented here. The format is based on
   `PresentationRefusedException`.
 - `ODISEO_AGENT_TEST_DATABASE_URL` replaces `AGENT_TEST_DATABASE_URL` for the test suite.
 - PHP constraint is `^8.2`.
+- The rate limiters are `odiseo_agent_session_start`, `odiseo_agent_chat_turn` and
+  `odiseo_agent_chat_turn_per_session` (were `agent_*`).
 
 ## [0.1.0] - 2026-09-17
 

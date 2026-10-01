@@ -56,9 +56,9 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
     {
         $limiter = ['policy' => 'sliding_window', 'interval' => '1 hour'];
         $builder->prependExtensionConfig('framework', ['rate_limiter' => [
-            'agent_session_start' => $limiter + ['limit' => 10],
-            'agent_chat_turn' => $limiter + ['limit' => 60],
-            'agent_chat_turn_per_session' => $limiter + ['limit' => 40],
+            'odiseo_agent_session_start' => $limiter + ['limit' => 10],
+            'odiseo_agent_chat_turn' => $limiter + ['limit' => 60],
+            'odiseo_agent_chat_turn_per_session' => $limiter + ['limit' => 40],
         ]]);
     }
 

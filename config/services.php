@@ -217,7 +217,7 @@ return static function (ContainerConfigurator $container): void {
 
     $services->set($id.'controller.session', SessionController::class)
         ->public()
-        ->args([service($id.'session.resolver'), service(PrincipalResolver::class), service('limiter.agent_session_start')])
+        ->args([service($id.'session.resolver'), service(PrincipalResolver::class), service('limiter.odiseo_agent_session_start')])
         ->tag('controller.service_arguments');
     $services->set($id.'controller.chat', ChatController::class)
         ->public()
@@ -225,8 +225,8 @@ return static function (ContainerConfigurator $container): void {
             service($id.'session.resolver'),
             service($id.'agent.turn_runner'),
             service('logger'),
-            service('limiter.agent_chat_turn'),
-            service('limiter.agent_chat_turn_per_session'),
+            service('limiter.odiseo_agent_chat_turn'),
+            service('limiter.odiseo_agent_chat_turn_per_session'),
         ])
         ->tag('controller.service_arguments');
     $services->set($id.'controller.memory', MemoryController::class)
