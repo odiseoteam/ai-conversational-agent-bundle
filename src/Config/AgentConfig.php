@@ -81,9 +81,23 @@ final readonly class AgentConfig
          */
         public int $compactHistoryAboveTokens = 100_000,
     ) {
-        $this->thinkingEffort = \is_string($thinkingEffort)
-            ? ('off' === $thinkingEffort ? null : ThinkingEffort::from($thinkingEffort))
-            : $thinkingEffort;
+        $this->thinkingEffort = \is_string($thinkingEffort) ? self::effort($thinkingEffort) : $thinkingEffort;
+    }
+
+    private static function effort(string $value): ?ThinkingEffort
+    {
+        if ('off' === $value) {
+            return null;
+        }
+
+        $effort = ThinkingEffort::tryFrom($value);
+        if (null === $effort) {
+            $valid = array_map(static fn (ThinkingEffort $case): string => $case->value, ThinkingEffort::cases());
+
+            throw new \InvalidArgumentException(sprintf('Unknown thinking effort "%s": use %s or off.', $value, implode(', ', $valid)));
+        }
+
+        return $effort;
     }
 
     /** @param array<string, mixed> $changes */

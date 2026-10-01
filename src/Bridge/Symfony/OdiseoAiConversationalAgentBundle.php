@@ -81,7 +81,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                     ->scalarNode('turn')->defaultValue('claude-sonnet-5')->end()
                     ->scalarNode('memory')->defaultValue('claude-haiku-4-5-20251001')->end()
                     ->scalarNode('judge')->defaultValue('claude-sonnet-5')->end()
-                    ->enumNode('thinking_effort')->values(['low', 'medium', 'high', 'xhigh', 'max', 'off'])->defaultValue('low')->end()
+                    ->scalarNode('thinking_effort')->defaultValue('low')->info('low, medium, high, xhigh, max or off; checked when the agent starts, so it can come from an env var.')->end()
                 ->end()->end()
                 ->arrayNode('budgets')->addDefaultsIfNotSet()->children()
                     ->integerNode('max_tokens')->defaultValue(2048)->end()

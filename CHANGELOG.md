@@ -29,6 +29,8 @@ All notable changes to this project are documented here. The format is based on
   longer used, and `agent:prune` deletes it. Set it to null to keep facts.
 - The rate limiters are `odiseo_agent_session_start`, `odiseo_agent_chat_turn` and
   `odiseo_agent_chat_turn_per_session` (were `agent_*`).
+- `models.thinking_effort` is a string checked when the agent starts (was a list checked when the
+  container is built), so it can come from an env var without a default `env()` parameter.
 
 ## [0.1.0] - 2026-09-17
 
