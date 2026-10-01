@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Eval;
 
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
+
 /**
  * One behavioural case. `state` is the precondition the runner loads before the turn; `turns`
  * is one message unless carrying state across turns is the behaviour under test; `expected`
@@ -37,15 +39,15 @@ final readonly class EvalCase
     public static function fromArray(array $row): self
     {
         return new self(
-            (string) ($row['id'] ?? ''),
-            array_values(array_map('strval', \is_array($row['turns'] ?? null) ? $row['turns'] : [])),
-            \is_array($row['expected'] ?? null) ? $row['expected'] : [],
-            (string) ($row['priority'] ?? 'medium'),
-            (string) ($row['difficulty'] ?? 'medium'),
-            array_values(array_map('strval', \is_array($row['tags'] ?? null) ? $row['tags'] : [])),
-            \is_array($row['state'] ?? null) ? $row['state'] : [],
-            isset($row['skip']) ? (string) $row['skip'] : null,
-            (string) ($row['notes'] ?? ''),
+            Scalar::string($row['id'] ?? null),
+            Scalar::strings($row['turns'] ?? null),
+            Scalar::keyed($row['expected'] ?? null),
+            Scalar::string($row['priority'] ?? null, 'medium'),
+            Scalar::string($row['difficulty'] ?? null, 'medium'),
+            Scalar::strings($row['tags'] ?? null),
+            Scalar::keyed($row['state'] ?? null),
+            Scalar::nullableString($row['skip'] ?? null),
+            Scalar::string($row['notes'] ?? null),
         );
     }
 }

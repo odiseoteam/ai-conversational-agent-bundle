@@ -164,11 +164,11 @@ make check     # php-cs-fixer, phpstan, deptrac, composer-dependency-analyser, p
 Deptrac keeps the agent free of Symfony and Doctrine: they are reached only through `Bridge/`
 and `Provider/Anthropic/`.
 
-The suite runs on SQLite in memory and needs no server. `AGENT_TEST_DATABASE_URL` points the
+The suite runs on SQLite in memory and needs no server. `ODISEO_AGENT_TEST_DATABASE_URL` points the
 ORM tests at a real one, which is what CI does for MySQL and PostgreSQL:
 
 ```bash
-AGENT_TEST_DATABASE_URL=postgresql://user:pass@127.0.0.1:5432/agent_test vendor/bin/phpunit
+ODISEO_AGENT_TEST_DATABASE_URL=postgresql://user:pass@127.0.0.1:5432/agent_test vendor/bin/phpunit
 ```
 
 ## Demo

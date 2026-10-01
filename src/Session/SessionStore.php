@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Session;
 
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
+
 /**
  * The session record's home. A deployment subclasses this and implements the six storage
  * methods over its own store; everything above them stays.
@@ -39,13 +41,10 @@ abstract class SessionStore
 
         return new SessionRecord(
             sessionId: $sessionId,
-            principalId: (string) ($document['principal_id'] ?? ''),
-            state: TurnState::fromArray(\is_array($document['state'] ?? null) ? $document['state'] : []),
+            principalId: Scalar::string($document['principal_id'] ?? null),
+            state: TurnState::fromArray(Scalar::keyed($document['state'] ?? null)),
             messages: $messages,
-            pendingAppEvents: array_values(array_map(
-                'strval',
-                \is_array($document['pending_app_events'] ?? null) ? $document['pending_app_events'] : [],
-            )),
+            pendingAppEvents: Scalar::strings($document['pending_app_events'] ?? null),
             version: $version,
             storedState: $document,
             storedMessages: \count($messages),

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Session;
 
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
+
 /**
  * The session state the host carries between turns: the provenance record, and whatever the
  * vertical needs to keep. A dropped id needs a fresh read, which is the point of the cap.
@@ -80,10 +82,10 @@ final class TurnState
         $state = new self();
         foreach (\is_array($row['seen_records'] ?? null) ? $row['seen_records'] : [] as $record) {
             if (\is_array($record)) {
-                $state->remember(SeenRecord::fromArray($record));
+                $state->remember(SeenRecord::fromArray(Scalar::keyed($record)));
             }
         }
-        $state->vertical = \is_array($row['vertical'] ?? null) ? $row['vertical'] : [];
+        $state->vertical = Scalar::keyed($row['vertical'] ?? null);
 
         return $state;
     }

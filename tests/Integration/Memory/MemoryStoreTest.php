@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiConversationalAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests\Integration\Memory;
 
 use Odiseo\AiConversationalAgentBundle\Memory\InMemoryMemoryStore;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryCategory;

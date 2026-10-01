@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiConversationalAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests\Unit\Prompt;
 
 use Odiseo\AiConversationalAgentBundle\Prompt\PromptAssembler;
+use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Dig;
 use PHPUnit\Framework\TestCase;
 
 final class PromptAssemblerTest extends TestCase
@@ -33,8 +34,8 @@ final class PromptAssemblerTest extends TestCase
 
         $request = PromptAssembler::requestMessages($messages);
 
-        self::assertTrue($request[1]['content'][0]['cache_hint']);
-        self::assertArrayNotHasKey('cache_hint', $messages[1]['content'][0], 'the stored history must not be touched');
+        self::assertTrue(Dig::value($request, 1, 'content', 0, 'cache_hint'));
+        self::assertArrayNotHasKey('cache_hint', Dig::array($messages, 1, 'content', 0), 'the stored history must not be touched');
     }
 
     public function testASingleMessageGetsNoMarker(): void
@@ -43,7 +44,7 @@ final class PromptAssemblerTest extends TestCase
             ['role' => 'user', 'content' => [['type' => 'text', 'text' => 'hi']]],
         ]);
 
-        self::assertArrayNotHasKey('cache_hint', $request[0]['content'][0]);
+        self::assertArrayNotHasKey('cache_hint', Dig::array($request, 0, 'content', 0));
     }
 
     public function testAForcedRoundGetsNoMarker(): void
@@ -55,7 +56,7 @@ final class PromptAssemblerTest extends TestCase
 
         $request = PromptAssembler::requestMessages($messages, rollingBreakpoint: false);
 
-        self::assertArrayNotHasKey('cache_hint', $request[1]['content'][0]);
+        self::assertArrayNotHasKey('cache_hint', Dig::array($request, 1, 'content', 0));
     }
 
     public function testAnEarlierMarkerIsStripped(): void
@@ -67,8 +68,8 @@ final class PromptAssemblerTest extends TestCase
 
         $request = PromptAssembler::requestMessages($messages);
 
-        self::assertArrayNotHasKey('cache_hint', $request[0]['content'][0]);
-        self::assertTrue($request[1]['content'][0]['cache_hint']);
+        self::assertArrayNotHasKey('cache_hint', Dig::array($request, 0, 'content', 0));
+        self::assertTrue(Dig::value($request, 1, 'content', 0, 'cache_hint'));
     }
 
     public function testConsecutiveUserMessagesAreMergedToolResultsFirst(): void
@@ -82,7 +83,7 @@ final class PromptAssemblerTest extends TestCase
         $request = PromptAssembler::requestMessages($messages);
 
         self::assertCount(2, $request);
-        self::assertSame('tool_result', $request[1]['content'][0]['type']);
-        self::assertSame('text', $request[1]['content'][1]['type']);
+        self::assertSame('tool_result', Dig::value($request, 1, 'content', 0, 'type'));
+        self::assertSame('text', Dig::value($request, 1, 'content', 1, 'type'));
     }
 }

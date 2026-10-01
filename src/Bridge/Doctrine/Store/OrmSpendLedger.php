@@ -8,6 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\SpendEntryInterface;
 use Odiseo\AiConversationalAgentBundle\Budget\SpendLedger;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /**
  * One row per charged model call, with the model and the tokens behind the amount, so a
@@ -58,8 +59,8 @@ final class OrmSpendLedger implements SpendLedger
                 ->setParameter('ids', $chunk);
 
             $total += $dryRun
-                ? (int) $qb->select('COUNT(e.id)')->getQuery()->getSingleScalarResult()
-                : (int) $qb->delete()->getQuery()->execute();
+                ? Scalar::int($qb->select('COUNT(e.id)')->getQuery()->getSingleScalarResult())
+                : Scalar::int($qb->delete()->getQuery()->execute());
         }
 
         return $total;

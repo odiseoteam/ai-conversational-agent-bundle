@@ -18,6 +18,7 @@ use Odiseo\AiConversationalAgentBundle\Presentation\PresentationComponent;
 use Odiseo\AiConversationalAgentBundle\Session\SeenRecord;
 use Odiseo\AiConversationalAgentBundle\Session\TurnState;
 use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /** A minimal vertical: one read, one gated write, one card, one grounding rule, one domain error. */
 final class DirectoryCapability implements Capability, DomainErrorMapper
@@ -87,7 +88,7 @@ final class DirectoryCapability implements Capability, DomainErrorMapper
             'present_records',
             'records',
             static function (array $input): array {
-                $ids = array_values(array_map('strval', \is_array($input['ids'] ?? null) ? $input['ids'] : []));
+                $ids = Scalar::strings($input['ids'] ?? null);
                 if ([] === $ids) {
                     throw new \InvalidArgumentException('ids is required.');
                 }
@@ -96,7 +97,7 @@ final class DirectoryCapability implements Capability, DomainErrorMapper
             },
             static function (array $payload, $context): array {
                 $items = [];
-                foreach ($payload['ids'] as $id) {
+                foreach (Scalar::strings($payload['ids'] ?? null) as $id) {
                     $record = $context->tools->state->seen($id);
                     if (null === $record) {
                         $context->note(ProvenanceGate::message($id, 'call find_records'));
@@ -106,7 +107,7 @@ final class DirectoryCapability implements Capability, DomainErrorMapper
                 }
 
                 if ([] === $items) {
-                    throw new \Odiseo\AiConversationalAgentBundle\Presentation\PresentationRefused('nothing to show', ProvenanceGate::NAME);
+                    throw new \Odiseo\AiConversationalAgentBundle\Presentation\PresentationRefusedException('nothing to show', ProvenanceGate::NAME);
                 }
 
                 return ['items' => $items];
@@ -135,7 +136,7 @@ final class DirectoryCapability implements Capability, DomainErrorMapper
         }
 
         if ('pick_record' === $tool) {
-            $id = (string) ($input['id'] ?? '');
+            $id = Scalar::string($input['id'] ?? null);
 
             return ProvenanceGate::check($context->state, $id, 'call find_records')
                 ?? new ToolOutcome(\sprintf('Picked %s.', $id));

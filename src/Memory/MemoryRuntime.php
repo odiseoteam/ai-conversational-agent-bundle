@@ -10,6 +10,7 @@ use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\SystemBlock;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
 use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -67,9 +68,9 @@ final class MemoryRuntime
             return ToolOutcome::error('Memory is off in this deployment; do not offer to remember anything.');
         }
 
-        $key = $this->fence->sanitizeText((string) ($input['key'] ?? ''), self::KEY_MAX_CHARS);
-        $value = $this->fence->sanitizeText((string) ($input['value'] ?? ''), self::VALUE_MAX_CHARS);
-        $category = MemoryCategory::tryFrom((string) ($input['category'] ?? '')) ?? MemoryCategory::Preference;
+        $key = $this->fence->sanitizeText(Scalar::string($input['key'] ?? null), self::KEY_MAX_CHARS);
+        $value = $this->fence->sanitizeText(Scalar::string($input['value'] ?? null), self::VALUE_MAX_CHARS);
+        $category = MemoryCategory::tryFrom(Scalar::string($input['category'] ?? null)) ?? MemoryCategory::Preference;
 
         if ('' === $key || '' === $value) {
             return ToolOutcome::error('save_memory needs a short key and a value.');
@@ -99,7 +100,7 @@ final class MemoryRuntime
             return ToolOutcome::error('Memory is off in this deployment.');
         }
 
-        $query = $this->fence->sanitizeText((string) ($input['query'] ?? ''), 200);
+        $query = $this->fence->sanitizeText(Scalar::string($input['query'] ?? null), 200);
         $facts = $this->live($this->store->search($subject, $query, 10));
 
         $payload = array_map(static fn (MemoryFact $fact): array => $fact->toPayload(), $facts);
@@ -180,7 +181,7 @@ final class MemoryRuntime
         $facts = [];
         foreach ($decoded as $row) {
             if (\is_array($row) && isset($row['key'], $row['value'])) {
-                $facts[] = $row;
+                $facts[] = Scalar::keyed($row);
             }
         }
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiConversationalAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests\Unit\Agent;
 
 use Odiseo\AiConversationalAgentBundle\Agent\Transcript;
 use PHPUnit\Framework\TestCase;

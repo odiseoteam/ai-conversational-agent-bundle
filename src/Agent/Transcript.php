@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Agent;
 
 use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /**
  * The stored conversation: what goes in it, and the repairs a turn may owe it.
@@ -64,7 +65,7 @@ final class Transcript
             $text = '';
             foreach (\is_array($messages[$i]['content'] ?? null) ? $messages[$i]['content'] : [] as $block) {
                 if (\is_array($block) && 'text' === ($block['type'] ?? null)) {
-                    $text .= (string) ($block['text'] ?? '')."\n";
+                    $text .= Scalar::string($block['text'] ?? null)."\n";
                 }
             }
 
@@ -90,7 +91,7 @@ final class Transcript
             if ('assistant' === ($message['role'] ?? null)) {
                 foreach (\is_array($message['content'] ?? null) ? $message['content'] : [] as $block) {
                     if (\is_array($block) && 'tool_use' === ($block['type'] ?? null)) {
-                        $open[(string) ($block['id'] ?? '')] = true;
+                        $open[Scalar::string($block['id'] ?? null)] = true;
                     }
                 }
                 continue;
@@ -98,7 +99,7 @@ final class Transcript
 
             foreach (\is_array($message['content'] ?? null) ? $message['content'] : [] as $block) {
                 if (\is_array($block) && 'tool_result' === ($block['type'] ?? null)) {
-                    unset($open[(string) ($block['tool_use_id'] ?? '')]);
+                    unset($open[Scalar::string($block['tool_use_id'] ?? null)]);
                 }
             }
         }
@@ -140,10 +141,12 @@ final class Transcript
             foreach ($content as $index => $block) {
                 if (\is_array($block) && 'tool_result' === ($block['type'] ?? null)
                     && '[cleared]' !== ($block['content'] ?? null)) {
-                    $messages[$i]['content'][$index]['content'] = '[cleared]';
+                    $block['content'] = '[cleared]';
+                    $content[$index] = $block;
                     ++$cleared;
                 }
             }
+            $messages[$i]['content'] = $content;
         }
 
         return $cleared;
@@ -154,10 +157,10 @@ final class Transcript
     {
         $lines = [];
         foreach ($messages as $message) {
-            $role = (string) ($message['role'] ?? '');
+            $role = Scalar::string($message['role'] ?? null);
             foreach (\is_array($message['content'] ?? null) ? $message['content'] : [] as $block) {
                 if (\is_array($block) && 'text' === ($block['type'] ?? null)) {
-                    $lines[] = $role.': '.(string) ($block['text'] ?? '');
+                    $lines[] = $role.': '.Scalar::string($block['text'] ?? null);
                 }
             }
         }
@@ -188,7 +191,7 @@ final class Transcript
     private static function hasText(array $message): bool
     {
         foreach (\is_array($message['content'] ?? null) ? $message['content'] : [] as $block) {
-            if (\is_array($block) && 'text' === ($block['type'] ?? null) && '' !== trim((string) ($block['text'] ?? ''))) {
+            if (\is_array($block) && 'text' === ($block['type'] ?? null) && '' !== trim(Scalar::string($block['text'] ?? null))) {
                 return true;
             }
         }

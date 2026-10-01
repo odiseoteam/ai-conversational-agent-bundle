@@ -89,8 +89,6 @@ final readonly class AgentConfig
     /** @param array<string, mixed> $changes */
     public function with(array $changes): self
     {
-        $args = get_object_vars($this);
-
-        return new self(...array_merge($args, $changes));
+        return (new \ReflectionClass(self::class))->newInstanceArgs(array_merge(get_object_vars($this), $changes));
     }
 }

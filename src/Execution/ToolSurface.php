@@ -6,6 +6,7 @@ namespace Odiseo\AiConversationalAgentBundle\Execution;
 
 use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /**
  * The tool list one deployment sends, built once. These are prompt bytes: the order and the
@@ -51,7 +52,7 @@ final class ToolSurface
                     $this->wording->statusReader,
                 ),
             ],
-            ...($schema['properties'] ?? []),
+            ...Scalar::keyed($schema['properties'] ?? null),
         ];
 
         return new ToolSpec($tool->name, $tool->description, $schema, $tool->wantsStatusLine, $tool->providerDefinition);

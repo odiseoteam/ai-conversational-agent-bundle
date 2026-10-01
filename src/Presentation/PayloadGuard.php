@@ -7,6 +7,7 @@ namespace Odiseo\AiConversationalAgentBundle\Presentation;
 use Odiseo\AiConversationalAgentBundle\Gate\ProvenanceGate;
 use Odiseo\AiConversationalAgentBundle\Session\Provenance;
 use Odiseo\AiConversationalAgentBundle\Session\SeenRecord;
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /**
  * What a validator and an enrich hook do to the model's arguments before they become a
@@ -49,7 +50,7 @@ final class PayloadGuard
     /** @return list<array<string, mixed>> */
     public static function rows(mixed $value, string $field, int $max, int $min = 1): array
     {
-        $rows = \is_array($value) ? array_values(array_filter($value, 'is_array')) : [];
+        $rows = Scalar::rows($value);
         if (\count($rows) < $min) {
             throw new \InvalidArgumentException(\sprintf('%s needs at least %d entr%s.', $field, $min, 1 === $min ? 'y' : 'ies'));
         }
@@ -79,12 +80,12 @@ final class PayloadGuard
      *
      * @return list<array<string, mixed>>
      *
-     * @throws PresentationRefused when nothing survived provenance: an empty card is never rendered
+     * @throws PresentationRefusedException when nothing survived provenance: an empty card is never rendered
      */
     public static function requireAny(array $enriched, string $what): array
     {
         if ([] === $enriched) {
-            throw new PresentationRefused(\sprintf('None of the ids on this %s were returned by a tool in this session, so nothing can be shown. Look them up first, then call it again.', $what), ProvenanceGate::NAME);
+            throw new PresentationRefusedException(\sprintf('None of the ids on this %s were returned by a tool in this session, so nothing can be shown. Look them up first, then call it again.', $what), ProvenanceGate::NAME);
         }
 
         return $enriched;

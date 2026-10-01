@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiConversationalAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests\Integration\Session;
 
 use Odiseo\AiConversationalAgentBundle\Agent\Transcript;
 use Odiseo\AiConversationalAgentBundle\Session\InMemorySessionStore;
 use Odiseo\AiConversationalAgentBundle\Session\SeenRecord;
 use Odiseo\AiConversationalAgentBundle\Session\SessionConflictException;
 use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
+use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Dig;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Orm;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -98,6 +99,6 @@ final class SessionStoreTest extends TestCase
         $record->storedMessages = 0;
         $store->save($record);
 
-        self::assertSame('uno (recortado)', $store->require($record->sessionId)->messages[0]['content'][0]['text']);
+        self::assertSame('uno (recortado)', Dig::value($store->require($record->sessionId)->messages, 0, 'content', 0, 'text'));
     }
 }
