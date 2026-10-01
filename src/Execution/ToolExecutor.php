@@ -7,6 +7,7 @@ namespace Odiseo\AiConversationalAgentBundle\Execution;
 use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
 use Odiseo\AiConversationalAgentBundle\Fencing\Sanitizer;
+use Odiseo\AiConversationalAgentBundle\Presentation\ChipComponent;
 use Odiseo\AiConversationalAgentBundle\Presentation\PartialFrame;
 use Odiseo\AiConversationalAgentBundle\Presentation\PresentationComponent;
 use Odiseo\AiConversationalAgentBundle\Presentation\PresentationRunner;

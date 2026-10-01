@@ -8,7 +8,6 @@ use Odiseo\AiConversationalAgentBundle\Capability\Capability;
 use Odiseo\AiConversationalAgentBundle\Capability\Limits;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
-use Odiseo\AiConversationalAgentBundle\Execution\ChipComponent;
 use Odiseo\AiConversationalAgentBundle\Fencing\Sanitizer;
 use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
 
