@@ -6,7 +6,7 @@ namespace Odiseo\AiConversationalAgentBundle\Tests\Unit\Agent;
 
 use Odiseo\AiConversationalAgentBundle\Agent\Transcript;
 use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
-use Odiseo\AiConversationalAgentBundle\Execution\ChipComponent;
+use Odiseo\AiConversationalAgentBundle\Presentation\ChipComponent;
 use Odiseo\AiConversationalAgentBundle\Provider\Fake\FakeProvider;
 use Odiseo\AiConversationalAgentBundle\Provider\ProviderCapabilities;
 use Odiseo\AiConversationalAgentBundle\Session\SessionContext;

@@ -25,20 +25,20 @@ final class BudgetPolicy
     ) {
     }
 
-    public function exceeded(string $sessionId, \DateTimeImmutable $at): ?BudgetExceeded
+    public function exceeded(string $sessionId, \DateTimeImmutable $at): ?BudgetLimit
     {
         if ($this->ledger->sessionSpend($sessionId) >= $this->config->sessionBudgetUsd) {
-            return BudgetExceeded::Session;
+            return BudgetLimit::Session;
         }
 
         $cap = $this->config->clientBudgetUsd;
         $client = null === $cap ? null : $this->client->clientKey();
         if (null !== $cap && null !== $client && $this->ledger->clientSpend($client, $at) >= $cap) {
-            return BudgetExceeded::Client;
+            return BudgetLimit::Client;
         }
 
         if ($this->ledger->daySpend($at) >= $this->config->dailyBudgetUsd) {
-            return BudgetExceeded::Day;
+            return BudgetLimit::Day;
         }
 
         return null;

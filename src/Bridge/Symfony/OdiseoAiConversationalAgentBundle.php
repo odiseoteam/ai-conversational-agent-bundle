@@ -39,7 +39,10 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
         return \dirname(__DIR__, 3);
     }
 
-    /** The ORM mappings of the core's mapped superclasses, when DoctrineBundle is installed. */
+    /**
+     * The ORM mappings of the core's mapped superclasses, when DoctrineBundle is installed. Not in
+     * config/doctrine: auto-mapping would read it as entities of the bundle's own namespace.
+     */
     public function build(ContainerBuilder $container): void
     {
         parent::build($container);

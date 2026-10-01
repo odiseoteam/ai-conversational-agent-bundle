@@ -40,6 +40,19 @@ final class Scalar
         return $strings;
     }
 
+    /** @return array<string, string> */
+    public static function stringMap(mixed $value): array
+    {
+        $map = [];
+        foreach (\is_array($value) ? $value : [] as $key => $item) {
+            if (\is_scalar($item) || $item instanceof \Stringable) {
+                $map[(string) $key] = (string) $item;
+            }
+        }
+
+        return $map;
+    }
+
     /** @return array<string, mixed> */
     public static function keyed(mixed $value): array
     {

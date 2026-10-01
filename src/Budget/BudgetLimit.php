@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Budget;
 
-enum BudgetExceeded: string
+/** The spend cap a turn ran into. */
+enum BudgetLimit: string
 {
     case Session = 'session';
     case Client = 'client';

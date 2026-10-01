@@ -8,8 +8,8 @@ use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
 use Odiseo\AiConversationalAgentBundle\Capability\PromptFragment;
 use Odiseo\AiConversationalAgentBundle\Capability\PromptSection;
 use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
-use Odiseo\AiConversationalAgentBundle\Execution\ChipComponent;
 use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
+use Odiseo\AiConversationalAgentBundle\Presentation\ChipComponent;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
 
 /**
