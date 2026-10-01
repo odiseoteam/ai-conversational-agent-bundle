@@ -102,7 +102,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                 ->arrayNode('memory')->addDefaultsIfNotSet()->children()
                     ->booleanNode('enabled')->defaultTrue()->end()
                     ->integerNode('tier_one_cap')->defaultValue(8)->end()
-                    ->integerNode('retention_days')->defaultNull()->end()
+                    ->integerNode('retention_days')->defaultValue(180)->info('Days a memory fact is kept and used after its last update; null keeps it.')->end()
                     ->arrayNode('blocked_patterns')->scalarPrototype()->end()->end()
                     ->scalarNode('extraction_prompt_file')->defaultNull()->end()
                 ->end()->end()

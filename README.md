@@ -141,8 +141,9 @@ the stores are in memory and nothing outlives the process.
 
 Two clocks. `sessions.retention_days` (30) is how long a session is served after its last
 activity; past it the widget starts a new one, but the conversation stays for the host to read.
-`conversations.retention_days` (180) is how long it is kept; `memory.retention_days` (null)
-does the same for memory facts. Null keeps them. `bin/console agent:prune` applies both,
+`conversations.retention_days` (180) is how long it is kept; `memory.retention_days` (180)
+does the same for memory facts, counted from their last update, and a fact past it is no longer
+used even before it is pruned. Null keeps them. `bin/console agent:prune` applies both,
 dropping the conversations with their messages and spend; `--dry-run` only counts. Run it
 from a daily cron.
 

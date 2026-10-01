@@ -69,7 +69,7 @@ final readonly class AgentConfig
         public int $memoryTierOneCap = 8,
         /** @var list<string> */
         public array $memoryBlockedPatterns = [],
-        public ?int $memoryRetentionDays = null,
+        public ?int $memoryRetentionDays = 180,
 
         // -- Caps.
         public Limits $limits = new Limits(),

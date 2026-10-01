@@ -25,6 +25,8 @@ All notable changes to this project are documented here. The format is based on
   `PresentationRefusedException`.
 - `ODISEO_AGENT_TEST_DATABASE_URL` replaces `AGENT_TEST_DATABASE_URL` for the test suite.
 - PHP constraint is `^8.2`.
+- `memory.retention_days` defaults to 180 (was null): a fact not updated in that time is no
+  longer used, and `agent:prune` deletes it. Set it to null to keep facts.
 - The rate limiters are `odiseo_agent_session_start`, `odiseo_agent_chat_turn` and
   `odiseo_agent_chat_turn_per_session` (were `agent_*`).
 
