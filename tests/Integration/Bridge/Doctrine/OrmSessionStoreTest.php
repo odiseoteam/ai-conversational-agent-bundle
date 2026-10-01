@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiConversationalAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests\Integration\Bridge\Doctrine;
 
 use Doctrine\ORM\EntityManager;
 use Odiseo\AiConversationalAgentBundle\Agent\Transcript;
@@ -10,6 +10,7 @@ use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\ConversationInitializer;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\ConversationInterface;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmSessionStore;
 use Odiseo\AiConversationalAgentBundle\Session\SessionConflictException;
+use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Dig;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Entity\TestConversation;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Entity\TestMessage;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Orm;
@@ -78,7 +79,7 @@ final class OrmSessionStoreTest extends TestCase
         self::assertSame('hi', $rows[0]->getText());
         self::assertSame('assistant', $rows[1]->getRole());
         self::assertNull($rows[1]->getText());
-        self::assertSame('t1', $rows[1]->getPayload()['content'][0]['id']);
+        self::assertSame('t1', Dig::value($rows[1]->getPayload(), 'content', 0, 'id'));
     }
 
     public function testTheHostFillsInItsOwnColumnsWhenTheConversationIsCreated(): void

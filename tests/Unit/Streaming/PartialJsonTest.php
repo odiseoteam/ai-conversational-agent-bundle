@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiConversationalAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests\Unit\Streaming;
 
 use Odiseo\AiConversationalAgentBundle\Streaming\PartialJson;
+use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Dig;
 use PHPUnit\Framework\TestCase;
 
 final class PartialJsonTest extends TestCase
@@ -60,7 +61,7 @@ final class PartialJsonTest extends TestCase
         $decoded = PartialJson::decode('{"status": "Filtrando", "filters": {"attributes": {"type": "service"');
 
         self::assertSame('Filtrando', $decoded['status'] ?? null);
-        self::assertSame(['type' => 'service'], $decoded['filters']['attributes'] ?? null);
+        self::assertSame(['type' => 'service'], Dig::value($decoded, 'filters', 'attributes') ?? null);
     }
 
     public function testAnEscapedQuoteInsideTheOpenStringIsNotMistakenForItsEnd(): void

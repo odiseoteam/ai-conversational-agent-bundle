@@ -18,6 +18,7 @@ use Odiseo\AiConversationalAgentBundle\Provider\Stream\TextChunk;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\ToolCallStarted;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\ToolInputChunk;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\TurnFinished;
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 use Symfony\AI\Platform\Exception\AuthenticationException as PlatformAuthenticationException;
 use Symfony\AI\Platform\Exception\ExceptionInterface as PlatformException;
 use Symfony\AI\Platform\PlatformInterface;
@@ -132,9 +133,10 @@ final class AnthropicProvider implements ModelProvider
         self::flushText($content, $text);
 
         $metadata = $deferred->getMetadata();
-        $usage = $this->usageFrom($metadata->get('token_usage'));
+        $tokenUsage = $metadata->get('token_usage');
+        $usage = $this->usageFrom($tokenUsage instanceof TokenUsageInterface ? $tokenUsage : null);
         $finishReason = $metadata->get('finish_reason');
-        $stopReason = null === $finishReason ? null : (string) $finishReason;
+        $stopReason = Scalar::nullableString($finishReason);
 
         yield new TurnFinished(new ProviderResponse($content, $toolUses, $stopReason, $usage));
     }
@@ -245,12 +247,14 @@ final class AnthropicProvider implements ModelProvider
         }
 
         foreach ($content as $index => $block) {
-            if (\is_array($block) && ($block['cache_hint'] ?? false)) {
-                unset($content[$index]['cache_hint']);
-                $content[$index]['cache_control'] = ['type' => 'ephemeral'];
-            } elseif (\is_array($block)) {
-                unset($content[$index]['cache_hint']);
+            if (!\is_array($block)) {
+                continue;
             }
+            if ($block['cache_hint'] ?? false) {
+                $block['cache_control'] = ['type' => 'ephemeral'];
+            }
+            unset($block['cache_hint']);
+            $content[$index] = $block;
         }
 
         $message['content'] = array_values($content);

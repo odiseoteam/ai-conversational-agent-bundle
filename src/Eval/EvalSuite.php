@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Eval;
 
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
+
 /** The cases under one directory: one JSON file per flow, an array of cases in each. */
 final class EvalSuite
 {
@@ -26,7 +28,7 @@ final class EvalSuite
 
             foreach ($decoded as $row) {
                 if (\is_array($row)) {
-                    $cases[] = EvalCase::fromArray($row);
+                    $cases[] = EvalCase::fromArray(Scalar::keyed($row));
                 }
             }
         }

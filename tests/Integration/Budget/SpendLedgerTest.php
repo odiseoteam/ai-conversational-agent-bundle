@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiConversationalAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests\Integration\Budget;
 
 use Odiseo\AiConversationalAgentBundle\Budget\InMemorySpendLedger;
 use Odiseo\AiConversationalAgentBundle\Budget\SpendLedger;

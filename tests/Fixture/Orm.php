@@ -27,10 +27,12 @@ use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Entity\TestSpendEntry;
  * An entity manager with the core's XML mappings and the test entities that extend them,
  * schema created: what the ORM stores need and nothing of Symfony.
  *
- * SQLite in memory by default, so the suite needs no server. AGENT_TEST_DATABASE_URL points it
+ * SQLite in memory by default, so the suite needs no server. ODISEO_AGENT_TEST_DATABASE_URL points it
  * at a real one instead; the CI matrix runs the same tests on MySQL and on PostgreSQL, where
  * the JSON columns, the optimistic lock and the collation of the memory search behave like
  * they will in a shop.
+ *
+ * @phpstan-import-type Params from DriverManager
  */
 final class Orm
 {
@@ -58,10 +60,10 @@ final class Orm
         return $em;
     }
 
-    /** @return array<string, mixed> */
+    /** @phpstan-return Params */
     private static function connection(): array
     {
-        $dsn = getenv('AGENT_TEST_DATABASE_URL');
+        $dsn = getenv('ODISEO_AGENT_TEST_DATABASE_URL');
         if (!\is_string($dsn) || '' === $dsn) {
             return ['driver' => 'pdo_sqlite', 'memory' => true];
         }

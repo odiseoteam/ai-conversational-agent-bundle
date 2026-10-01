@@ -11,6 +11,7 @@ use Odiseo\AiConversationalAgentBundle\Provider\AuthenticationException;
 use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
 use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
 use Odiseo\AiConversationalAgentBundle\Streaming\EventType;
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -45,7 +46,7 @@ final class ChatCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $this->environment->prepare();
 
-        $record = $this->sessions->start((string) $input->getOption('principal'));
+        $record = $this->sessions->start(Scalar::string($input->getOption('principal')));
         $session = $this->resolver->context($record);
         $io->writeln(\sprintf('Session %s. Ctrl-D to quit.', $record->sessionId));
 
@@ -84,32 +85,32 @@ final class ChatCommand extends Command
         $data = $event->data;
         switch ($event->type) {
             case EventType::TextDelta:
-                $output->write($data['text']);
+                $output->write(Scalar::string($data['text'] ?? null));
                 break;
             case EventType::ToolCall:
-                $output->writeln(\sprintf("\n  · %s%s", $data['tool'], isset($data['label']) ? ' — '.$data['label'] : ''));
+                $output->writeln(\sprintf("\n  · %s%s", Scalar::string($data['tool'] ?? null), isset($data['label']) ? ' — '.Scalar::string($data['label']) : ''));
                 break;
             case EventType::ToolResult:
                 if ('ok' !== $data['status']) {
-                    $output->writeln(\sprintf('  ! %s: %s', $data['tool'], $data['reason'] ?? 'error'));
+                    $output->writeln(\sprintf('  ! %s: %s', Scalar::string($data['tool'] ?? null), Scalar::string($data['reason'] ?? null, 'error')));
                 }
                 break;
             case EventType::Ui:
-                $output->writeln(\sprintf("\n[%s]\n%s", $data['component'], json_encode($data['payload'], \JSON_PRETTY_PRINT | \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES)));
+                $output->writeln(\sprintf("\n[%s]\n%s", Scalar::string($data['component'] ?? null), json_encode($data['payload'], \JSON_PRETTY_PRINT | \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES)));
                 break;
             case EventType::UiPartial:
                 break;
             case EventType::Progress:
-                $output->writeln("\n  … ".$data['message']);
+                $output->writeln("\n  … ".Scalar::string($data['message'] ?? null));
                 break;
             case EventType::StateUpdate:
-                $output->writeln(\sprintf("\n[state:%s] %s", $data['key'], json_encode($data['value'], \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES)));
+                $output->writeln(\sprintf("\n[state:%s] %s", Scalar::string($data['key'] ?? null), json_encode($data['value'], \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES)));
                 break;
             case EventType::Error:
-                $output->writeln("\n[error] ".$data['message']);
+                $output->writeln("\n[error] ".Scalar::string($data['message'] ?? null));
                 break;
             case EventType::TurnComplete:
-                $output->writeln(\sprintf("\n(%d ms · %s)", $data['elapsed_ms'], json_encode($data['usage'])));
+                $output->writeln(\sprintf("\n(%d ms · %s)", Scalar::int($data['elapsed_ms'] ?? null), json_encode($data['usage'] ?? null)));
                 break;
         }
     }

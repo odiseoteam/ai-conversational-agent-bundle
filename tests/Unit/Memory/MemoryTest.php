@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiConversationalAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests\Unit\Memory;
 
 use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
 use Odiseo\AiConversationalAgentBundle\Fencing\Fence;

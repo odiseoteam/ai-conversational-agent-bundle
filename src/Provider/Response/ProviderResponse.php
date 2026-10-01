@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Provider\Response;
 
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
+
 /**
  * One completed model call: the assistant message as content blocks the transcript stores, the
  * tool calls it asked for, why it stopped, and what it consumed.
@@ -27,7 +29,7 @@ final readonly class ProviderResponse
         $text = '';
         foreach ($this->content as $block) {
             if ('text' === ($block['type'] ?? null)) {
-                $text .= (string) ($block['text'] ?? '');
+                $text .= Scalar::string($block['text'] ?? null);
             }
         }
 

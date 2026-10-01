@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiConversationalAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests\Unit\Agent;
 
 use Odiseo\AiConversationalAgentBundle\Agent\Transcript;
 use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
@@ -14,6 +14,8 @@ use Odiseo\AiConversationalAgentBundle\Session\TurnState;
 use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
 use Odiseo\AiConversationalAgentBundle\Streaming\EventType;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\AgentBuilder;
+use Odiseo\AiConversationalAgentBundle\Tests\Fixture\ChunkedToolCallProvider;
+use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Dig;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\DirectoryCapability;
 use PHPUnit\Framework\TestCase;
 
@@ -28,7 +30,7 @@ final class AgentLoopTest extends TestCase
 
         self::assertSame('Hi, how can I help?', $this->text($events));
         self::assertSame('end_turn', $this->last($events)->data['stop_reason']);
-        self::assertSame('assistant', $messages[1]['role']);
+        self::assertSame('assistant', Dig::value($messages, 1, 'role'));
     }
 
     public function testAToolRoundRunsTheToolAndFeedsTheResultBack(): void
@@ -48,10 +50,10 @@ final class AgentLoopTest extends TestCase
         $call = $this->ofType($events, EventType::ToolCall)[0];
         self::assertSame('find_records', $call->data['tool']);
         self::assertSame('Searching', $call->data['label'], 'the status line reaches the host as a label');
-        self::assertArrayNotHasKey('status', $call->data['input'], 'and never reaches the tool');
+        self::assertArrayNotHasKey('status', Dig::array($call->data, 'input'), 'and never reaches the tool');
 
         self::assertTrue($state->hasSeen('R-1'));
-        self::assertSame('tool_result', $messages[2]['content'][0]['type']);
+        self::assertSame('tool_result', Dig::value($messages, 2, 'content', 0, 'type'));
     }
 
     public function testAFailingToolIsReportedAsUnavailableAndDoesNotEndTheTurn(): void
@@ -69,7 +71,7 @@ final class AgentLoopTest extends TestCase
 
         $result = $this->ofType($events, EventType::ToolResult)[0];
         self::assertTrue($result->data['is_error']);
-        self::assertStringContainsString('temporarily unavailable', $messages[2]['content'][0]['content']);
+        self::assertStringContainsString('temporarily unavailable', Dig::string($messages, 2, 'content', 0, 'content'));
         self::assertSame('I could not look it up.', $this->text($events));
     }
 
@@ -86,7 +88,7 @@ final class AgentLoopTest extends TestCase
         $messages = [Transcript::userMessage('something')];
         $this->collect($builder, $messages);
 
-        self::assertStringContainsString('not something this organisation covers', $messages[2]['content'][0]['content']);
+        self::assertStringContainsString('not something this organisation covers', Dig::string($messages, 2, 'content', 0, 'content'));
     }
 
     public function testACardNamingAnUnseenRecordIsHeldByProvenance(): void
@@ -163,9 +165,9 @@ final class AgentLoopTest extends TestCase
 
         // The read the host did for it goes in above the visitor's message, introduced as the
         // host's own work rather than as something the visitor said.
-        self::assertStringContainsString('Prefetched:', $messages[0]['content'][0]['text']);
-        self::assertStringContainsString('R-1', $messages[0]['content'][0]['text']);
-        self::assertStringContainsString('record of this', $messages[1]['content'][0]['text']);
+        self::assertStringContainsString('Prefetched:', Dig::string($messages, 0, 'content', 0, 'text'));
+        self::assertStringContainsString('R-1', Dig::string($messages, 0, 'content', 0, 'text'));
+        self::assertStringContainsString('record of this', Dig::string($messages, 1, 'content', 0, 'text'));
         self::assertSame('auto', $provider->requests()[0]->toolChoice->type);
     }
 
@@ -186,8 +188,8 @@ final class AgentLoopTest extends TestCase
 
         $forced = $provider->requests()[0];
         foreach ($forced->messages as $message) {
-            foreach ($message['content'] as $block) {
-                self::assertArrayNotHasKey('cache_hint', $block);
+            foreach (Dig::array($message, 'content') as $block) {
+                self::assertArrayNotHasKey('cache_hint', Dig::array($block));
             }
         }
     }
@@ -266,12 +268,12 @@ final class AgentLoopTest extends TestCase
 
         $open = [];
         foreach ($messages as $message) {
-            foreach ($message['content'] as $block) {
-                if ('tool_use' === ($block['type'] ?? null)) {
-                    $open[$block['id']] = true;
+            foreach (Dig::array($message, 'content') as $block) {
+                if ('tool_use' === Dig::value($block, 'type')) {
+                    $open[Dig::string($block, 'id')] = true;
                 }
-                if ('tool_result' === ($block['type'] ?? null)) {
-                    unset($open[$block['tool_use_id']]);
+                if ('tool_result' === Dig::value($block, 'type')) {
+                    unset($open[Dig::string($block, 'tool_use_id')]);
                 }
             }
         }
@@ -295,7 +297,7 @@ final class AgentLoopTest extends TestCase
 
     public function testAStatusLineSurfacesBeforeTheRoundFinishes(): void
     {
-        $provider = Fixture\ChunkedToolCallProvider::single(
+        $provider = ChunkedToolCallProvider::single(
             tool: 'find_records',
             id: 'tu-1',
             chunks: [
@@ -327,7 +329,7 @@ final class AgentLoopTest extends TestCase
     public function testAToolRunsTheMomentItsArgumentsCloseWhileTheModelStillWrites(): void
     {
         $directory = new DirectoryCapability();
-        $provider = Fixture\ChunkedToolCallProvider::single(
+        $provider = ChunkedToolCallProvider::single(
             'find_records',
             'tu-1',
             ['{"query": "some', 'thing"}'],
@@ -353,7 +355,7 @@ final class AgentLoopTest extends TestCase
     public function testWithoutEagerDispatchTheRoundIsAnnouncedThenRunAfterTheStream(): void
     {
         $directory = new DirectoryCapability();
-        $provider = Fixture\ChunkedToolCallProvider::single(
+        $provider = ChunkedToolCallProvider::single(
             'find_records',
             'tu-1',
             ['{"query": "something"}'],
@@ -374,7 +376,7 @@ final class AgentLoopTest extends TestCase
     public function testAPresentationCallStreamsPartialFramesAsItsListGrows(): void
     {
         $directory = new DirectoryCapability();
-        $provider = new Fixture\ChunkedToolCallProvider([
+        $provider = new ChunkedToolCallProvider([
             ['find_records', 'tu-1', ['{"query": "something"}'], ['query' => 'something']],
             ['present_records', 'tu-2', ['{"ids": ["R-', '1"', ', "R-2"', ']}'], ['ids' => ['R-1', 'R-2']]],
         ]);
@@ -385,14 +387,14 @@ final class AgentLoopTest extends TestCase
 
         $partials = $this->ofType($events, EventType::UiPartial);
         self::assertCount(2, $partials, 'one frame per visible change: the first id complete, then the second');
-        self::assertSame(['R-1'], array_column($partials[0]->data['payload']['items'], 'id'));
-        self::assertSame(['R-1', 'R-2'], array_column($partials[1]->data['payload']['items'], 'id'));
+        self::assertSame(['R-1'], array_column(Dig::array($partials[0]->data, 'payload', 'items'), 'id'));
+        self::assertSame(['R-1', 'R-2'], array_column(Dig::array($partials[1]->data, 'payload', 'items'), 'id'));
         self::assertSame('tu-2', $partials[0]->data['stream_id']);
 
         $ui = $this->ofType($events, EventType::Ui);
         self::assertCount(1, $ui);
         self::assertSame('tu-2', $ui[0]->data['stream_id'], 'the final card carries the same stream id so the host replaces the last frame');
-        self::assertSame(['R-1', 'R-2'], array_column($ui[0]->data['payload']['items'], 'id'));
+        self::assertSame(['R-1', 'R-2'], array_column(Dig::array($ui[0]->data, 'payload', 'items'), 'id'));
     }
 
     /** @param list<AgentEvent> $events */
@@ -401,7 +403,7 @@ final class AgentLoopTest extends TestCase
         $text = '';
         foreach ($events as $index => $event) {
             if ($index > $after && $event->type === $type) {
-                $text .= $event->data['text'];
+                $text .= Dig::string($event->data, 'text');
             }
         }
 

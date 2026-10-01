@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Streaming;
 
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
+
 /**
  * Best-effort decoding of a tool call's arguments while they are still streaming in.
  *
@@ -29,7 +31,7 @@ final class PartialJson
 
         $decoded = json_decode($text, true);
         if (\is_array($decoded)) {
-            return $decoded;
+            return Scalar::keyed($decoded);
         }
 
         [$closing, $inString, $opened] = self::closersFor($text);
@@ -52,7 +54,7 @@ final class PartialJson
         foreach ($candidates as $candidate) {
             $parsed = json_decode($candidate, true);
             if (\is_array($parsed)) {
-                return $parsed;
+                return Scalar::keyed($parsed);
             }
         }
 

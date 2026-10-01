@@ -141,8 +141,9 @@ the stores are in memory and nothing outlives the process.
 
 Two clocks. `sessions.retention_days` (30) is how long a session is served after its last
 activity; past it the widget starts a new one, but the conversation stays for the host to read.
-`conversations.retention_days` (180) is how long it is kept; `memory.retention_days` (null)
-does the same for memory facts. Null keeps them. `bin/console agent:prune` applies both,
+`conversations.retention_days` (180) is how long it is kept; `memory.retention_days` (180)
+does the same for memory facts, counted from their last update, and a fact past it is no longer
+used even before it is pruned. Null keeps them. `bin/console agent:prune` applies both,
 dropping the conversations with their messages and spend; `--dry-run` only counts. Run it
 from a daily cron.
 
@@ -164,11 +165,11 @@ make check     # php-cs-fixer, phpstan, deptrac, composer-dependency-analyser, p
 Deptrac keeps the agent free of Symfony and Doctrine: they are reached only through `Bridge/`
 and `Provider/Anthropic/`.
 
-The suite runs on SQLite in memory and needs no server. `AGENT_TEST_DATABASE_URL` points the
+The suite runs on SQLite in memory and needs no server. `ODISEO_AGENT_TEST_DATABASE_URL` points the
 ORM tests at a real one, which is what CI does for MySQL and PostgreSQL:
 
 ```bash
-AGENT_TEST_DATABASE_URL=postgresql://user:pass@127.0.0.1:5432/agent_test vendor/bin/phpunit
+ODISEO_AGENT_TEST_DATABASE_URL=postgresql://user:pass@127.0.0.1:5432/agent_test vendor/bin/phpunit
 ```
 
 ## Demo

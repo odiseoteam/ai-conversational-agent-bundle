@@ -7,6 +7,7 @@ namespace Odiseo\AiConversationalAgentBundle\Eval;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillCapability;
 use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
 use Odiseo\AiConversationalAgentBundle\Streaming\EventType;
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /**
  * What a graded turn produced. Graders read this rather than the transcript, because what is
@@ -37,29 +38,29 @@ final class TurnRecording
     {
         switch ($event->type) {
             case EventType::TextDelta:
-                $this->reply .= (string) ($event->data['text'] ?? '');
+                $this->reply .= Scalar::string($event->data['text'] ?? null);
                 break;
             case EventType::ToolCall:
-                $tool = (string) ($event->data['tool'] ?? '');
-                $input = \is_array($event->data['input'] ?? null) ? $event->data['input'] : [];
+                $tool = Scalar::string($event->data['tool'] ?? null);
+                $input = Scalar::keyed($event->data['input'] ?? null);
                 $this->toolCalls[] = ['tool' => $tool, 'input' => $input];
                 if (SkillCapability::TOOL === $tool && isset($input['skill_name'])) {
-                    $this->skillsLoaded[] = (string) $input['skill_name'];
+                    $this->skillsLoaded[] = Scalar::string($input['skill_name']);
                 }
                 break;
             case EventType::ToolResult:
                 $this->toolResults[] = [
-                    'tool' => (string) ($event->data['tool'] ?? ''),
-                    'status' => (string) ($event->data['status'] ?? ''),
-                    'reason' => isset($event->data['reason']) ? (string) $event->data['reason'] : null,
+                    'tool' => Scalar::string($event->data['tool'] ?? null),
+                    'status' => Scalar::string($event->data['status'] ?? null),
+                    'reason' => Scalar::nullableString($event->data['reason'] ?? null),
                 ];
                 break;
             case EventType::Ui:
-                $this->components[] = (string) ($event->data['component'] ?? '');
+                $this->components[] = Scalar::string($event->data['component'] ?? null);
                 break;
             case EventType::TurnComplete:
-                $this->stopReason = isset($event->data['stop_reason']) ? (string) $event->data['stop_reason'] : null;
-                $this->usage = \is_array($event->data['usage'] ?? null) ? $event->data['usage'] : [];
+                $this->stopReason = Scalar::nullableString($event->data['stop_reason'] ?? null);
+                $this->usage = array_map(Scalar::int(...), Scalar::keyed($event->data['usage'] ?? null));
                 break;
             default:
                 break;

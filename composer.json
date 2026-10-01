@@ -3,8 +3,18 @@
     "description": "Vertical-agnostic core for conversational agents: capabilities, turn loop, gates, sessions, streaming and evals.",
     "type": "symfony-bundle",
     "license": "MIT",
+    "keywords": [
+        "symfony",
+        "symfony-bundle",
+        "ai",
+        "agent",
+        "llm",
+        "chat",
+        "claude",
+        "anthropic"
+    ],
     "require": {
-        "php": ">=8.2",
+        "php": "^8.2",
         "ext-intl": "*",
         "ext-mbstring": "*",
         "psr/log": "^3.0",

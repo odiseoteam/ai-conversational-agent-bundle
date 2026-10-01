@@ -9,6 +9,7 @@ use Doctrine\ORM\QueryBuilder;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\MemoryFactInterface;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryFact;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryStore;
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /**
  * Facts keyed by subject and key, so a later save on the same subject replaces the earlier one
@@ -69,8 +70,8 @@ final class OrmMemoryStore implements MemoryStore
             ->setParameter('before', $before);
 
         return $dryRun
-            ? (int) $qb->select('COUNT(f.id)')->getQuery()->getSingleScalarResult()
-            : (int) $qb->delete()->getQuery()->execute();
+            ? Scalar::int($qb->select('COUNT(f.id)')->getQuery()->getSingleScalarResult())
+            : Scalar::int($qb->delete()->getQuery()->execute());
     }
 
     public function forget(string $subject, string $key): bool
@@ -83,7 +84,7 @@ final class OrmMemoryStore implements MemoryStore
             ->getQuery()
             ->execute();
 
-        return 0 < (int) $deleted;
+        return 0 < Scalar::int($deleted);
     }
 
     public function clear(string $subject): void
@@ -107,13 +108,16 @@ final class OrmMemoryStore implements MemoryStore
             ->setParameter('subject', $subject);
     }
 
-    /**
-     * @param list<MemoryFactInterface> $rows
-     *
-     * @return list<MemoryFact>
-     */
-    private function hydrate(array $rows): array
+    /** @return list<MemoryFact> */
+    private function hydrate(mixed $rows): array
     {
-        return array_map(static fn (MemoryFactInterface $row): MemoryFact => $row->toFact(), $rows);
+        $facts = [];
+        foreach (\is_array($rows) ? $rows : [] as $row) {
+            if ($row instanceof MemoryFactInterface) {
+                $facts[] = $row->toFact();
+            }
+        }
+
+        return $facts;
     }
 }

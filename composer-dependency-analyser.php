@@ -18,7 +18,6 @@ return (new Configuration())
     ], [ErrorType::DEV_DEPENDENCY_IN_PROD])
     // Defined next to ContainerConfigurator and loaded with it.
     ->ignoreUnknownFunctions([
-        'Symfony\\Component\\DependencyInjection\\Loader\\Configurator\\service',
-        'Symfony\\Component\\DependencyInjection\\Loader\\Configurator\\tagged_iterator',
+        'Symfony\\Component\\DependencyInjection\\Loader\\Configurator\\param',
     ])
 ;

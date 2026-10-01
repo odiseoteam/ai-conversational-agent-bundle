@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model;
 
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
+
 /**
  * One message of a transcript. $payload is the API message as the loop rereads it; $text is
  * its text blocks joined, for a person or a search to read without parsing JSON.
@@ -103,8 +105,8 @@ abstract class Message implements MessageInterface
 
         $parts = [];
         foreach (\is_array($content) ? $content : [] as $block) {
-            if (\is_array($block) && 'text' === ($block['type'] ?? null) && '' !== trim((string) ($block['text'] ?? ''))) {
-                $parts[] = trim((string) $block['text']);
+            if (\is_array($block) && 'text' === ($block['type'] ?? null) && '' !== trim(Scalar::string($block['text'] ?? null))) {
+                $parts[] = trim(Scalar::string($block['text']));
             }
         }
 

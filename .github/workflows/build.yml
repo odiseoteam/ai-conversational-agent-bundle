@@ -97,5 +97,5 @@ jobs:
 
             - name: "Run the suite against ${{ matrix.database }}"
               env:
-                  AGENT_TEST_DATABASE_URL: "${{ matrix.dsn }}"
-              run: vendor/bin/phpunit
+                  ODISEO_AGENT_TEST_DATABASE_URL: "${{ matrix.dsn }}"
+              run: vendor/bin/phpunit --testsuite integration

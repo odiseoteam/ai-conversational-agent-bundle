@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Memory;
 
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
+
 /**
  * One stored fact. The shape is bounded here; what a value may be about is the write filter's
  * decision.
@@ -58,11 +60,11 @@ final readonly class MemoryFact
             : null;
 
         return new self(
-            (string) ($row['key'] ?? ''),
-            (string) ($row['value'] ?? ''),
-            MemoryCategory::tryFrom((string) ($row['category'] ?? '')) ?? MemoryCategory::Preference,
+            Scalar::string($row['key'] ?? null),
+            Scalar::string($row['value'] ?? null),
+            MemoryCategory::tryFrom(Scalar::string($row['category'] ?? null)) ?? MemoryCategory::Preference,
             $updatedAt,
-            isset($row['source_session']) ? (string) $row['source_session'] : null,
+            Scalar::nullableString($row['source_session'] ?? null),
         );
     }
 }

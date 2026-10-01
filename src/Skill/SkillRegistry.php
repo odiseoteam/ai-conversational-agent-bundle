@@ -39,7 +39,7 @@ final class SkillRegistry
     public static function fromDirectory(string $root): self
     {
         if (!is_dir($root)) {
-            throw new SkillLoadError(\sprintf('%s: not a directory', $root));
+            throw new SkillLoadException(\sprintf('%s: not a directory', $root));
         }
 
         $names = scandir($root) ?: [];
@@ -59,7 +59,7 @@ final class SkillRegistry
         $seen = [];
         foreach ($skills as $skill) {
             if (isset($seen[$skill->name])) {
-                throw new SkillLoadError(\sprintf('duplicate skill name: %s', $skill->name));
+                throw new SkillLoadException(\sprintf('duplicate skill name: %s', $skill->name));
             }
             $seen[$skill->name] = true;
         }
@@ -71,7 +71,7 @@ final class SkillRegistry
     {
         $path = $dir.'/SKILL.md';
         if (!is_file($path)) {
-            throw new SkillLoadError(\sprintf('%s: no SKILL.md found', $dir));
+            throw new SkillLoadException(\sprintf('%s: no SKILL.md found', $dir));
         }
 
         return self::parse((string) file_get_contents($path), $path);
@@ -81,23 +81,23 @@ final class SkillRegistry
     {
         $where = $path ?? 'SKILL.md';
         if (!str_starts_with($text, '---')) {
-            throw new SkillLoadError(\sprintf('%s: missing YAML frontmatter', $where));
+            throw new SkillLoadException(\sprintf('%s: missing YAML frontmatter', $where));
         }
 
         $parts = explode('---', $text, 3);
         if (3 !== \count($parts)) {
-            throw new SkillLoadError(\sprintf('%s: malformed frontmatter fences', $where));
+            throw new SkillLoadException(\sprintf('%s: malformed frontmatter fences', $where));
         }
 
         try {
             $meta = Yaml::parse($parts[1]) ?? [];
         } catch (ParseException $malformed) {
-            throw new SkillLoadError(\sprintf('%s: the frontmatter is not valid YAML (%s). A description containing a colon has to be quoted.', $where, $malformed->getMessage()), 0, $malformed);
+            throw new SkillLoadException(\sprintf('%s: the frontmatter is not valid YAML (%s). A description containing a colon has to be quoted.', $where, $malformed->getMessage()), 0, $malformed);
         }
         $name = \is_array($meta) ? ($meta['name'] ?? null) : null;
         $description = \is_array($meta) ? ($meta['description'] ?? null) : null;
         if (!\is_string($name) || '' === $name || !\is_string($description) || '' === trim($description)) {
-            throw new SkillLoadError(\sprintf('%s: frontmatter needs `name` and `description`', $where));
+            throw new SkillLoadException(\sprintf('%s: frontmatter needs `name` and `description`', $where));
         }
 
         return new Skill($name, trim($description), trim($parts[2]));

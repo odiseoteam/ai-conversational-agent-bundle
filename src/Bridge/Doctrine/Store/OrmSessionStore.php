@@ -15,6 +15,7 @@ use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\MessageInterface;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\NullConversationInitializer;
 use Odiseo\AiConversationalAgentBundle\Session\SessionConflictException;
 use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /**
  * The session store over the ORM: a conversation row for the state document, a message row
@@ -116,7 +117,7 @@ final class OrmSessionStore extends SessionStore
             $message = new $this->messageClass();
             $message->setConversation($conversation);
             $message->setPosition($start + $offset);
-            $message->setRole((string) ($payload['role'] ?? ''));
+            $message->setRole(Scalar::string($payload['role'] ?? null));
             $message->setText(Message::textOf($payload));
             $message->setPayload($payload);
             $this->em->persist($message);
@@ -161,8 +162,7 @@ final class OrmSessionStore extends SessionStore
      */
     public function prune(\DateTimeImmutable $before, bool $dryRun = false): array
     {
-        /** @var list<string> $ids */
-        $ids = array_map('strval', $this->em->createQueryBuilder()
+        $ids = Scalar::strings($this->em->createQueryBuilder()
             ->select('c.sessionId')
             ->from($this->conversationClass, 'c')
             ->where('c.updatedAt < :before')
@@ -205,7 +205,7 @@ final class OrmSessionStore extends SessionStore
     {
         $conversation = new $this->conversationClass();
         $conversation->setSessionId($sessionId);
-        $conversation->setPrincipalId((string) ($document['principal_id'] ?? ''));
+        $conversation->setPrincipalId(Scalar::string($document['principal_id'] ?? null));
         self::fill($conversation, $document, $this->expiry());
         $this->initializer->initialize($conversation);
 
@@ -239,11 +239,8 @@ final class OrmSessionStore extends SessionStore
     /** @param array<string, mixed> $document */
     private static function fill(ConversationInterface $conversation, array $document, \DateTimeImmutable $expiresAt): void
     {
-        $conversation->setState(\is_array($document['state'] ?? null) ? $document['state'] : []);
-        $conversation->setPendingAppEvents(array_values(array_map(
-            'strval',
-            \is_array($document['pending_app_events'] ?? null) ? $document['pending_app_events'] : [],
-        )));
+        $conversation->setState(Scalar::keyed($document['state'] ?? null));
+        $conversation->setPendingAppEvents(Scalar::strings($document['pending_app_events'] ?? null));
         $conversation->setUpdatedAt(new \DateTimeImmutable());
         $conversation->setExpiresAt($expiresAt);
     }

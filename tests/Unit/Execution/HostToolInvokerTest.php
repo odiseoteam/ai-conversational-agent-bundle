@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiConversationalAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests\Unit\Execution;
 
 use Odiseo\AiConversationalAgentBundle\Execution\HostToolInvoker;
 use Odiseo\AiConversationalAgentBundle\Gate\ProvenanceGate;

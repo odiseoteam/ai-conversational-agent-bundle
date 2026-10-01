@@ -10,6 +10,7 @@ use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
 use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\SystemBlock;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /**
  * The one expected key a code grader cannot check: a rubric with a PASS condition and a FAIL
@@ -35,7 +36,7 @@ final class JudgeGrader
      */
     public function judge(EvalCase $case, TurnRecording $recording): ?array
     {
-        $rubric = (string) ($case->expected['rubric'] ?? '');
+        $rubric = Scalar::string($case->expected['rubric'] ?? null);
         if ('' === trim($rubric)) {
             return null;
         }
@@ -81,14 +82,14 @@ final class JudgeGrader
             return null;
         }
 
-        $verdict = strtoupper((string) $decoded['verdict']);
+        $verdict = strtoupper(Scalar::string($decoded['verdict']));
         if (!\in_array($verdict, ['PASS', 'FAIL'], true)) {
             return null;
         }
 
         return [
             'verdict' => $verdict,
-            'reason' => (string) ($decoded['reason'] ?? ''),
+            'reason' => Scalar::string($decoded['reason'] ?? null),
             'fingerprint' => substr(hash('sha256', $this->model.'|'.$rubric), 0, 16),
         ];
     }

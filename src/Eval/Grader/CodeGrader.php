@@ -7,6 +7,7 @@ namespace Odiseo\AiConversationalAgentBundle\Eval\Grader;
 use Odiseo\AiConversationalAgentBundle\Eval\EvalCase;
 use Odiseo\AiConversationalAgentBundle\Eval\TurnRecording;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryFact;
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /**
  * Every expected key except `rubric`. These grade the calls the agent made and the state they
@@ -43,11 +44,11 @@ final class CodeGrader
         }
 
         if (isset($expected['first_tool']) && $recording->firstTool() !== $expected['first_tool']) {
-            $failures[] = \sprintf('expected %s first; got %s', (string) $expected['first_tool'], $recording->firstTool() ?? 'no call');
+            $failures[] = \sprintf('expected %s first; got %s', Scalar::string($expected['first_tool']), $recording->firstTool() ?? 'no call');
         }
 
         if (isset($expected['first_tool_not']) && $recording->firstTool() === $expected['first_tool_not']) {
-            $failures[] = \sprintf('%s must not be the first call', (string) $expected['first_tool_not']);
+            $failures[] = \sprintf('%s must not be the first call', Scalar::string($expected['first_tool_not']));
         }
 
         foreach ($this->stringList($expected['ui_components'] ?? null) as $component) {
@@ -60,12 +61,12 @@ final class CodeGrader
             $failures[] = \sprintf('expected no component; rendered %s', $this->render($recording->components));
         }
 
-        if (isset($expected['skill_loaded']) && !\in_array((string) $expected['skill_loaded'], $recording->skillsLoaded, true)) {
-            $failures[] = \sprintf('expected the %s skill; loaded %s', (string) $expected['skill_loaded'], $this->render($recording->skillsLoaded));
+        if (isset($expected['skill_loaded']) && !\in_array(Scalar::string($expected['skill_loaded']), $recording->skillsLoaded, true)) {
+            $failures[] = \sprintf('expected the %s skill; loaded %s', Scalar::string($expected['skill_loaded']), $this->render($recording->skillsLoaded));
         }
 
-        if (isset($expected['skill_not_loaded']) && \in_array((string) $expected['skill_not_loaded'], $recording->skillsLoaded, true)) {
-            $failures[] = \sprintf('the %s skill was loaded and must not be', (string) $expected['skill_not_loaded']);
+        if (isset($expected['skill_not_loaded']) && \in_array(Scalar::string($expected['skill_not_loaded']), $recording->skillsLoaded, true)) {
+            $failures[] = \sprintf('the %s skill was loaded and must not be', Scalar::string($expected['skill_not_loaded']));
         }
 
         if (($expected['no_skill_load'] ?? false) && [] !== $recording->skillsLoaded) {
@@ -101,8 +102,8 @@ final class CodeGrader
         // The chips call that ends a turn is not part of the work the case is counting.
         if (isset($expected['max_tool_calls'])) {
             $counted = \count(array_filter($tools, static fn (string $tool): bool => 'present_suggestions' !== $tool));
-            if ($counted > (int) $expected['max_tool_calls']) {
-                $failures[] = \sprintf('made %d calls, more than the %d allowed', $counted, (int) $expected['max_tool_calls']);
+            if ($counted > Scalar::int($expected['max_tool_calls'])) {
+                $failures[] = \sprintf('made %d calls, more than the %d allowed', $counted, Scalar::int($expected['max_tool_calls']));
             }
         }
 
@@ -133,10 +134,10 @@ final class CodeGrader
     private function stringList(mixed $value): array
     {
         if (!\is_array($value)) {
-            return null === $value ? [] : [(string) $value];
+            return null === $value ? [] : [Scalar::string($value)];
         }
 
-        return array_values(array_map('strval', $value));
+        return Scalar::strings($value);
     }
 
     /** @param list<string> $values */

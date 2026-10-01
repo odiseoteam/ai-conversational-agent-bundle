@@ -14,6 +14,7 @@ use Odiseo\AiConversationalAgentBundle\Memory\MemoryStore;
 use Odiseo\AiConversationalAgentBundle\Session\SeenRecord;
 use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
 use Odiseo\AiConversationalAgentBundle\Session\TurnState;
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /**
  * Runs a case: loads its precondition into the session state and the memory store, plays its
@@ -88,7 +89,7 @@ final class EvalRunner
             if (\is_string($record)) {
                 $state->remember(new SeenRecord($record, 'record'));
             } elseif (\is_array($record)) {
-                $state->remember(SeenRecord::fromArray($record));
+                $state->remember(SeenRecord::fromArray(Scalar::keyed($record)));
             }
         }
 
@@ -102,9 +103,9 @@ final class EvalRunner
             }
 
             $this->memory->save($principal, new MemoryFact(
-                (string) $fact['key'],
-                (string) $fact['value'],
-                MemoryCategory::tryFrom((string) ($fact['category'] ?? '')) ?? MemoryCategory::Preference,
+                Scalar::string($fact['key']),
+                Scalar::string($fact['value']),
+                MemoryCategory::tryFrom(Scalar::string($fact['category'] ?? null)) ?? MemoryCategory::Preference,
                 new \DateTimeImmutable(),
                 'seeded',
             ));

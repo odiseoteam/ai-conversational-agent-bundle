@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiConversationalAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests\Unit\Eval;
 
 use Odiseo\AiConversationalAgentBundle\Eval\EvalCase;
 use Odiseo\AiConversationalAgentBundle\Eval\EvalRunner;

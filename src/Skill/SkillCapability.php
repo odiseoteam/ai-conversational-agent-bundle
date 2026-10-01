@@ -8,6 +8,7 @@ use Odiseo\AiConversationalAgentBundle\Capability\Capability;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
 use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /**
  * The flows' rules, loaded on demand. The static prompt carries only the index, so a rule that
@@ -68,7 +69,7 @@ final class SkillCapability implements Capability
 
     public function execute(string $tool, array $input, ToolContext $context): ToolOutcome
     {
-        $name = (string) ($input['skill_name'] ?? '');
+        $name = Scalar::string($input['skill_name'] ?? null);
         $body = $this->skills->instructions($name);
 
         if (null === $body) {

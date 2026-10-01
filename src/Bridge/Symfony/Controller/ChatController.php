@@ -8,6 +8,7 @@ use Odiseo\AiConversationalAgentBundle\Agent\TurnRunner;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Session\SessionResolver;
 use Odiseo\AiConversationalAgentBundle\Provider\AuthenticationException;
 use Odiseo\AiConversationalAgentBundle\Streaming\SseEncoder;
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -38,12 +39,12 @@ final class ChatController
         }
 
         $body = $request->toArray();
-        $message = trim((string) ($body['message'] ?? ''));
+        $message = trim(Scalar::string($body['message'] ?? null));
         if ('' === $message) {
             return ApiError::json('empty_message', 400);
         }
 
-        $surface = \is_array($body['page'] ?? null) ? $body['page'] : [];
+        $surface = Scalar::keyed($body['page'] ?? null);
         $session = $this->sessions->context($record, $surface);
 
         $response = new StreamedResponse(function () use ($record, $session, $message): void {

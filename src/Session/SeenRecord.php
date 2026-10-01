@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Session;
 
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
+
 /**
  * One record a tool returned this session. It is what the provenance gate checks against and
  * what presentation enrichment joins on, so it holds the id, what kind of thing it is, and
@@ -29,9 +31,9 @@ final readonly class SeenRecord
     public static function fromArray(array $row): self
     {
         return new self(
-            (string) ($row['id'] ?? ''),
-            (string) ($row['kind'] ?? ''),
-            \is_array($row['data'] ?? null) ? $row['data'] : [],
+            Scalar::string($row['id'] ?? null),
+            Scalar::string($row['kind'] ?? null),
+            Scalar::keyed($row['data'] ?? null),
         );
     }
 }

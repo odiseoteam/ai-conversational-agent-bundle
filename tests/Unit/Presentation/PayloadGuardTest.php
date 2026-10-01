@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Odiseo\AiConversationalAgentBundle\Tests;
+namespace Odiseo\AiConversationalAgentBundle\Tests\Unit\Presentation;
 
 use Odiseo\AiConversationalAgentBundle\Presentation\PayloadGuard;
-use Odiseo\AiConversationalAgentBundle\Presentation\PresentationRefused;
+use Odiseo\AiConversationalAgentBundle\Presentation\PresentationRefusedException;
 use PHPUnit\Framework\TestCase;
 
 /** Every string the model sends to a card is bounded, and a card never renders empty. */
@@ -41,7 +41,7 @@ final class PayloadGuardTest extends TestCase
 
     public function testACardWithNothingLeftIsRefused(): void
     {
-        $this->expectException(PresentationRefused::class);
+        $this->expectException(PresentationRefusedException::class);
         PayloadGuard::requireAny([], 'comparison');
     }
 }

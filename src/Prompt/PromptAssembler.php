@@ -116,7 +116,8 @@ final class PromptAssembler
         $touched = false;
         foreach ($content as $index => $block) {
             if (\is_array($block) && \array_key_exists('cache_hint', $block)) {
-                unset($content[$index]['cache_hint']);
+                unset($block['cache_hint']);
+                $content[$index] = $block;
                 $touched = true;
             }
         }

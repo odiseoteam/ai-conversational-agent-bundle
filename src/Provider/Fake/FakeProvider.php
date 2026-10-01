@@ -14,6 +14,7 @@ use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\TextChunk;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\ToolCallStarted;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\TurnFinished;
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /**
  * A scripted model, for tests and for eval replays. It answers with the responses it was
@@ -84,7 +85,7 @@ final class FakeProvider implements ModelProvider
 
         foreach ($response->content as $block) {
             if ('text' === ($block['type'] ?? null)) {
-                yield new TextChunk((string) ($block['text'] ?? ''));
+                yield new TextChunk(Scalar::string($block['text'] ?? null));
             }
         }
 

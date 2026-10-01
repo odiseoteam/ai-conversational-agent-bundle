@@ -26,7 +26,7 @@ final class PresentationRunner
 
         try {
             $payload = ($component->validate)($input);
-        } catch (PresentationRefused $refused) {
+        } catch (PresentationRefusedException $refused) {
             return self::refusal($refused);
         } catch (\InvalidArgumentException|\ValueError $invalid) {
             return ToolOutcome::error(\sprintf('Invalid %s payload: %s', $component->tool, $invalid->getMessage()));
@@ -35,7 +35,7 @@ final class PresentationRunner
         if (null !== $component->enrich) {
             try {
                 $payload = ($component->enrich)($payload, $context);
-            } catch (PresentationRefused $refused) {
+            } catch (PresentationRefusedException $refused) {
                 return self::refusal($refused);
             } catch (\InvalidArgumentException|\ValueError $invalid) {
                 return ToolOutcome::error($invalid->getMessage());
@@ -90,14 +90,14 @@ final class PresentationRunner
             }
             $carryProducts = [] !== $value && !array_filter($value, static fn (mixed $item): bool => !\is_array($item) || !\array_key_exists('products', $item));
             $lists[$key] = $carryProducts
-                ? array_map(static fn (array $item): int => \count(\is_array($item['products']) ? $item['products'] : []), $value)
+                ? array_map(static fn (mixed $item): int => \count(\is_array($item) && \is_array($item['products'] ?? null) ? $item['products'] : []), $value)
                 : \count($value);
         }
 
         return [!empty($payload['title']), $lists];
     }
 
-    private static function refusal(PresentationRefused $refused): ToolOutcome
+    private static function refusal(PresentationRefusedException $refused): ToolOutcome
     {
         return null === $refused->gate
             ? ToolOutcome::error($refused->getMessage())

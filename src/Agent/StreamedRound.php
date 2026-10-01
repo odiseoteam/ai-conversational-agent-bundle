@@ -11,6 +11,7 @@ use Odiseo\AiConversationalAgentBundle\Fencing\Sanitizer;
 use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
 use Odiseo\AiConversationalAgentBundle\Streaming\PartialJson;
 use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
+use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /**
  * One model round while it streams: each tool call's arguments buffered as they arrive, and
@@ -83,7 +84,7 @@ final class StreamedRound
         $call['closed'] = true;
 
         if ($this->eagerDispatch) {
-            yield from $this->run($id, $call['tool'], $complete);
+            yield from $this->run($id, $call['tool'], Scalar::keyed($complete));
         }
     }
 
