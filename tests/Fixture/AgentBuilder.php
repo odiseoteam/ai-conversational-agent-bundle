@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Tests\Fixture;
 
 use Odiseo\AiConversationalAgentBundle\Agent\AgentLoop;
+use Odiseo\AiConversationalAgentBundle\Agent\TurnRunner;
 use Odiseo\AiConversationalAgentBundle\Budget\BudgetPolicy;
 use Odiseo\AiConversationalAgentBundle\Budget\ClientKeyResolver;
 use Odiseo\AiConversationalAgentBundle\Budget\CostTable;
@@ -17,6 +18,7 @@ use Odiseo\AiConversationalAgentBundle\Execution\ExecutorWording;
 use Odiseo\AiConversationalAgentBundle\Execution\ToolExecutor;
 use Odiseo\AiConversationalAgentBundle\Execution\ToolSurface;
 use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
+use Odiseo\AiConversationalAgentBundle\Host\NullTurnHook;
 use Odiseo\AiConversationalAgentBundle\Memory\InMemoryMemoryStore;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryCapability;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryRuntime;
@@ -25,6 +27,8 @@ use Odiseo\AiConversationalAgentBundle\Presentation\SuggestionsCapability;
 use Odiseo\AiConversationalAgentBundle\Prompt\ContextBlockBuilder;
 use Odiseo\AiConversationalAgentBundle\Prompt\StaticPromptBuilder;
 use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
+use Odiseo\AiConversationalAgentBundle\Session\InMemorySessionStore;
+use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillCapability;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
 
@@ -38,6 +42,7 @@ final class AgentBuilder
     public MemoryStore $memoryStore;
     public MemoryRuntime $memory;
     public SpendLedger $ledger;
+    public SessionStore $sessionStore;
     /** The client the budget charges; null is a console run. */
     public ?string $clientKey = null;
     public StaticPromptBuilder $prompt;
@@ -65,7 +70,13 @@ final class AgentBuilder
         $this->executor = new ToolExecutor($this->capabilities, $wording);
         $this->surface = new ToolSurface($this->capabilities, $wording);
         $this->ledger = new InMemorySpendLedger();
+        $this->sessionStore = new InMemorySessionStore();
         $this->prompt = new StaticPromptBuilder($config, $this->capabilities, $skills, $this->fence);
+    }
+
+    public function turnRunner(): TurnRunner
+    {
+        return new TurnRunner($this->loop(), new NullTurnHook(), 'What happened meanwhile');
     }
 
     public function loop(): AgentLoop

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Eval\Grader;
 
+use Odiseo\AiConversationalAgentBundle\Budget\CostTable;
 use Odiseo\AiConversationalAgentBundle\Eval\EvalCase;
 use Odiseo\AiConversationalAgentBundle\Eval\TurnRecording;
 use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
@@ -20,19 +21,29 @@ use Odiseo\AiConversationalAgentBundle\Support\Scalar;
  * may contain anything a visitor typed. A reply that does not parse into a verdict is a judge
  * failure on the case, kept apart from an agent failure; and because a change to the judge
  * model or to a rubric invalidates every verdict scored with it, each verdict carries a
- * fingerprint of both.
+ * fingerprint of both. A transcript too long for the judge loses its oldest calls and turns
+ * first, so the graded end survives, and the verdict says it was cut.
  */
 final class JudgeGrader
 {
+    private const MAX_MATERIAL_CHARS = 20_000;
+
     public function __construct(
         private readonly ModelProvider $provider,
         private readonly Fence $fence,
         private readonly string $model = 'claude-sonnet-5',
+        private readonly CostTable $costs = new CostTable(),
     ) {
     }
 
+    /** Ties a stored verdict to the judge model and the rubric it was scored with. */
+    public function fingerprint(string $rubric): string
+    {
+        return substr(hash('sha256', $this->model.'|'.$rubric), 0, 16);
+    }
+
     /**
-     * @return array{verdict: string, reason: string, fingerprint: string}|null null when the judge did not answer with a verdict
+     * @return array{verdict: string, reason: string, fingerprint: string, truncated: bool, cost_usd: float}|null null when the judge did not answer with a verdict
      */
     public function judge(EvalCase $case, TurnRecording $recording): ?array
     {
@@ -52,13 +63,25 @@ final class JudgeGrader
             {"verdict": "PASS" | "FAIL", "reason": "<one sentence>"}
             PROMPT;
 
-        $material = $this->fence->fencePayload([
+        $quoted = [
             'rubric' => $rubric,
             'visitor_turns' => $case->turns,
             'tool_calls' => $recording->toolCalls,
             'components' => $recording->components,
             'agent_reply' => $recording->reply,
-        ], 20_000);
+        ];
+        $truncated = false;
+        while (mb_strlen((string) json_encode($quoted, \JSON_UNESCAPED_UNICODE)) > self::MAX_MATERIAL_CHARS) {
+            if ([] !== $quoted['tool_calls']) {
+                array_shift($quoted['tool_calls']);
+            } elseif (\count($quoted['visitor_turns']) > 1) {
+                array_shift($quoted['visitor_turns']);
+            } else {
+                break;
+            }
+            $truncated = true;
+        }
+        $material = $this->fence->fencePayload($quoted, self::MAX_MATERIAL_CHARS);
 
         $response = $this->provider->complete(new TurnRequest(
             model: $this->model,
@@ -90,7 +113,9 @@ final class JudgeGrader
         return [
             'verdict' => $verdict,
             'reason' => Scalar::string($decoded['reason'] ?? null),
-            'fingerprint' => substr(hash('sha256', $this->model.'|'.$rubric), 0, 16),
+            'fingerprint' => $this->fingerprint($rubric),
+            'truncated' => $truncated,
+            'cost_usd' => $this->costs->costOf($this->model, $response->usage),
         ];
     }
 }

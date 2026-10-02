@@ -36,15 +36,33 @@ final class EvalSuite
         return new self($cases);
     }
 
-    /** @param list<string> $tags */
-    public function filter(?string $priority = null, array $tags = []): self
+    /**
+     * @param list<string> $tags a case carrying any of them
+     * @param list<string> $ids  only these cases
+     */
+    public function filter(?string $priority = null, array $tags = [], array $ids = []): self
     {
-        return new self(array_values(array_filter($this->cases, static function (EvalCase $case) use ($priority, $tags): bool {
+        return new self(array_values(array_filter($this->cases, static function (EvalCase $case) use ($priority, $tags, $ids): bool {
             if (null !== $priority && $case->priority !== $priority) {
+                return false;
+            }
+
+            if ([] !== $ids && !\in_array($case->id, $ids, true)) {
                 return false;
             }
 
             return [] === $tags || [] !== array_intersect($tags, $case->tags);
         })));
+    }
+
+    public function find(string $id): ?EvalCase
+    {
+        foreach ($this->cases as $case) {
+            if ($case->id === $id) {
+                return $case;
+            }
+        }
+
+        return null;
     }
 }

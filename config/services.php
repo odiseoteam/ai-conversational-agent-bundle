@@ -8,6 +8,7 @@ use Odiseo\AiConversationalAgentBundle\Agent\NullContextProvider;
 use Odiseo\AiConversationalAgentBundle\Agent\TurnRunner;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Budget\RequestClientKeyResolver;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Command\ChatCommand;
+use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Command\EvalCommand;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\ChatController;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\MemoryController;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\SessionController;
@@ -21,9 +22,13 @@ use Odiseo\AiConversationalAgentBundle\Budget\SpendLedger;
 use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
 use Odiseo\AiConversationalAgentBundle\Capability\Limits;
 use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
+use Odiseo\AiConversationalAgentBundle\Eval\EvalEnvironment;
+use Odiseo\AiConversationalAgentBundle\Eval\EvalIsolation;
 use Odiseo\AiConversationalAgentBundle\Eval\EvalRunner;
 use Odiseo\AiConversationalAgentBundle\Eval\Grader\CodeGrader;
 use Odiseo\AiConversationalAgentBundle\Eval\Grader\JudgeGrader;
+use Odiseo\AiConversationalAgentBundle\Eval\NullEvalEnvironment;
+use Odiseo\AiConversationalAgentBundle\Eval\NullEvalIsolation;
 use Odiseo\AiConversationalAgentBundle\Execution\ExecutorWording;
 use Odiseo\AiConversationalAgentBundle\Execution\HostToolInvoker;
 use Odiseo\AiConversationalAgentBundle\Execution\ToolExecutor;
@@ -243,17 +248,39 @@ return static function (ContainerConfigurator $container): void {
         ])
         ->tag('console.command');
 
-    // Evals
+    // Evals: the host points EvalEnvironment at its own preconditions; with the ORM the cases run
+    // in a transaction that is rolled back.
 
-    $services->set($id.'eval.code_grader', CodeGrader::class);
+    $services->set($id.'eval.environment.null', NullEvalEnvironment::class);
+    $services->alias(EvalEnvironment::class, $id.'eval.environment.null');
+    $services->set($id.'eval.isolation.null', NullEvalIsolation::class);
+    $services->alias(EvalIsolation::class, $id.'eval.isolation.null');
+
+    $services->set($id.'eval.code_grader', CodeGrader::class)->tag(OdiseoAiConversationalAgentBundle::EVAL_GRADER_TAG);
     $services->set($id.'eval.judge_grader', JudgeGrader::class)
-        ->args([service(ModelProvider::class), service($id.'fence'), param($id.'models.judge')]);
+        ->args([service(ModelProvider::class), service($id.'fence'), param($id.'models.judge'), service($id.'budget.cost_table')]);
     $services->set($id.'eval.runner', EvalRunner::class)->args([
-        service($id.'agent.loop'),
+        service($id.'agent.turn_runner'),
+        service(SessionStore::class),
         service(MemoryStore::class),
-        service($id.'eval.code_grader'),
+        service(SpendLedger::class),
+        service(PrincipalResolver::class),
+        tagged_iterator(OdiseoAiConversationalAgentBundle::EVAL_GRADER_TAG),
         service($id.'eval.judge_grader'),
+        service(EvalEnvironment::class),
+        service(EvalIsolation::class),
         param($id.'eval.timezone'),
     ]);
     $services->alias(EvalRunner::class, $id.'eval.runner');
+
+    $services->set($id.'command.eval', EvalCommand::class)
+        ->args([
+            service($id.'eval.runner'),
+            service(ConsoleEnvironment::class),
+            service($id.'config'),
+            param($id.'evals_dir'),
+            param('kernel.project_dir').'/var/evals',
+            param($id.'models.judge'),
+        ])
+        ->tag('console.command');
 };

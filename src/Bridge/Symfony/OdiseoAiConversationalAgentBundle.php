@@ -7,6 +7,7 @@ namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony;
 use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\DoctrineOrmMappingsPass;
 use Doctrine\ORM\EntityManagerInterface;
 use Odiseo\AiConversationalAgentBundle\Capability\Capability;
+use Odiseo\AiConversationalAgentBundle\Eval\Grader\Grader;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
 use Symfony\AI\Platform\Bridge\Anthropic\Claude;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
@@ -30,6 +31,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
 
     /** The tag every capability carries; the registry collects them in order. */
     public const CAPABILITY_TAG = 'odiseo_ai_conversational_agent.capability';
+    public const EVAL_GRADER_TAG = 'odiseo_ai_conversational_agent.eval_grader';
 
     protected string $extensionAlias = 'odiseo_ai_conversational_agent';
 
@@ -168,8 +170,9 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
      */
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
-        // A host that autoconfigures its own capabilities gets them tagged.
+        // A host that autoconfigures its own capabilities and eval graders gets them tagged.
         $builder->registerForAutoconfiguration(Capability::class)->addTag(self::CAPABILITY_TAG);
+        $builder->registerForAutoconfiguration(Grader::class)->addTag(self::EVAL_GRADER_TAG);
 
         foreach (['identity', 'models', 'budgets', 'limits', 'latency', 'fence', 'conversations', 'sessions'] as $section) {
             foreach ($config[$section] as $key => $value) {

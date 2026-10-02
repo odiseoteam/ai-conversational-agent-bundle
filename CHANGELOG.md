@@ -16,6 +16,11 @@ All notable changes to this project are documented here. The format is based on
 - Per-client daily budget (`budgets.client_usd`), keyed by IP.
 - `ConversationInitializer`, for the host to fill its own conversation fields when one starts.
 - `Scalar::stringMap()`, to narrow a map of strings keeping its keys.
+- `agent:eval` command: runs the cases in `evals_dir` with trials (`--trials`, `--min-pass`),
+  writes each run to `var/evals/`, and grades a stored run again with `--replay`.
+- Eval ports: a tagged `Grader` for a vertical's expected keys, `EvalEnvironment` for the host's
+  preconditions and end state, and `EvalIsolation`, which rolls each case back with the ORM.
+- `turn_complete` carries `rounds`, the model calls the turn made.
 
 ### Changed
 
@@ -34,6 +39,11 @@ All notable changes to this project are documented here. The format is based on
 - `BudgetExceeded` is now `BudgetLimit`.
 - `models.thinking_effort` is a string checked when the agent starts (was a list checked when the
   container is built), so it can come from an env var without a default `env()` parameter.
+- `EvalRunner` drives a case through `TurnRunner`, so memory extraction and the host's hook run
+  as in the chat; a provider error is retried and then reported as an error, not a failure. An
+  expected key no grader owns fails the case.
+- The judge drops the oldest calls and turns of a transcript too long for it, and its verdict
+  says so and carries its cost.
 - `symfony/ai-platform` is required. The Anthropic adapter is registered when
   `symfony/ai-anthropic-platform` is installed (was when `symfony/ai-platform` was).
 
