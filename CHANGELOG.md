@@ -34,6 +34,8 @@ All notable changes to this project are documented here. The format is based on
 - `BudgetExceeded` is now `BudgetLimit`.
 - `models.thinking_effort` is a string checked when the agent starts (was a list checked when the
   container is built), so it can come from an env var without a default `env()` parameter.
+- `symfony/ai-platform` is required. The Anthropic adapter is registered when
+  `symfony/ai-anthropic-platform` is installed (was when `symfony/ai-platform` was).
 
 ## [0.1.0] - 2026-09-17
 

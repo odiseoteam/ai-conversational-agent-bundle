@@ -8,7 +8,7 @@ use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\DoctrineOrmMappi
 use Doctrine\ORM\EntityManagerInterface;
 use Odiseo\AiConversationalAgentBundle\Capability\Capability;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
-use Symfony\AI\Platform\PlatformInterface;
+use Symfony\AI\Platform\Bridge\Anthropic\Claude;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -190,7 +190,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
 
         $container->import(self::CONFIG_DIR.'/services.php');
         $container->import(self::CONFIG_DIR.'/services/'.($config['orm']['enabled'] ? 'orm' : 'in_memory').'.php');
-        if (interface_exists(PlatformInterface::class)) {
+        if (class_exists(Claude::class)) {
             $container->import(self::CONFIG_DIR.'/services/anthropic.php');
         }
 
