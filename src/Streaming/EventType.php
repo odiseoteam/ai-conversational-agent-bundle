@@ -19,7 +19,8 @@ namespace Odiseo\AiConversationalAgentBundle\Streaming;
  *               frame; a call that ends refused leaves no ui, so the host drops its frames.
  * progress      {message, tool?, step?}: a status line replacing the previous one.
  * state_update  {key, value}: a whole piece of vertical state after it moved.
- * turn_complete {stop_reason, usage, elapsed_ms, results_cleared}.
+ * turn_complete {stop_reason, usage, elapsed_ms, results_cleared, rounds}; rounds counts the
+ *               model calls the turn made.
  * error         {code, message}: the host translates the code; the message is a neutral
  *               English fallback, safe to show as is.
  */

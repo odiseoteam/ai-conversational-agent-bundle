@@ -8,8 +8,8 @@ use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigura
 
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
 
-// The Anthropic adapter, loaded when symfony/ai-platform is installed; without it the host
-// aliases ModelProvider itself.
+// The Anthropic adapter, loaded when symfony/ai-anthropic-platform is installed; without it the
+// host aliases ModelProvider itself.
 return static function (ContainerConfigurator $container): void {
     $id = 'odiseo_ai_conversational_agent.';
 

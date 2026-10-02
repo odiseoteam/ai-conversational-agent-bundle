@@ -7,8 +7,9 @@ namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony;
 use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\DoctrineOrmMappingsPass;
 use Doctrine\ORM\EntityManagerInterface;
 use Odiseo\AiConversationalAgentBundle\Capability\Capability;
+use Odiseo\AiConversationalAgentBundle\Eval\Grader\Grader;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
-use Symfony\AI\Platform\PlatformInterface;
+use Symfony\AI\Platform\Bridge\Anthropic\Claude;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -30,6 +31,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
 
     /** The tag every capability carries; the registry collects them in order. */
     public const CAPABILITY_TAG = 'odiseo_ai_conversational_agent.capability';
+    public const EVAL_GRADER_TAG = 'odiseo_ai_conversational_agent.eval_grader';
 
     protected string $extensionAlias = 'odiseo_ai_conversational_agent';
 
@@ -168,8 +170,9 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
      */
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
-        // A host that autoconfigures its own capabilities gets them tagged.
+        // A host that autoconfigures its own capabilities and eval graders gets them tagged.
         $builder->registerForAutoconfiguration(Capability::class)->addTag(self::CAPABILITY_TAG);
+        $builder->registerForAutoconfiguration(Grader::class)->addTag(self::EVAL_GRADER_TAG);
 
         foreach (['identity', 'models', 'budgets', 'limits', 'latency', 'fence', 'conversations', 'sessions'] as $section) {
             foreach ($config[$section] as $key => $value) {
@@ -190,7 +193,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
 
         $container->import(self::CONFIG_DIR.'/services.php');
         $container->import(self::CONFIG_DIR.'/services/'.($config['orm']['enabled'] ? 'orm' : 'in_memory').'.php');
-        if (interface_exists(PlatformInterface::class)) {
+        if (class_exists(Claude::class)) {
             $container->import(self::CONFIG_DIR.'/services/anthropic.php');
         }
 
@@ -206,7 +209,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
         if (null === $file || !is_file($file)) {
             // A vertical that has not written one gets a prompt that keeps nothing, which is
             // the safe default: memory is a feature the vertical opts into deliberately.
-            return 'Return an empty JSON array: []';
+            return 'Record nothing.';
         }
 
         return (string) file_get_contents($file);

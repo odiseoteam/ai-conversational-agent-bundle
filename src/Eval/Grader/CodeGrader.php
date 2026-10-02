@@ -6,21 +6,26 @@ namespace Odiseo\AiConversationalAgentBundle\Eval\Grader;
 
 use Odiseo\AiConversationalAgentBundle\Eval\EvalCase;
 use Odiseo\AiConversationalAgentBundle\Eval\TurnRecording;
-use Odiseo\AiConversationalAgentBundle\Memory\MemoryFact;
 use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /**
- * Every expected key except `rubric`. These grade the calls the agent made and the state they
- * produced; the reply's wording is graded only for strings that must or must not appear.
+ * The core's expected keys: the calls the agent made, what it rendered and the memory it left;
+ * the reply's wording is graded only for strings that must or must not appear. `rubric` goes to
+ * the judge, and a vertical's state to its own grader.
  */
-final class CodeGrader
+final class CodeGrader implements Grader
 {
-    /**
-     * @param list<MemoryFact> $memory the subject's facts after the turn
-     *
-     * @return list<string>
-     */
-    public function grade(EvalCase $case, TurnRecording $recording, array $memory): array
+    public function keys(): array
+    {
+        return [
+            'calls_tool', 'calls_one_of', 'never_calls', 'first_tool', 'first_tool_not',
+            'ui_components', 'no_ui', 'skill_loaded', 'skill_not_loaded', 'no_skill_load',
+            'reply_includes', 'reply_omits', 'memory_contains', 'memory_not_contains',
+            'max_tool_calls', 'blocked_by',
+        ];
+    }
+
+    public function grade(EvalCase $case, TurnRecording $recording): array
     {
         $failures = [];
         $expected = $case->expected;
@@ -86,7 +91,7 @@ final class CodeGrader
             }
         }
 
-        $stored = array_map(static fn (MemoryFact $fact): string => mb_strtolower($fact->key.' '.$fact->value), $memory);
+        $stored = array_map(static fn (array $fact): string => mb_strtolower($fact['key'].' '.$fact['value']), $recording->memory);
         foreach ($this->stringList($expected['memory_contains'] ?? null) as $needle) {
             if (!$this->anyContains($stored, $needle)) {
                 $failures[] = \sprintf('memory does not hold "%s"', $needle);

@@ -105,13 +105,14 @@ final readonly class AgentEvent
     }
 
     /** @param array<string, int> $usage */
-    public static function turnComplete(?string $stopReason, array $usage, int $elapsedMs, int $resultsCleared): self
+    public static function turnComplete(?string $stopReason, array $usage, int $elapsedMs, int $resultsCleared, int $rounds = 0): self
     {
         return new self(EventType::TurnComplete, [
             'stop_reason' => $stopReason,
             'usage' => $usage,
             'elapsed_ms' => $elapsedMs,
             'results_cleared' => $resultsCleared,
+            'rounds' => $rounds,
         ]);
     }
 

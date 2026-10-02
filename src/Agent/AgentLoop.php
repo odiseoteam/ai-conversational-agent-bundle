@@ -114,6 +114,7 @@ final class AgentLoop
         }
 
         $usage = new Usage();
+        $rounds = 0;
         $stopReason = null;
         $lastPromptTokens = 0;
         /** @var array<string, ToolOutcome> $settled */
@@ -191,6 +192,7 @@ final class AgentLoop
                 }
 
                 $usage = $usage->plus($response->usage);
+                ++$rounds;
                 $lastPromptTokens = $response->usage->promptTokens();
                 $this->budget->charge($session->sessionId, $this->config->model, $response->usage, $clock);
                 $this->log($session, $round, $response);
@@ -260,6 +262,7 @@ final class AgentLoop
             $usage->toArray(),
             (int) round((microtime(true) - $startedAt) * 1000),
             $cleared,
+            $rounds,
         );
     }
 

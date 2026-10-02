@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Memory;
 
+use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
 use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
 use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
 use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
@@ -25,6 +26,8 @@ final class MemoryRuntime
 {
     private const KEY_MAX_CHARS = 64;
     private const VALUE_MAX_CHARS = 200;
+    private const RECORD_FACT = 'record_fact';
+    private const MAX_NEW_FACTS = 3;
 
     public function __construct(
         private readonly MemoryStore $store,
@@ -121,6 +124,10 @@ final class MemoryRuntime
      * never raises, because a memory failure must not surface as a failed turn. The caller
      * sees the model's response through $onResponse, to charge and log it like any round.
      *
+     * The model records each fact through `record_fact`, against the facts already saved. A
+     * proposal under a saved key is the update the prompt asks for; one restating a saved
+     * value is dropped. At most three are kept.
+     *
      * @return list<MemoryFact>
      */
     public function extract(ModelProvider $provider, string $subject, string $sessionTag, string $transcript, ?\Closure $onResponse = null): array
@@ -130,14 +137,16 @@ final class MemoryRuntime
         }
 
         try {
+            $existing = $this->live($this->store->all($subject));
             $response = $provider->complete(new TurnRequest(
                 model: $this->config->memoryModel,
                 system: [new SystemBlock($this->extractionPrompt)],
                 messages: [[
                     'role' => 'user',
-                    'content' => [['type' => 'text', 'text' => $this->fence->fencePayload($transcript, 8000)]],
+                    'content' => [['type' => 'text', 'text' => "Already saved facts:\n".$this->render($existing)."\n\nConversation:\n".$this->fence->fencePayload($transcript, 8000)]],
                 ]],
-                maxTokens: 1024,
+                tools: [self::recordFactTool()],
+                maxTokens: 600,
                 thinkingEffort: null,
                 timeoutSeconds: $this->config->requestTimeoutSeconds,
                 cacheTools: false,
@@ -146,11 +155,25 @@ final class MemoryRuntime
                 $onResponse($response);
             }
 
-            $written = [];
-            foreach ($this->decodeFacts($response->text()) as $candidate) {
-                $outcome = $this->save($subject, $sessionTag, $candidate);
+            $held = [];
+            foreach ($existing as $fact) {
+                $held[$fact->key] = self::normalize($fact->value);
+            }
+            $written = 0;
+            foreach ($response->toolUses as $call) {
+                if (self::RECORD_FACT !== $call->name || $written >= self::MAX_NEW_FACTS) {
+                    continue;
+                }
+                $key = trim(Scalar::string($call->input['key'] ?? null));
+                $value = self::normalize(Scalar::string($call->input['value'] ?? null));
+                $current = $held[$key] ?? null;
+                if ($current === $value || (null === $current && $this->restates($value, $held))) {
+                    continue;
+                }
+                $outcome = $this->save($subject, $sessionTag, $call->input);
                 if (!$outcome->refused() && str_starts_with($outcome->resultText, 'Saved')) {
-                    $written[] = $candidate['key'];
+                    $held[$key] = $value;
+                    ++$written;
                 }
             }
 
@@ -162,30 +185,68 @@ final class MemoryRuntime
         }
     }
 
-    /**
-     * @return list<array<string, mixed>>
-     */
-    private function decodeFacts(string $text): array
+    private static function recordFactTool(): ToolSpec
     {
-        $start = strpos($text, '[');
-        $end = strrpos($text, ']');
-        if (false === $start || false === $end || $end < $start) {
-            return [];
+        return new ToolSpec(
+            self::RECORD_FACT,
+            'Record one new durable fact about the user.',
+            [
+                'type' => 'object',
+                'properties' => [
+                    'key' => ['type' => 'string', 'maxLength' => self::KEY_MAX_CHARS],
+                    'value' => ['type' => 'string', 'maxLength' => self::VALUE_MAX_CHARS],
+                    'category' => ['type' => 'string', 'enum' => array_map(static fn (MemoryCategory $c): string => $c->value, MemoryCategory::cases())],
+                ],
+                'required' => ['key', 'value', 'category'],
+                'additionalProperties' => false,
+            ],
+            wantsStatusLine: false,
+        );
+    }
+
+    /** @param list<MemoryFact> $facts */
+    private function render(array $facts): string
+    {
+        if ([] === $facts) {
+            return 'No saved facts.';
         }
 
-        $decoded = json_decode(substr($text, $start, $end - $start + 1), true);
-        if (!\is_array($decoded)) {
-            return [];
-        }
+        return implode("\n", array_map(
+            fn (MemoryFact $fact): string => \sprintf('- %s: %s [%s]', $fact->key, $this->fence->sanitizeText($fact->value, self::VALUE_MAX_CHARS), $fact->category->value),
+            $facts,
+        ));
+    }
 
-        $facts = [];
-        foreach ($decoded as $row) {
-            if (\is_array($row) && isset($row['key'], $row['value'])) {
-                $facts[] = Scalar::keyed($row);
+    private static function normalize(string $value): string
+    {
+        return implode(' ', preg_split('/\s+/u', mb_strtolower(trim($value))) ?: []);
+    }
+
+    /**
+     * Whether a value states a fact already held under another key: one contains the other, or
+     * their words overlap by 60% or more.
+     *
+     * @param array<string, string> $held
+     */
+    private function restates(string $value, array $held): bool
+    {
+        $words = static fn (string $text): array => array_values(array_filter(array_unique(array_map(
+            static fn (string $word): string => trim($word, ".,;:!?'\"()"),
+            explode(' ', $text),
+        ))));
+        $mine = $words($value);
+        foreach ($held as $seen) {
+            if ('' !== $value && '' !== $seen && (str_contains($seen, $value) || str_contains($value, $seen))) {
+                return true;
+            }
+            $theirs = $words($seen);
+            $union = \count(array_unique([...$mine, ...$theirs]));
+            if (0 !== $union && \count(array_intersect($mine, $theirs)) / $union >= 0.6) {
+                return true;
             }
         }
 
-        return $facts;
+        return false;
     }
 
     /**
