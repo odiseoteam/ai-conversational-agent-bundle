@@ -46,7 +46,7 @@ return static function (ContainerConfigurator $container): void {
     $services->alias(SpendLedger::class, $id.'store.spend.orm');
 
     $services->set($id.'eval.isolation.transactional', TransactionalEvalIsolation::class)
-        ->args([service('doctrine.orm.entity_manager')]);
+        ->args([service('doctrine.orm.entity_manager'), service('doctrine')]);
     $services->alias(EvalIsolation::class, $id.'eval.isolation.transactional');
 
     $services->set($id.'command.prune', PruneCommand::class)

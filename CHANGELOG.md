@@ -52,6 +52,13 @@ All notable changes to this project are documented here. The format is based on
 - `symfony/ai-platform` is required. The Anthropic adapter is registered when
   `symfony/ai-anthropic-platform` is installed (was when `symfony/ai-platform` was).
 
+### Fixed
+
+- An error in an eval case that does not come from the model (a precondition the store cannot
+  build, a bug) is an error on that case; the run goes on and its file is written.
+- A failed flush inside an eval case no longer leaves the entity manager closed for the cases
+  after it.
+
 ## [0.1.0] - 2026-09-17
 
 First release: the turn loop with streaming and eager tool dispatch, capabilities, provenance

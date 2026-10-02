@@ -28,7 +28,9 @@ use Odiseo\AiConversationalAgentBundle\Support\Scalar;
  * case runs inside the isolation, so it starts from the store and leaves nothing behind.
  *
  * A provider error is retried with a growing pause; once the retries are spent the case is an
- * error, not a failure, because nothing was graded.
+ * error, not a failure, because nothing was graded. Any other error in the case (a precondition
+ * the store cannot build, a bug) is an error on that case too, so the run goes on and keeps
+ * what it already paid for. Only a rejected credential ends it.
  */
 final class EvalRunner
 {
@@ -80,6 +82,8 @@ final class EvalRunner
                     return new EvalResult($case, error: $failed->getMessage());
                 }
                 ($this->pause)(2 ** $attempt);
+            } catch (\Throwable $broken) {
+                return new EvalResult($case, error: $broken->getMessage());
             }
         }
 
