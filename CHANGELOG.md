@@ -54,6 +54,10 @@ All notable changes to this project are documented here. The format is based on
 
 ### Fixed
 
+- The Anthropic platform needs `cache_retention: none` (README): with the default the bridge adds
+  cache breakpoints of its own, on the volatile context block and on forced-tool rounds, whose
+  writes are never read. Measured on Expreso's evals: 58% fewer cache writes per round and about
+  13% less per round.
 - An error in an eval case that does not come from the model (a precondition the store cannot
   build, a bug) is an error on that case; the run goes on and its file is written.
 - A failed flush inside an eval case no longer leaves the entity manager closed for the cases

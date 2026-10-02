@@ -34,8 +34,8 @@ use Symfony\AI\Platform\TokenUsage\TokenUsageInterface;
  * The Anthropic adapter, over the Symfony AI platform bridge.
  *
  * The payload is written here, not by the bridge: this product places its own cache
- * breakpoints, so the bridge's model client is configured with cache retention "none" and the
- * markers below are the only ones on the request. What the bridge does supply is the HTTP
+ * breakpoints, so the host configures the platform with `cache_retention: none` and the markers
+ * below are the only ones on the request; with the default the bridge adds its own. What the bridge does supply is the HTTP
  * plumbing, the SSE parsing, the error mapping and the usage extraction.
  */
 final class AnthropicProvider implements ModelProvider
