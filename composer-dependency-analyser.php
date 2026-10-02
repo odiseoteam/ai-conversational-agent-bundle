@@ -14,6 +14,7 @@ return (new Configuration())
         'doctrine/dbal',
         'doctrine/doctrine-bundle',
         'doctrine/orm',
+        'doctrine/persistence',
         'symfony/ai-anthropic-platform',
     ], [ErrorType::DEV_DEPENDENCY_IN_PROD])
     // Defined next to ContainerConfigurator and loaded with it.
