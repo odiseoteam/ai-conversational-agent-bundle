@@ -46,6 +46,8 @@ final class AgentBuilder
     /** The client the budget charges; null is a console run. */
     public ?string $clientKey = null;
     public StaticPromptBuilder $prompt;
+    /** Runs the memory extraction; the turn's provider when null. */
+    public ?ModelProvider $memoryProvider = null;
 
     /** @param list<Capability> $extra */
     public function __construct(
@@ -101,6 +103,7 @@ final class AgentBuilder
                     return $this->builder->clientKey;
                 }
             }),
+            memoryProvider: $this->memoryProvider,
         );
     }
 }

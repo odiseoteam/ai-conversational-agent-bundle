@@ -153,7 +153,7 @@ final class EvalRunnerTest extends TestCase
     public function testARejectedCredentialStopsTheRun(): void
     {
         $provider = new class implements ModelProvider {
-            public function capabilities(): ProviderCapabilities
+            public function capabilities(string $model): ProviderCapabilities
             {
                 return new ProviderCapabilities();
             }

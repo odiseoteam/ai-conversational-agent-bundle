@@ -21,16 +21,21 @@ use Symfony\AI\Platform\Result\Stream\Delta\ThinkingComplete;
  */
 final class AnthropicProvider extends PlatformProvider
 {
-    public function capabilities(): ProviderCapabilities
+    public function capabilities(string $model): ProviderCapabilities
     {
         return new ProviderCapabilities(
             streaming: true,
             promptCaching: true,
             serverTools: true,
-            forcedToolChoice: true,
-            thinking: true,
+            // Sonnet 5.5 rejects a forced tool choice.
+            forcedToolChoice: !str_starts_with($model, 'claude-sonnet-5-5'),
+            // Haiku 4.5 has no adaptive thinking: it rejects the effort the turn asks for.
+            thinking: !str_starts_with($model, 'claude-haiku-4-5'),
             usageAccounting: true,
             parallelToolCalls: true,
+            toolInputDeltas: true,
+            // The Claude 5 models reject a temperature.
+            temperature: 1 !== preg_match('/^claude-(fable|opus|sonnet)-5/', $model),
         );
     }
 
@@ -78,7 +83,8 @@ final class AnthropicProvider extends PlatformProvider
         }
 
         if (null === $request->thinkingEffort) {
-            $payload['thinking'] = ['type' => 'disabled'];
+            // Sonnet 5.5 rejects `disabled`: thinking only between tool calls is its lowest setting.
+            $payload['thinking'] = ['type' => str_starts_with($request->model, 'claude-sonnet-5-5') ? 'between_tools' : 'disabled'];
         } else {
             $payload['thinking'] = ['type' => 'adaptive'];
             $payload['output_config'] = ['effort' => $request->thinkingEffort->value];

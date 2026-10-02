@@ -70,7 +70,7 @@ final class FakeProvider implements ModelProvider
         array_push($this->responses, ...$responses);
     }
 
-    public function capabilities(): ProviderCapabilities
+    public function capabilities(string $model): ProviderCapabilities
     {
         return $this->capabilities;
     }

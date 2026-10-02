@@ -48,9 +48,9 @@ final class ChunkedToolCallProvider implements ModelProvider
         return new self([[$tool, $id, $chunks, $finalInput]], $trailingText);
     }
 
-    public function capabilities(): ProviderCapabilities
+    public function capabilities(string $model): ProviderCapabilities
     {
-        return new ProviderCapabilities(forcedToolChoice: true);
+        return new ProviderCapabilities(forcedToolChoice: true, toolInputDeltas: true);
     }
 
     public function stream(TurnRequest $request): iterable

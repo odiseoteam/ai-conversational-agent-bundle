@@ -14,6 +14,7 @@ use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\MemoryControlle
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\SessionController;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\EventListener\SessionWriteBackListener;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\OdiseoAiConversationalAgentBundle;
+use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\ProviderRegistry;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Session\SessionResolver;
 use Odiseo\AiConversationalAgentBundle\Budget\BudgetPolicy;
 use Odiseo\AiConversationalAgentBundle\Budget\ClientKeyResolver;
@@ -55,11 +56,13 @@ use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigura
 use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\tagged_iterator;
+use function Symfony\Component\DependencyInjection\Loader\Configurator\tagged_locator;
 
 /*
  * Every service is registered under an `odiseo_ai_conversational_agent.*` id with explicit
  * arguments; the classes and interfaces a host autowires are aliases. A host swaps a port by
- * redefining its alias (ModelProvider, ContextProvider, TurnHook…). The parameters come from the
+ * redefining its alias (ContextProvider, TurnHook…), and a role's model provider by redefining
+ * `odiseo_ai_conversational_agent.provider.<role>`. The parameters come from the
  * bundle's configuration.
  */
 return static function (ContainerConfigurator $container): void {
@@ -149,9 +152,19 @@ return static function (ContainerConfigurator $container): void {
     $services->set($id.'context_provider.null', NullContextProvider::class);
     $services->alias(ContextProvider::class, $id.'context_provider.null');
 
+    // One provider per role, picked by its platform when the service is built; a host replaces a
+    // role's provider by redefining its service.
+    $services->set($id.'provider.registry', ProviderRegistry::class)
+        ->args([tagged_locator(OdiseoAiConversationalAgentBundle::PROVIDER_TAG, 'platform'), param($id.'capabilities')]);
+    foreach (['turn', 'memory', 'judge'] as $role) {
+        $services->set($id.'provider.'.$role, ModelProvider::class)
+            ->factory([service($id.'provider.registry'), 'get'])
+            ->args([param($id.'models.'.$role.'_platform')]);
+    }
+
     $services->set($id.'agent.loop', AgentLoop::class)->args([
         service($id.'config'),
-        service(ModelProvider::class),
+        service($id.'provider.turn'),
         service($id.'capability.registry'),
         service($id.'execution.tool_executor'),
         service($id.'execution.tool_surface'),
@@ -162,6 +175,7 @@ return static function (ContainerConfigurator $container): void {
         service($id.'budget.policy'),
         service(ContextProvider::class),
         service('logger'),
+        service($id.'provider.memory'),
     ]);
     $services->alias(AgentLoop::class, $id.'agent.loop');
 
@@ -192,7 +206,8 @@ return static function (ContainerConfigurator $container): void {
 
     // Budget
 
-    $services->set($id.'budget.cost_table', CostTable::class);
+    $services->set($id.'budget.cost_table', CostTable::class)
+        ->args([param($id.'prices'), [param($id.'models.turn'), param($id.'models.memory'), param($id.'models.judge')]]);
     $services->set($id.'budget.client_key_resolver', RequestClientKeyResolver::class)
         ->args([service('request_stack')]);
     $services->alias(ClientKeyResolver::class, $id.'budget.client_key_resolver');
@@ -258,7 +273,7 @@ return static function (ContainerConfigurator $container): void {
 
     $services->set($id.'eval.code_grader', CodeGrader::class)->tag(OdiseoAiConversationalAgentBundle::EVAL_GRADER_TAG);
     $services->set($id.'eval.judge_grader', JudgeGrader::class)
-        ->args([service(ModelProvider::class), service($id.'fence'), param($id.'models.judge'), service($id.'budget.cost_table')]);
+        ->args([service($id.'provider.judge'), service($id.'fence'), param($id.'models.judge'), service($id.'budget.cost_table')]);
     $services->set($id.'eval.runner', EvalRunner::class)->args([
         service($id.'agent.turn_runner'),
         service(SessionStore::class),

@@ -19,7 +19,10 @@ use Odiseo\AiConversationalAgentBundle\Provider\Stream\ToolCallStarted;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\ToolInputChunk;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\TurnFinished;
 use PHPUnit\Framework\TestCase;
+use Symfony\AI\Platform\Bridge\Anthropic\Claude;
 use Symfony\AI\Platform\Bridge\Anthropic\Factory;
+use Symfony\AI\Platform\Bridge\Anthropic\ModelCatalog;
+use Symfony\AI\Platform\Capability;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
 
@@ -172,6 +175,28 @@ final class AnthropicProviderTest extends TestCase
         self::assertEquals(new Usage(20, 1024, 0, 500), $response->usage);
     }
 
+    public function testWhatEachModelCanDo(): void
+    {
+        $provider = $this->provider('');
+
+        self::assertFalse($provider->capabilities('claude-haiku-4-5-20251001')->thinking);
+        self::assertTrue($provider->capabilities('claude-haiku-4-5')->temperature);
+        self::assertFalse($provider->capabilities('claude-sonnet-5')->temperature);
+        self::assertTrue($provider->capabilities('claude-sonnet-5')->forcedToolChoice);
+        self::assertFalse($provider->capabilities('claude-sonnet-5-5')->forcedToolChoice);
+    }
+
+    public function testSonnetFiveFiveTurnsThinkingDownInsteadOfOff(): void
+    {
+        $this->events($this->provider(self::sse(self::start(3), self::stop('end_turn'))), new TurnRequest(
+            model: 'claude-sonnet-5-5',
+            system: [new SystemBlock('Rules.')],
+            messages: [['role' => 'user', 'content' => [['type' => 'text', 'text' => 'Hi']]]],
+        ));
+
+        self::assertSame(['type' => 'between_tools'], $this->sent[0]['thinking'] ?? null);
+    }
+
     private function provider(string $body): AnthropicProvider
     {
         $client = new MockHttpClient(function (string $method, string $url, array $options) use ($body): MockResponse {
@@ -182,7 +207,10 @@ final class AnthropicProviderTest extends TestCase
             return new MockResponse($body, ['response_headers' => ['content-type' => 'text/event-stream']]);
         });
 
-        return new AnthropicProvider(Factory::createPlatform('key', $client, cacheRetention: 'none'));
+        // A model the bridge's catalog does not list yet is declared, as a host does in ai.yaml.
+        $catalog = new ModelCatalog(['claude-sonnet-5-5' => ['class' => Claude::class, 'capabilities' => [Capability::INPUT_MESSAGES, Capability::OUTPUT_TEXT, Capability::OUTPUT_STREAMING, Capability::TOOL_CALLING]]]);
+
+        return new AnthropicProvider(Factory::createPlatform('key', $client, $catalog, cacheRetention: 'none'));
     }
 
     /** @return list<StreamEvent> */

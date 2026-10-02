@@ -15,7 +15,8 @@ use Odiseo\AiConversationalAgentBundle\Provider\Stream\StreamEvent;
  */
 interface ModelProvider
 {
-    public function capabilities(): ProviderCapabilities;
+    /** What this provider can do with $model. */
+    public function capabilities(string $model): ProviderCapabilities;
 
     /**
      * One streamed model call. The last event is always TurnFinished.

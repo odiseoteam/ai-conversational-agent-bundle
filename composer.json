@@ -38,7 +38,8 @@
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^11.5",
         "shipmonk/composer-dependency-analyser": "^1.8",
-        "symfony/ai-anthropic-platform": "^0.13"
+        "symfony/ai-anthropic-platform": "^0.13",
+        "symfony/http-client": "^7.3|^8.0"
     },
     "suggest": {
         "doctrine/doctrine-bundle": "Registers the ORM mappings",
