@@ -153,9 +153,15 @@ final class EvalRunner
             if (null === $this->judge) {
                 $judgeFailures[] = 'the case has a rubric and no judge is configured';
             } elseif ($live) {
-                $recording->verdict = $this->judge->judge($case, $recording);
-                if (null === $recording->verdict) {
-                    $judgeFailures[] = 'the judge did not return a verdict';
+                try {
+                    $recording->verdict = $this->judge->judge($case, $recording);
+                    if (null === $recording->verdict) {
+                        $judgeFailures[] = 'the judge did not return a verdict';
+                    }
+                } catch (AuthenticationException $rejected) {
+                    throw $rejected;
+                } catch (ProviderException $failed) {
+                    $judgeFailures[] = 'the judge failed: '.$failed->getMessage();
                 }
             } elseif (($recording->verdict['fingerprint'] ?? null) !== $this->judge->fingerprint($rubric)) {
                 $judgeFailures[] = 'the rubric or the judge model changed since this recording; run the case live';

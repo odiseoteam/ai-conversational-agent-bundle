@@ -176,6 +176,18 @@ final class EvalRunnerTest extends TestCase
         );
     }
 
+    public function testAJudgeErrorIsAJudgeFailureNotTheEndOfTheRun(): void
+    {
+        $builder = new AgentBuilder(new FakeProvider([FakeProvider::text('It costs 10.')]), extra: [new DirectoryCapability()]);
+        $judge = new JudgeGrader(new FakeProvider([]), $builder->fence);
+        $runner = new EvalRunner($builder->turnRunner(), $builder->sessionStore, $builder->memoryStore, $builder->ledger, self::guest(), judge: $judge);
+
+        $result = $runner->run(new EvalCase('price', ['how much?'], ['rubric' => 'PASS if it says 10. FAIL otherwise.']));
+
+        self::assertSame([], $result->failures);
+        self::assertStringStartsWith('the judge failed: ', $result->judgeFailures[0] ?? '');
+    }
+
     /**
      * @param list<ProviderResponse>     $responses
      * @param (\Closure(int): void)|null $pause

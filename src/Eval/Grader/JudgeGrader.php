@@ -89,7 +89,8 @@ final class JudgeGrader
             messages: [['role' => 'user', 'content' => [['type' => 'text', 'text' => $material]]]],
             maxTokens: 512,
             thinkingEffort: null,
-            temperature: 0.0,
+            // Pinned by its model and the fingerprint; the Claude 5 models take no temperature.
+            temperature: null,
             cacheTools: false,
         ));
 

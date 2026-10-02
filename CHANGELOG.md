@@ -44,7 +44,8 @@ All notable changes to this project are documented here. The format is based on
   expected key no grader owns fails the case.
 - The judge reads the case's transcript, tool results included, and what each component
   showed; one too long for it loses its oldest messages first, and the verdict says so and
-  carries its cost.
+  carries its cost. It sends no temperature, which the Claude 5 models reject, and a judge
+  error is a judge failure on the case instead of stopping the run.
 - `symfony/ai-platform` is required. The Anthropic adapter is registered when
   `symfony/ai-anthropic-platform` is installed (was when `symfony/ai-platform` was).
 
