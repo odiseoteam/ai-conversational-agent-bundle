@@ -70,7 +70,12 @@ ai:
     platform:
         anthropic:
             api_key: '%env(ANTHROPIC_API_KEY)%'
+            cache_retention: none
 ```
+
+`cache_retention: none` matters: the bundle places its own cache breakpoints, and with the
+default (`short`) the bridge adds more, on the volatile context block and on rounds where a
+cached span can't be read back, which pays cache writes for nothing.
 
 ### Storage
 
