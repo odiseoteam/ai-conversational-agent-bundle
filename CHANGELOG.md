@@ -25,6 +25,9 @@ All notable changes to this project are documented here. The format is based on
 ### Changed
 
 - MIT license.
+- Memory extraction records facts through a `record_fact` tool, as the reference does, and sees
+  the facts already saved: a restatement is dropped, an update under a saved key replaces it, and
+  at most three are kept per turn. An extraction prompt no longer asks for a JSON array.
 - The DBAL stores are gone; the ORM ones replace them.
 - `SessionResolver` moved to `Bridge\Symfony\Session`.
 - `SkillLoadError` is now `SkillLoadException` and `PresentationRefused` is now

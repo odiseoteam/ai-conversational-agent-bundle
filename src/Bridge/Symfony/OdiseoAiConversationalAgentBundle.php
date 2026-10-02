@@ -209,7 +209,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
         if (null === $file || !is_file($file)) {
             // A vertical that has not written one gets a prompt that keeps nothing, which is
             // the safe default: memory is a feature the vertical opts into deliberately.
-            return 'Return an empty JSON array: []';
+            return 'Record nothing.';
         }
 
         return (string) file_get_contents($file);

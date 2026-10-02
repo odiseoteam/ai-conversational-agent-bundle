@@ -11,6 +11,9 @@ use Odiseo\AiConversationalAgentBundle\Memory\MemoryCategory;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryFact;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryRuntime;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryWriteFilter;
+use Odiseo\AiConversationalAgentBundle\Provider\Fake\FakeProvider;
+use Odiseo\AiConversationalAgentBundle\Provider\Response\ProviderResponse;
+use Odiseo\AiConversationalAgentBundle\Provider\Response\ToolUse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -101,6 +104,39 @@ final class MemoryTest extends TestCase
         self::assertFalse($filter->allows('juan@example.com'), 'the identifier defaults still hold');
         self::assertFalse($filter->allows('this never goes'), 'and the deployment pattern is added');
         self::assertTrue($filter->allows('They work with Symfony'));
+    }
+
+    public function testExtractionStoresWhatTheModelRecords(): void
+    {
+        [$runtime, $store] = $this->runtime();
+        $provider = new FakeProvider([new ProviderResponse([], [
+            new ToolUse('tu-1', 'record_fact', ['key' => 'jeans-size', 'value' => 'Wears size M in jeans', 'category' => 'preference']),
+            new ToolUse('tu-2', 'record_fact', ['key' => 'child-age', 'value' => 'Has a son aged 6', 'category' => 'context']),
+        ])]);
+
+        $runtime->extract($provider, 'visitor-1', 'tag', 'Customer: I wear an M. My son is 6.');
+
+        $keys = array_map(static fn (MemoryFact $f): string => $f->key, $store->all('visitor-1'));
+        sort($keys);
+        self::assertSame(['child-age', 'jeans-size'], $keys);
+        self::assertSame('record_fact', $provider->requests()[0]->tools[0]->name);
+    }
+
+    public function testExtractionSeesTheSavedFactsAndDropsWhatRestatesThem(): void
+    {
+        [$runtime, $store] = $this->runtime();
+        $store->save('visitor-1', new MemoryFact('jeans-size', 'Wears size M in jeans', MemoryCategory::Preference, new \DateTimeImmutable()));
+        $provider = new FakeProvider([new ProviderResponse([], [
+            new ToolUse('tu-1', 'record_fact', ['key' => 'size', 'value' => 'wears size M in jeans', 'category' => 'preference']),
+            new ToolUse('tu-2', 'record_fact', ['key' => 'jeans-size', 'value' => 'Wears size L in jeans', 'category' => 'preference']),
+        ])]);
+
+        $runtime->extract($provider, 'visitor-1', 'tag', 'Customer: I am an L now.');
+
+        $facts = $store->all('visitor-1');
+        self::assertCount(1, $facts, 'the restatement under another key is dropped');
+        self::assertSame('Wears size L in jeans', $facts[0]->value, 'the update under the saved key replaces it');
+        self::assertStringContainsString('- jeans-size: Wears size M in jeans', json_encode($provider->requests()[0]->messages, \JSON_THROW_ON_ERROR));
     }
 
     /** @return array{0: MemoryRuntime, 1: InMemoryMemoryStore} */
