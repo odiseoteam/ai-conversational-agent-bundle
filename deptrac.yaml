@@ -16,6 +16,8 @@ deptrac:
                       value: src/Bridge/.*
                     - type: directory
                       value: src/Provider/Anthropic/.*
+                    - type: directory
+                      value: src/Provider/Platform/.*
 
         - name: Bridge
           collectors:
@@ -26,6 +28,11 @@ deptrac:
           collectors:
               - type: directory
                 value: src/Provider/Anthropic/.*
+
+        - name: Platform
+          collectors:
+              - type: directory
+                value: src/Provider/Platform/.*
 
         - name: Framework
           collectors:
@@ -42,8 +49,13 @@ deptrac:
         Bridge:
             - Agent
             - Anthropic
+            - Platform
             - Framework
             - SymfonyAi
         Anthropic:
+            - Agent
+            - Platform
+            - SymfonyAi
+        Platform:
             - Agent
             - SymfonyAi

@@ -74,8 +74,8 @@ ai:
 ```
 
 `cache_retention: none` matters: the bundle places its own cache breakpoints, and with the
-default (`short`) the bridge adds more, on the volatile context block and on rounds where a
-cached span can't be read back, which pays cache writes for nothing.
+default (`short`) the bridge adds more on top, including on forced-tool rounds, whose entries
+the rounds after them cannot read.
 
 ### Storage
 
@@ -133,12 +133,43 @@ Point the `ConversationInitializer` alias at it and the core will call it; unset
 
 Every service is registered as `odiseo_ai_conversational_agent.*` with explicit arguments.
 The classes and ports a host uses are aliases, and a host replaces a port by redefining its
-alias: `ModelProvider`, `ContextProvider`, `PrincipalResolver`, `TurnHook`,
-`ConsoleEnvironment`, `ConversationInitializer`, `SessionStore`, `MemoryStore` and
-`SpendLedger`. The Anthropic adapter is registered only when `symfony/ai-anthropic-platform` is
-installed, and it needs the AI bundle's `ai.platform.anthropic`; without them, alias
-`ModelProvider` to your own provider. Capabilities are collected
-by the `odiseo_ai_conversational_agent.capability` tag.
+alias: `ContextProvider`, `PrincipalResolver`, `TurnHook`, `ConsoleEnvironment`,
+`ConversationInitializer`, `SessionStore`, `MemoryStore` and `SpendLedger`. Capabilities are
+collected by the `odiseo_ai_conversational_agent.capability` tag.
+
+### Models
+
+Each role (the turn, the memory extraction, the eval judge) names its platform and model; both
+can come from env vars, because a role's provider is picked when its service is built:
+
+```yaml
+odiseo_ai_conversational_agent:
+    models:
+        turn: { platform: '%env(AGENT_TURN_PLATFORM)%', model: '%env(AGENT_TURN_MODEL)%', thinking_effort: low }
+        memory: { platform: anthropic, model: claude-haiku-4-5-20251001 }
+        judge: { platform: anthropic, model: claude-sonnet-5 }
+```
+
+A platform is an adapter tagged `odiseo_ai_conversational_agent.provider` with its `platform`
+name. The Anthropic one (`anthropic`) is registered when `symfony/ai-anthropic-platform` is
+installed and wraps the AI bundle's `ai.platform.anthropic`; your own adapter implements
+`ModelProvider` and is tagged the same way. To replace one role's provider outright, redefine
+`odiseo_ai_conversational_agent.provider.<role>`.
+
+Every configured model needs a price, or the agent refuses to start: an unpriced model would
+cost zero and no spend cap would stop it. The Claude models carry theirs; add or correct one
+under `prices`, in USD per million tokens. An adapter knows what each of its models can do (a
+forced tool choice, thinking, a temperature…); for a model it does not know yet, say so under
+`capabilities`. A model the AI bundle's catalog does not list yet is declared under its
+`ai.model.<platform>`:
+
+```yaml
+odiseo_ai_conversational_agent:
+    prices:
+        claude-sonnet-6: { input: 2.0, output: 10.0, cache_write: 2.5, cache_read: 0.2 }
+    capabilities:
+        claude-sonnet-6: { forced_tool_choice: false }
+```
 
 `doctrine:migrations:diff` then produces the schema: the mappings ship here, the migration
 belongs to the application that runs them. Without `doctrine/orm` (or with `orm.enabled: false`)
@@ -158,7 +189,7 @@ from a daily cron.
 
 A case file in `evals_dir` holds a JSON array of cases, each with a precondition (`state`), the
 visitor's `turns` and the `expected` keys it is about; a `rubric` goes to the judge
-(`models.judge`) at temperature zero, and every other key to a tagged grader. A vertical adds
+(`models.judge`), and every other key to a tagged grader. A vertical adds
 the keys of its own state with its own `Grader`, and builds the preconditions the core cannot
 by aliasing `EvalEnvironment`. With the ORM each case runs in a transaction that is rolled back,
 so nothing it writes stays and its spend does not count against the day's budget.
@@ -189,7 +220,7 @@ composer install
 make check     # php-cs-fixer, phpstan, deptrac, composer-dependency-analyser, phpunit
 ```
 
-Deptrac keeps the agent free of Symfony and Doctrine: they are reached only through `Bridge/`
+Deptrac keeps the agent free of Symfony and Doctrine: they are reached only through `Bridge/`, `Provider/Platform/`
 and `Provider/Anthropic/`.
 
 The suite runs on SQLite in memory and needs no server. `ODISEO_AGENT_TEST_DATABASE_URL` points the

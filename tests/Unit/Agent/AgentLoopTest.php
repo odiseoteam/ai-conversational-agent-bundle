@@ -110,6 +110,51 @@ final class AgentLoopTest extends TestCase
         self::assertSame([], $this->ofType($events, EventType::Ui), 'nothing is rendered');
     }
 
+    public function testARoundCutAtTheOutputLimitEndsTheTurnWithWhatArrived(): void
+    {
+        $builder = new AgentBuilder(new FakeProvider([
+            FakeProvider::text('Here are', \Odiseo\AiConversationalAgentBundle\Provider\Response\StopReason::MaxTokens),
+        ]));
+        $messages = [Transcript::userMessage('hi')];
+
+        $events = $this->collect($builder, $messages);
+
+        self::assertSame('max_tokens', $this->last($events)->data['stop_reason']);
+        self::assertSame('Here are', $this->text($events));
+        self::assertSame([], $this->ofType($events, EventType::Error));
+    }
+
+    public function testWhatTheModelCannotDoIsNotAskedOfIt(): void
+    {
+        $provider = new FakeProvider([FakeProvider::text('Hi.')], new ProviderCapabilities());
+        $builder = new AgentBuilder($provider, new AgentConfig(brandName: 'Odiseo', thinkingEffort: 'high'));
+        $messages = [Transcript::userMessage('hi'), ['role' => 'assistant', 'content' => [['type' => 'text', 'text' => 'Hello.']]], Transcript::userMessage('again')];
+
+        $this->collect($builder, $messages);
+
+        $request = $provider->lastRequest();
+        self::assertNotNull($request);
+        self::assertNull($request->thinkingEffort, 'no thinking without it');
+        self::assertFalse($request->cacheTools, 'no cache markers without caching');
+        self::assertSame([], array_filter($request->system, static fn ($block): bool => $block->cacheHint));
+        self::assertStringNotContainsString('cache_hint', (string) json_encode($request->messages));
+    }
+
+    public function testTheMemoryIsExtractedByItsOwnProvider(): void
+    {
+        $turn = new FakeProvider([FakeProvider::text('Noted.')]);
+        $memory = new FakeProvider([FakeProvider::text('[]')]);
+        $builder = new AgentBuilder($turn);
+        $builder->memoryProvider = $memory;
+        $messages = [Transcript::userMessage('I wear an M')];
+        $this->collect($builder, $messages);
+
+        $builder->loop()->updateMemory($messages, new SessionContext('s-1', 'visitor-1'));
+
+        self::assertCount(1, $turn->requests());
+        self::assertCount(1, $memory->requests());
+    }
+
     public function testACleanPresentationRoundWithChipsEndsTheTurn(): void
     {
         $provider = new FakeProvider([
@@ -123,7 +168,7 @@ final class AgentLoopTest extends TestCase
                     new \Odiseo\AiConversationalAgentBundle\Provider\Response\ToolUse('tu-2', 'present_records', ['ids' => ['R-1']]),
                     new \Odiseo\AiConversationalAgentBundle\Provider\Response\ToolUse('tu-3', ChipComponent::TOOL, ['suggestions' => ['See the other one']]),
                 ],
-                'tool_use',
+                \Odiseo\AiConversationalAgentBundle\Provider\Response\StopReason::ToolUse,
             ),
         ]);
         $builder = new AgentBuilder($provider, extra: [new DirectoryCapability()]);

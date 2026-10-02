@@ -25,6 +25,29 @@ All notable changes to this project are documented here. The format is based on
 ### Changed
 
 - MIT license.
+- `Provider\Platform\PlatformProvider` is the shared base of the adapters over a Symfony AI
+  platform: it reads the stream, maps errors and reports usage and the stop reason in this
+  product's terms; `AnthropicProvider` extends it and only writes the payload.
+- `ProviderResponse::$stopReason` is a `StopReason` enum, mapped from the platform's finish reason
+  instead of the provider's raw value. The `stop_reason` of events and logs keeps its values.
+- Reasoning blocks in the transcript carry the provider that wrote them; an adapter sends back
+  its own and leaves another provider's out. A block without the tag is sent as it is.
+- `ToolSpec` has no `providerDefinition` nor `isServerTool()`: each adapter writes its tools.
+  An empty `properties` in a schema is left out of the request.
+- `models` names a platform and a model per role: `turn` (with its `thinking_effort`), `memory`
+  and `judge`, each `{platform, model}`; the platform is `anthropic` by default and, like the
+  model, can come from an env var. Each role has its provider service
+  (`odiseo_ai_conversational_agent.provider.<role>`), picked from the adapters tagged
+  `odiseo_ai_conversational_agent.provider`; the `ModelProvider` alias is gone.
+- `ModelProvider::capabilities()` takes the model. The Anthropic adapter knows its models: Haiku
+  4.5 has no thinking, so its effort is dropped instead of needing `off`; Sonnet 5.5 takes no
+  forced tool choice and turns thinking down with `between_tools`; the Claude 5 models take no
+  temperature. `capabilities` completes it for a model the adapter does not know yet.
+- The loop applies every capability: no cache markers without caching, no thinking without it,
+  no eager dispatch without tool-input deltas.
+- `prices` sets a model's price, with input, output, cache write and cache read stated apart.
+  `ModelPrice` takes all four; the defaults state them for the Claude models. A configured model
+  without a price stops the agent from starting instead of costing zero.
 - Memory extraction records facts through a `record_fact` tool, as the reference does, and sees
   the facts already saved: a restatement is dropped, an update under a saved key replaces it, and
   at most three are kept per turn. An extraction prompt no longer asks for a JSON array.
@@ -54,10 +77,12 @@ All notable changes to this project are documented here. The format is based on
 
 ### Fixed
 
+- A round cut at the output token limit no longer ends the turn in an error: it closes with
+  what arrived and `stop_reason: max_tokens`, logs a warning, and its usage is charged.
 - The Anthropic platform needs `cache_retention: none` (README): with the default the bridge adds
-  cache breakpoints of its own, on the volatile context block and on forced-tool rounds, whose
-  writes are never read. Measured on Expreso's evals: 58% fewer cache writes per round and about
-  13% less per round.
+  cache breakpoints of its own on top of the bundle's, including on forced-tool rounds, whose
+  entries the rounds after them cannot read. The cost is about the same either way; the request
+  carries the breakpoints the bundle places, as the reference does.
 - An error in an eval case that does not come from the model (a precondition the store cannot
   build, a bug) is an error on that case; the run goes on and its file is written.
 - A failed flush inside an eval case no longer leaves the entity manager closed for the cases

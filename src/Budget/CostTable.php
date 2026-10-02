@@ -7,35 +7,51 @@ namespace Odiseo\AiConversationalAgentBundle\Budget;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
 
 /**
- * What a call cost. The prices are deployment configuration: the defaults below follow the
- * published list at the time of writing and must be checked against the provider's own price
- * list before a spend cap means anything. An unpriced model costs zero and is logged as such
- * by the policy, rather than silently charging a wrong number.
+ * What a call cost. The defaults follow the published list prices at the time of writing; a
+ * deployment adds or corrects a model under `prices`. Every model the agent is configured with
+ * must have a price, or the table refuses to be built: an unpriced model would cost zero and no
+ * spend cap would ever stop it.
  */
 final class CostTable
 {
     /** @var array<string, ModelPrice> */
     private array $prices;
 
-    /** @param array<string, ModelPrice> $prices */
-    public function __construct(array $prices = [])
+    /**
+     * @param array<string, ModelPrice|array{input: float|int, output: float|int, cache_write: float|int, cache_read: float|int}> $prices
+     * @param list<string>                                                                                                        $models the configured ones, each of which must be priced
+     */
+    public function __construct(array $prices = [], array $models = [])
     {
-        $this->prices = $prices + self::defaults();
+        $this->prices = array_map(
+            static fn (ModelPrice|array $price): ModelPrice => $price instanceof ModelPrice ? $price : ModelPrice::fromArray($price),
+            $prices,
+        ) + self::defaults();
+
+        foreach ($models as $model) {
+            if ('' !== $model && !$this->knows($model)) {
+                throw new \InvalidArgumentException(\sprintf('The model "%s" has no price: add it under prices, with input, output, cache_write and cache_read in USD per million tokens.', $model));
+            }
+        }
     }
 
     /** @return array<string, ModelPrice> */
     public static function defaults(): array
     {
-        // List prices of the first-party API; a dated id costs the same as its alias.
+        // List prices of the first-party API; a dated id costs the same as its alias. Cache
+        // writes are the 5-minute ones (1.25x input) and reads 0.1x.
+        $claude = static fn (float $input, float $output): ModelPrice => new ModelPrice($input, $output, $input * 1.25, $input * 0.1);
+
         return [
-            'claude-fable-5-1' => new ModelPrice(10.0, 50.0),
-            'claude-fable-5' => new ModelPrice(10.0, 50.0),
-            'claude-opus-5' => new ModelPrice(5.0, 25.0),
-            'claude-opus-4-8' => new ModelPrice(5.0, 25.0),
-            'claude-sonnet-5' => new ModelPrice(2.0, 10.0),
-            'claude-sonnet-4-6' => new ModelPrice(3.0, 15.0),
-            'claude-haiku-4-5' => new ModelPrice(1.0, 5.0),
-            'claude-haiku-4-5-20251001' => new ModelPrice(1.0, 5.0),
+            'claude-fable-5-1' => $claude(10.0, 50.0),
+            'claude-fable-5' => $claude(10.0, 50.0),
+            'claude-opus-5' => $claude(5.0, 25.0),
+            'claude-opus-4-8' => $claude(5.0, 25.0),
+            'claude-sonnet-5-5' => $claude(2.0, 10.0),
+            'claude-sonnet-5' => $claude(2.0, 10.0),
+            'claude-sonnet-4-6' => $claude(3.0, 15.0),
+            'claude-haiku-4-5' => $claude(1.0, 5.0),
+            'claude-haiku-4-5-20251001' => $claude(1.0, 5.0),
         ];
     }
 
@@ -53,7 +69,7 @@ final class CostTable
 
         return ($usage->inputTokens * $price->inputPerMillion
             + $usage->outputTokens * $price->outputPerMillion
-            + $usage->cacheCreationTokens * $price->cacheWrite()
-            + $usage->cacheReadTokens * $price->cacheRead()) / 1_000_000;
+            + $usage->cacheCreationTokens * $price->cacheWritePerMillion
+            + $usage->cacheReadTokens * $price->cacheReadPerMillion) / 1_000_000;
     }
 }

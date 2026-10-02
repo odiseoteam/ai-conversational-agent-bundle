@@ -21,9 +21,11 @@ use Odiseo\AiConversationalAgentBundle\Prompt\ContextBlockBuilder;
 use Odiseo\AiConversationalAgentBundle\Prompt\PromptAssembler;
 use Odiseo\AiConversationalAgentBundle\Prompt\StaticPromptBuilder;
 use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
+use Odiseo\AiConversationalAgentBundle\Provider\Request\SystemBlock;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\ToolChoice;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\ProviderResponse;
+use Odiseo\AiConversationalAgentBundle\Provider\Response\StopReason;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\TextChunk;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\ToolCallStarted;
@@ -66,6 +68,8 @@ final class AgentLoop
         private readonly BudgetPolicy $budget,
         private readonly ContextProvider $context = new NullContextProvider(),
         private readonly LoggerInterface $logger = new NullLogger(),
+        /** Runs the memory extraction; the turn's provider when null. */
+        private readonly ?ModelProvider $memoryProvider = null,
     ) {
     }
 
@@ -90,7 +94,13 @@ final class AgentLoop
             $now,
             $this->config->maxContextChars,
         );
+        // What the model can do decides what is asked of it: no markers without caching, no
+        // thinking without it, no eager dispatch without the deltas it reads.
+        $can = $this->provider->capabilities($this->config->model);
         $system = PromptAssembler::systemBlocks($this->staticPrompt->build(), $context);
+        if (!$can->promptCaching) {
+            $system = array_map(static fn (SystemBlock $block): SystemBlock => new SystemBlock($block->text), $system);
+        }
         $tools = $this->toolSurface->tools();
 
         $scope = new TurnScope();
@@ -108,7 +118,7 @@ final class AgentLoop
             $state,
         );
 
-        $canForce = $this->provider->capabilities()->forcedToolChoice;
+        $canForce = $can->forcedToolChoice;
         if (null !== $forced && !$canForce) {
             $this->prefetch($forced, $toolContext, $messages);
         }
@@ -148,13 +158,14 @@ final class AgentLoop
                     // the automatic rounds that follow.
                     messages: PromptAssembler::requestMessages(
                         $messages,
-                        $this->config->rollingConversationCache && $toolChoice->isAuto(),
+                        $can->promptCaching && $this->config->rollingConversationCache && $toolChoice->isAuto(),
                     ),
                     tools: $tools,
                     toolChoice: $toolChoice,
                     maxTokens: $this->config->maxTokens,
-                    thinkingEffort: $this->config->thinkingEffort,
+                    thinkingEffort: $can->thinking ? $this->config->thinkingEffort : null,
                     timeoutSeconds: $this->config->requestTimeoutSeconds,
+                    cacheTools: $can->promptCaching,
                 );
 
                 $response = null;
@@ -163,7 +174,7 @@ final class AgentLoop
                 // dispatch the call itself — is StreamedRound's; the join below picks up the
                 // rest. Waiting for the whole round instead means the local reads this
                 // deployment's tools do resolve before a person ever sees a line.
-                $streamed = new StreamedRound($this->executor, $toolContext, $this->config->eagerToolDispatch && !$forceText);
+                $streamed = new StreamedRound($this->executor, $toolContext, $this->config->eagerToolDispatch && $can->toolInputDeltas && !$forceText);
                 foreach ($this->provider->stream($request) as $event) {
                     if ($event instanceof TextChunk) {
                         yield AgentEvent::textDelta($event->text);
@@ -197,7 +208,10 @@ final class AgentLoop
                 $this->budget->charge($session->sessionId, $this->config->model, $response->usage, $clock);
                 $this->log($session, $round, $response);
 
-                $stopReason = $response->stopReason;
+                $stopReason = $response->stopReason?->value;
+                if (StopReason::MaxTokens === $response->stopReason) {
+                    $this->logger->warning('round cut at the output token limit', ['session' => $session->sessionTag(), 'round' => $round]);
+                }
                 if (null !== $assistant = $response->assistantMessage()) {
                     $messages[] = $assistant;
                 }
@@ -276,7 +290,7 @@ final class AgentLoop
     public function updateMemory(array $messages, SessionContext $session): array
     {
         return $this->memory->extract(
-            $this->provider,
+            $this->memoryProvider ?? $this->provider,
             $session->principalId,
             $session->sessionTag(),
             Transcript::text(Transcript::latestExchange($messages)),
@@ -326,7 +340,7 @@ final class AgentLoop
             'session' => $session->sessionTag(),
             'round' => $round,
             'model' => $model ?? $this->config->model,
-            'stop_reason' => $response->stopReason,
+            'stop_reason' => $response->stopReason?->value,
             'usage' => $response->usage->toArray(),
             'tool_calls' => array_map(static fn ($call): string => $call->name, $response->toolUses),
         ]);

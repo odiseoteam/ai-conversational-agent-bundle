@@ -11,21 +11,12 @@ namespace Odiseo\AiConversationalAgentBundle\Capability;
  */
 final readonly class ToolSpec
 {
-    /**
-     * @param array<string, mixed>      $inputSchema        JSON schema for the tool's arguments
-     * @param array<string, mixed>|null $providerDefinition set for a server-side tool the provider runs itself
-     */
+    /** @param array<string, mixed> $inputSchema JSON schema for the tool's arguments */
     public function __construct(
         public string $name,
         public string $description,
         public array $inputSchema,
         public bool $wantsStatusLine = true,
-        public ?array $providerDefinition = null,
     ) {
-    }
-
-    public function isServerTool(): bool
-    {
-        return null !== $this->providerDefinition;
     }
 }

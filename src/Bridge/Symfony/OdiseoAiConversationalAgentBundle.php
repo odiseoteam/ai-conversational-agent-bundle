@@ -32,6 +32,8 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
     /** The tag every capability carries; the registry collects them in order. */
     public const CAPABILITY_TAG = 'odiseo_ai_conversational_agent.capability';
     public const EVAL_GRADER_TAG = 'odiseo_ai_conversational_agent.eval_grader';
+    /** An adapter, with the platform it talks to as the tag's `platform` attribute. */
+    public const PROVIDER_TAG = 'odiseo_ai_conversational_agent.provider';
 
     protected string $extensionAlias = 'odiseo_ai_conversational_agent';
 
@@ -82,12 +84,39 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                     // between turns (a button pressed, an action taken outside the chat).
                     ->scalarNode('app_events_label')->defaultValue('What happened in the app meanwhile')->end()
                 ->end()->end()
-                ->arrayNode('models')->addDefaultsIfNotSet()->children()
-                    ->scalarNode('turn')->defaultValue('claude-sonnet-5')->end()
-                    ->scalarNode('memory')->defaultValue('claude-haiku-4-5-20251001')->end()
-                    ->scalarNode('judge')->defaultValue('claude-sonnet-5')->end()
-                    ->scalarNode('thinking_effort')->defaultValue('low')->info('low, medium, high, xhigh, max or off; checked when the agent starts, so it can come from an env var.')->end()
-                ->end()->end()
+                ->arrayNode('models')->addDefaultsIfNotSet()
+                    ->info('The platform and model of each role. The platform names an installed adapter (anthropic); it and the model can come from env vars, because the adapter is picked when the role\'s service is built.')
+                    ->children()
+                        ->arrayNode('turn')->addDefaultsIfNotSet()->children()
+                            ->scalarNode('platform')->defaultValue('anthropic')->end()
+                            ->scalarNode('model')->defaultValue('claude-sonnet-5')->end()
+                            ->scalarNode('thinking_effort')->defaultValue('low')->info('low, medium, high, xhigh, max or off; ignored by a model without thinking.')->end()
+                        ->end()->end()
+                        ->arrayNode('memory')->addDefaultsIfNotSet()->children()
+                            ->scalarNode('platform')->defaultValue('anthropic')->end()
+                            ->scalarNode('model')->defaultValue('claude-haiku-4-5-20251001')->end()
+                        ->end()->end()
+                        ->arrayNode('judge')->addDefaultsIfNotSet()->children()
+                            ->scalarNode('platform')->defaultValue('anthropic')->end()
+                            ->scalarNode('model')->defaultValue('claude-sonnet-5')->end()
+                        ->end()->end()
+                    ->end()
+                ->end()
+                ->arrayNode('prices')
+                    ->info('USD per million tokens, for a model the bundle has no price for or whose price changed. Every configured model needs one.')
+                    ->useAttributeAsKey('model')
+                    ->arrayPrototype()->children()
+                        ->floatNode('input')->isRequired()->end()
+                        ->floatNode('output')->isRequired()->end()
+                        ->floatNode('cache_write')->isRequired()->end()
+                        ->floatNode('cache_read')->isRequired()->end()
+                    ->end()->end()
+                ->end()
+                ->arrayNode('capabilities')
+                    ->info('What a model can do, for one its adapter does not know yet: forced_tool_choice, thinking, prompt_caching, tool_input_deltas, temperature, server_tools, parallel_tool_calls.')
+                    ->useAttributeAsKey('model')
+                    ->arrayPrototype()->useAttributeAsKey('name')->booleanPrototype()->end()->end()
+                ->end()
                 ->arrayNode('budgets')->addDefaultsIfNotSet()->children()
                     ->integerNode('max_tokens')->defaultValue(2048)->end()
                     ->integerNode('max_tool_iterations')->defaultValue(8)->end()
@@ -155,7 +184,9 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
      *
      * @param array{
      *     identity: array<string, string>,
-     *     models: array<string, string>,
+     *     models: array{turn: array{platform: string, model: string, thinking_effort: string}, memory: array{platform: string, model: string}, judge: array{platform: string, model: string}},
+     *     prices: array<string, array{input: float, output: float, cache_write: float, cache_read: float}>,
+     *     capabilities: array<string, array<string, bool>>,
      *     budgets: array<string, int|float|null>,
      *     limits: array<string, int>,
      *     memory: array{enabled: bool, tier_one_cap: int, retention_days: ?int, blocked_patterns: list<string>, extraction_prompt_file: ?string},
@@ -174,7 +205,14 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
         $builder->registerForAutoconfiguration(Capability::class)->addTag(self::CAPABILITY_TAG);
         $builder->registerForAutoconfiguration(Grader::class)->addTag(self::EVAL_GRADER_TAG);
 
-        foreach (['identity', 'models', 'budgets', 'limits', 'latency', 'fence', 'conversations', 'sessions'] as $section) {
+        foreach (['turn', 'memory', 'judge'] as $role) {
+            $builder->setParameter(self::ID.'models.'.$role, $config['models'][$role]['model']);
+            $builder->setParameter(self::ID.'models.'.$role.'_platform', $config['models'][$role]['platform']);
+        }
+        $builder->setParameter(self::ID.'models.thinking_effort', $config['models']['turn']['thinking_effort']);
+        $builder->setParameter(self::ID.'prices', $config['prices']);
+        $builder->setParameter(self::ID.'capabilities', $config['capabilities']);
+        foreach (['identity', 'budgets', 'limits', 'latency', 'fence', 'conversations', 'sessions'] as $section) {
             foreach ($config[$section] as $key => $value) {
                 $builder->setParameter(self::ID.$section.'.'.$key, $value);
             }

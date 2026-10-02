@@ -19,7 +19,7 @@ final readonly class ProviderResponse
     public function __construct(
         public array $content,
         public array $toolUses = [],
-        public ?string $stopReason = null,
+        public ?StopReason $stopReason = null,
         public Usage $usage = new Usage(),
     ) {
     }
