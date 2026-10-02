@@ -131,6 +131,25 @@ final class EvalRunnerTest extends TestCase
         self::assertSame([1, 2], $pauses);
     }
 
+    public function testAnErrorOutsideTheModelIsAnErrorOnThatCase(): void
+    {
+        $environment = new class implements EvalEnvironment {
+            public function prepare(EvalCase $case, TurnState $state): void
+            {
+                throw new \RuntimeException('Product X is not in the catalog.');
+            }
+
+            public function snapshot(): array
+            {
+                return [];
+            }
+        };
+
+        $result = $this->runner([], environment: $environment)->run(new EvalCase('missing-product', ['hi'], []));
+
+        self::assertSame('Product X is not in the catalog.', $result->error);
+    }
+
     public function testARejectedCredentialStopsTheRun(): void
     {
         $provider = new class implements ModelProvider {

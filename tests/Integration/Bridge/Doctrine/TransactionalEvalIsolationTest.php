@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Tests\Integration\Bridge\Doctrine;
 
+use Doctrine\Persistence\ManagerRegistry;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\TransactionalEvalIsolation;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryFact;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Orm;
@@ -65,6 +66,24 @@ final class TransactionalEvalIsolationTest extends TestCase
         }
 
         self::assertSame([], $memory->all('eval-subject'));
+        self::assertFalse($em->getConnection()->isTransactionActive());
+    }
+
+    public function testAManagerAFailedFlushClosedIsReset(): void
+    {
+        $em = Orm::entityManager();
+        $registry = $this->createMock(ManagerRegistry::class);
+        $registry->expects(self::once())->method('resetManager');
+
+        try {
+            (new TransactionalEvalIsolation($em, $registry))->isolate(static function () use ($em): never {
+                $em->close();
+
+                throw new \RuntimeException('flush failed');
+            });
+        } catch (\RuntimeException) {
+        }
+
         self::assertFalse($em->getConnection()->isTransactionActive());
     }
 }
