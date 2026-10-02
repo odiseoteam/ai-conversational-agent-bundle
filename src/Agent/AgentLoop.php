@@ -24,6 +24,7 @@ use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\ToolChoice;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\ProviderResponse;
+use Odiseo\AiConversationalAgentBundle\Provider\Response\StopReason;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\TextChunk;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\ToolCallStarted;
@@ -197,7 +198,10 @@ final class AgentLoop
                 $this->budget->charge($session->sessionId, $this->config->model, $response->usage, $clock);
                 $this->log($session, $round, $response);
 
-                $stopReason = $response->stopReason;
+                $stopReason = $response->stopReason?->value;
+                if (StopReason::MaxTokens === $response->stopReason) {
+                    $this->logger->warning('round cut at the output token limit', ['session' => $session->sessionTag(), 'round' => $round]);
+                }
                 if (null !== $assistant = $response->assistantMessage()) {
                     $messages[] = $assistant;
                 }
@@ -326,7 +330,7 @@ final class AgentLoop
             'session' => $session->sessionTag(),
             'round' => $round,
             'model' => $model ?? $this->config->model,
-            'stop_reason' => $response->stopReason,
+            'stop_reason' => $response->stopReason?->value,
             'usage' => $response->usage->toArray(),
             'tool_calls' => array_map(static fn ($call): string => $call->name, $response->toolUses),
         ]);

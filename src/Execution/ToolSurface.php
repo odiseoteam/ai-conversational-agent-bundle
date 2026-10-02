@@ -55,6 +55,6 @@ final class ToolSurface
             ...Scalar::keyed($schema['properties'] ?? null),
         ];
 
-        return new ToolSpec($tool->name, $tool->description, $schema, $tool->wantsStatusLine, $tool->providerDefinition);
+        return new ToolSpec($tool->name, $tool->description, $schema, $tool->wantsStatusLine);
     }
 }

@@ -5,45 +5,22 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Provider\Anthropic;
 
 use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
-use Odiseo\AiConversationalAgentBundle\Provider\AuthenticationException;
-use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
+use Odiseo\AiConversationalAgentBundle\Provider\Platform\PlatformProvider;
 use Odiseo\AiConversationalAgentBundle\Provider\ProviderCapabilities;
-use Odiseo\AiConversationalAgentBundle\Provider\ProviderException;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\SystemBlock;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
-use Odiseo\AiConversationalAgentBundle\Provider\Response\ProviderResponse;
-use Odiseo\AiConversationalAgentBundle\Provider\Response\ToolUse;
-use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
-use Odiseo\AiConversationalAgentBundle\Provider\Stream\TextChunk;
-use Odiseo\AiConversationalAgentBundle\Provider\Stream\ToolCallStarted;
-use Odiseo\AiConversationalAgentBundle\Provider\Stream\ToolInputChunk;
-use Odiseo\AiConversationalAgentBundle\Provider\Stream\TurnFinished;
-use Odiseo\AiConversationalAgentBundle\Support\Scalar;
-use Symfony\AI\Platform\Exception\AuthenticationException as PlatformAuthenticationException;
-use Symfony\AI\Platform\Exception\ExceptionInterface as PlatformException;
-use Symfony\AI\Platform\PlatformInterface;
-use Symfony\AI\Platform\Result\DeferredResult;
-use Symfony\AI\Platform\Result\Stream\Delta\TextDelta;
+use Symfony\AI\Platform\Result\Stream\Delta\DeltaInterface;
 use Symfony\AI\Platform\Result\Stream\Delta\ThinkingComplete;
-use Symfony\AI\Platform\Result\Stream\Delta\ToolCallComplete;
-use Symfony\AI\Platform\Result\Stream\Delta\ToolCallStart;
-use Symfony\AI\Platform\Result\Stream\Delta\ToolInputDelta;
-use Symfony\AI\Platform\TokenUsage\TokenUsageInterface;
 
 /**
  * The Anthropic adapter, over the Symfony AI platform bridge.
  *
  * The payload is written here, not by the bridge: this product places its own cache
  * breakpoints, so the host configures the platform with `cache_retention: none` and the markers
- * below are the only ones on the request; with the default the bridge adds its own. What the bridge does supply is the HTTP
- * plumbing, the SSE parsing, the error mapping and the usage extraction.
+ * below are the only ones on the request; with the default the bridge adds its own.
  */
-final class AnthropicProvider implements ModelProvider
+final class AnthropicProvider extends PlatformProvider
 {
-    public function __construct(private readonly PlatformInterface $platform)
-    {
-    }
-
     public function capabilities(): ProviderCapabilities
     {
         return new ProviderCapabilities(
@@ -57,149 +34,25 @@ final class AnthropicProvider implements ModelProvider
         );
     }
 
-    public function stream(TurnRequest $request): iterable
+    protected function name(): string
     {
-        $content = [];
-        $text = '';
-        $toolUses = [];
-
-        // Usage and the finish reason never reach this loop as deltas: the platform's own
-        // TokenUsageStreamListener and MetaDataStreamListener intercept those two delta types
-        // on the way through (Symfony\AI\Platform\Result\StreamResult::consume() marks them
-        // "skipped") and fold them into the deferred result's metadata instead, precisely so
-        // that a caller who only wants the text never has to filter them out. They are read
-        // from that metadata below, once the stream has been drained.
-        //
-        // asStream() itself returns a generator that has not run yet: the HTTP call and the SSE
-        // parsing happen lazily, as this loop iterates it, so the try/catch has to wrap the
-        // iteration itself rather than the call that hands back the generator.
-        $deferred = $this->invoke($request);
-
-        try {
-            foreach ($deferred->asStream() as $event) {
-                if ($event instanceof TextDelta) {
-                    $text .= $event->getText();
-                    yield new TextChunk($event->getText());
-                    continue;
-                }
-
-                if ($event instanceof ThinkingComplete) {
-                    // Thinking blocks travel back with the assistant message: a turn that
-                    // drops them cannot continue a tool call under extended thinking.
-                    self::flushText($content, $text);
-                    $content[] = array_filter([
-                        'type' => 'thinking',
-                        'thinking' => $event->getThinking(),
-                        'signature' => $event->getSignature(),
-                    ], static fn (mixed $value): bool => null !== $value);
-                    continue;
-                }
-
-                if ($event instanceof ToolCallStart) {
-                    yield new ToolCallStarted($event->getId(), $event->getName());
-                    continue;
-                }
-
-                if ($event instanceof ToolInputDelta) {
-                    yield new ToolInputChunk($event->getId(), $event->getName(), $event->getPartialJson());
-                    continue;
-                }
-
-                if ($event instanceof ToolCallComplete) {
-                    self::flushText($content, $text);
-                    foreach ($event->getToolCalls() as $call) {
-                        $content[] = [
-                            'type' => 'tool_use',
-                            'id' => $call->getId(),
-                            'name' => $call->getName(),
-                            // A plain array, not (object): the bridge's Contract runs this
-                            // whole payload through the Symfony Serializer before it reaches
-                            // JSON, and that serializer has no normalizer for stdClass. An
-                            // empty array becomes `[]` rather than Anthropic's `{}` for a
-                            // zero-argument call; every tool this deployment registers requires
-                            // at least one property, so the case does not arise yet.
-                            'input' => $call->getArguments(),
-                        ];
-                        $toolUses[] = new ToolUse($call->getId(), $call->getName(), $call->getArguments());
-                    }
-                }
-            }
-        } catch (PlatformAuthenticationException $failed) {
-            throw new AuthenticationException($failed->getMessage(), 0, $failed);
-        } catch (PlatformException $failed) {
-            throw new ProviderException($failed->getMessage(), 0, $failed);
-        }
-
-        self::flushText($content, $text);
-
-        $metadata = $deferred->getMetadata();
-        $tokenUsage = $metadata->get('token_usage');
-        $usage = $this->usageFrom($tokenUsage instanceof TokenUsageInterface ? $tokenUsage : null);
-        $finishReason = $metadata->get('finish_reason');
-        $stopReason = Scalar::nullableString($finishReason);
-
-        yield new TurnFinished(new ProviderResponse($content, $toolUses, $stopReason, $usage));
+        return 'anthropic';
     }
 
-    private function usageFrom(?TokenUsageInterface $usage): Usage
+    protected function reasoning(DeltaInterface $delta): ?array
     {
-        if (null === $usage) {
-            return new Usage();
+        if (!$delta instanceof ThinkingComplete) {
+            return null;
         }
 
-        return new Usage(
-            $usage->getPromptTokens() ?? 0,
-            $usage->getCompletionTokens() ?? 0,
-            $usage->getCacheCreationTokens() ?? 0,
-            $usage->getCacheReadTokens() ?? 0,
-        );
+        return array_filter([
+            'type' => 'thinking',
+            'thinking' => $delta->getThinking(),
+            'signature' => $delta->getSignature(),
+        ], static fn (mixed $value): bool => null !== $value);
     }
 
-    public function complete(TurnRequest $request): ProviderResponse
-    {
-        foreach ($this->stream($request) as $event) {
-            if ($event instanceof TurnFinished) {
-                return $event->response;
-            }
-        }
-
-        throw new ProviderException('The model stream ended without a completed turn.');
-    }
-
-    /**
-     * @param list<array<string, mixed>> $content
-     */
-    private static function flushText(array &$content, string &$text): void
-    {
-        if ('' !== $text) {
-            $content[] = ['type' => 'text', 'text' => $text];
-            $text = '';
-        }
-    }
-
-    /**
-     * The synchronous half of one call: resolving the model and starting the request. Anything
-     * the platform raises while resolving the model (an unknown model id) is mapped here;
-     * anything it raises while streaming the response is mapped in stream() instead, because
-     * asStream() there returns unstarted.
-     */
-    private function invoke(TurnRequest $request): DeferredResult
-    {
-        if ('' === $request->model) {
-            throw new ProviderException('The request names no model.');
-        }
-
-        try {
-            return $this->platform->invoke($request->model, $this->payload($request), ['stream' => true]);
-        } catch (PlatformAuthenticationException $failed) {
-            throw new AuthenticationException($failed->getMessage(), 0, $failed);
-        } catch (PlatformException $failed) {
-            throw new ProviderException($failed->getMessage(), 0, $failed);
-        }
-    }
-
-    /** @return array<string, mixed> */
-    private function payload(TurnRequest $request): array
+    protected function payload(TurnRequest $request): array
     {
         $payload = [
             'model' => $request->model,
@@ -241,6 +94,7 @@ final class AnthropicProvider implements ModelProvider
      */
     private function message(array $message): array
     {
+        $message = $this->ownReasoning($message);
         $content = $message['content'] ?? null;
         if (!\is_array($content)) {
             return $message;
@@ -270,10 +124,10 @@ final class AnthropicProvider implements ModelProvider
     private function tools(array $tools, bool $cacheTools): array
     {
         $mapped = array_map(
-            static fn (ToolSpec $tool): array => $tool->providerDefinition ?? [
+            static fn (ToolSpec $tool): array => [
                 'name' => $tool->name,
                 'description' => $tool->description,
-                'input_schema' => $tool->inputSchema,
+                'input_schema' => self::schema($tool->inputSchema),
             ],
             $tools,
         );

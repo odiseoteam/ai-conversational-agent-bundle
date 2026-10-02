@@ -9,6 +9,7 @@ use Odiseo\AiConversationalAgentBundle\Provider\ProviderCapabilities;
 use Odiseo\AiConversationalAgentBundle\Provider\ProviderException;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\ProviderResponse;
+use Odiseo\AiConversationalAgentBundle\Provider\Response\StopReason;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\ToolUse;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\TextChunk;
@@ -56,7 +57,7 @@ final class ChunkedToolCallProvider implements ModelProvider
     {
         if ($this->round++ > 0) {
             yield new TextChunk($this->closing);
-            yield new TurnFinished(new ProviderResponse([['type' => 'text', 'text' => $this->closing]], [], 'end_turn', new Usage(10, 5)));
+            yield new TurnFinished(new ProviderResponse([['type' => 'text', 'text' => $this->closing]], [], StopReason::EndTurn, new Usage(10, 5)));
 
             return;
         }
@@ -77,7 +78,7 @@ final class ChunkedToolCallProvider implements ModelProvider
             $content[] = ['type' => 'text', 'text' => $this->trailingText];
         }
 
-        yield new TurnFinished(new ProviderResponse($content, $uses, 'tool_use', new Usage(10, 5)));
+        yield new TurnFinished(new ProviderResponse($content, $uses, StopReason::ToolUse, new Usage(10, 5)));
     }
 
     public function complete(TurnRequest $request): ProviderResponse

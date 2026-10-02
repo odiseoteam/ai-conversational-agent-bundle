@@ -110,6 +110,20 @@ final class AgentLoopTest extends TestCase
         self::assertSame([], $this->ofType($events, EventType::Ui), 'nothing is rendered');
     }
 
+    public function testARoundCutAtTheOutputLimitEndsTheTurnWithWhatArrived(): void
+    {
+        $builder = new AgentBuilder(new FakeProvider([
+            FakeProvider::text('Here are', \Odiseo\AiConversationalAgentBundle\Provider\Response\StopReason::MaxTokens),
+        ]));
+        $messages = [Transcript::userMessage('hi')];
+
+        $events = $this->collect($builder, $messages);
+
+        self::assertSame('max_tokens', $this->last($events)->data['stop_reason']);
+        self::assertSame('Here are', $this->text($events));
+        self::assertSame([], $this->ofType($events, EventType::Error));
+    }
+
     public function testACleanPresentationRoundWithChipsEndsTheTurn(): void
     {
         $provider = new FakeProvider([
@@ -123,7 +137,7 @@ final class AgentLoopTest extends TestCase
                     new \Odiseo\AiConversationalAgentBundle\Provider\Response\ToolUse('tu-2', 'present_records', ['ids' => ['R-1']]),
                     new \Odiseo\AiConversationalAgentBundle\Provider\Response\ToolUse('tu-3', ChipComponent::TOOL, ['suggestions' => ['See the other one']]),
                 ],
-                'tool_use',
+                \Odiseo\AiConversationalAgentBundle\Provider\Response\StopReason::ToolUse,
             ),
         ]);
         $builder = new AgentBuilder($provider, extra: [new DirectoryCapability()]);

@@ -189,7 +189,7 @@ composer install
 make check     # php-cs-fixer, phpstan, deptrac, composer-dependency-analyser, phpunit
 ```
 
-Deptrac keeps the agent free of Symfony and Doctrine: they are reached only through `Bridge/`
+Deptrac keeps the agent free of Symfony and Doctrine: they are reached only through `Bridge/`, `Provider/Platform/`
 and `Provider/Anthropic/`.
 
 The suite runs on SQLite in memory and needs no server. `ODISEO_AGENT_TEST_DATABASE_URL` points the

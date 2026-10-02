@@ -9,6 +9,7 @@ use Odiseo\AiConversationalAgentBundle\Provider\ProviderCapabilities;
 use Odiseo\AiConversationalAgentBundle\Provider\ProviderException;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\ProviderResponse;
+use Odiseo\AiConversationalAgentBundle\Provider\Response\StopReason;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\ToolUse;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\TextChunk;
@@ -40,7 +41,7 @@ final class FakeProvider implements ModelProvider
         $this->responses = $responses;
     }
 
-    public static function text(string $text, string $stopReason = 'end_turn'): ProviderResponse
+    public static function text(string $text, StopReason $stopReason = StopReason::EndTurn): ProviderResponse
     {
         return new ProviderResponse(
             [['type' => 'text', 'text' => $text]],
@@ -58,7 +59,7 @@ final class FakeProvider implements ModelProvider
         return new ProviderResponse(
             $content,
             [new ToolUse($id, $tool, $input)],
-            'tool_use',
+            StopReason::ToolUse,
             new Usage(10, 5),
         );
     }
