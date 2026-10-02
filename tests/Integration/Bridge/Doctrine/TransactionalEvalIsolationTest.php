@@ -34,6 +34,22 @@ final class TransactionalEvalIsolationTest extends TestCase
         self::assertSame(0.0, $ledger->sessionSpend($sessionId));
     }
 
+    public function testATransactionAroundTheRunStaysOpen(): void
+    {
+        $em = Orm::entityManager();
+        $memory = Orm::memoryStore($em);
+        $connection = $em->getConnection();
+        $connection->beginTransaction();
+
+        (new TransactionalEvalIsolation($em))->isolate(static function () use ($memory): void {
+            $memory->save('eval-subject', new MemoryFact('size', 'M'));
+        });
+
+        self::assertSame(1, $connection->getTransactionNestingLevel());
+        self::assertSame([], $memory->all('eval-subject'));
+        $connection->rollBack();
+    }
+
     public function testACaseThatThrowsIsRolledBackToo(): void
     {
         $em = Orm::entityManager();

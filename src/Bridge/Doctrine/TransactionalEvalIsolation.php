@@ -21,12 +21,14 @@ final class TransactionalEvalIsolation implements EvalIsolation
     public function isolate(\Closure $case): mixed
     {
         $connection = $this->entityManager->getConnection();
+        // Only what the case opened is rolled back: a transaction around the run stays open.
+        $level = $connection->getTransactionNestingLevel();
         $connection->beginTransaction();
 
         try {
             return $case();
         } finally {
-            while ($connection->isTransactionActive()) {
+            while ($connection->getTransactionNestingLevel() > $level) {
                 $connection->rollBack();
             }
             $this->entityManager->clear();

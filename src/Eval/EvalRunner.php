@@ -120,6 +120,7 @@ final class EvalRunner
             }
         }
 
+        $recording->transcript = $record->messages;
         $recording->memory = array_map(static fn (MemoryFact $fact): array => [
             'key' => $fact->key,
             'value' => $fact->value,

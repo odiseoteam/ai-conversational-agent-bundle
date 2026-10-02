@@ -42,8 +42,9 @@ All notable changes to this project are documented here. The format is based on
 - `EvalRunner` drives a case through `TurnRunner`, so memory extraction and the host's hook run
   as in the chat; a provider error is retried and then reported as an error, not a failure. An
   expected key no grader owns fails the case.
-- The judge drops the oldest calls and turns of a transcript too long for it, and its verdict
-  says so and carries its cost.
+- The judge reads the case's transcript, tool results included, and what each component
+  showed; one too long for it loses its oldest messages first, and the verdict says so and
+  carries its cost.
 - `symfony/ai-platform` is required. The Anthropic adapter is registered when
   `symfony/ai-anthropic-platform` is installed (was when `symfony/ai-platform` was).
 

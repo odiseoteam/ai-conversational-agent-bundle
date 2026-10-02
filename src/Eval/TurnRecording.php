@@ -20,6 +20,10 @@ final class TurnRecording
     public array $toolCalls = [];
     /** @var list<string> */
     public array $components = [];
+    /** @var list<array{component: string, payload: array<string, mixed>}> what each component showed */
+    public array $payloads = [];
+    /** @var list<array<string, mixed>> the session's messages after the case, tool results included */
+    public array $transcript = [];
     /** @var list<string> */
     public array $skillsLoaded = [];
     /** @var list<array{tool: string, status: string, reason: string|null}> */
@@ -64,7 +68,9 @@ final class TurnRecording
                 ];
                 break;
             case EventType::Ui:
-                $this->components[] = Scalar::string($event->data['component'] ?? null);
+                $component = Scalar::string($event->data['component'] ?? null);
+                $this->components[] = $component;
+                $this->payloads[] = ['component' => $component, 'payload' => Scalar::keyed($event->data['payload'] ?? null)];
                 break;
             case EventType::StateUpdate:
                 $this->state[Scalar::string($event->data['key'] ?? null)] = $event->data['value'] ?? null;
@@ -99,6 +105,8 @@ final class TurnRecording
         return [
             'toolCalls' => $this->toolCalls,
             'components' => $this->components,
+            'payloads' => $this->payloads,
+            'transcript' => $this->transcript,
             'skillsLoaded' => $this->skillsLoaded,
             'toolResults' => $this->toolResults,
             'reply' => $this->reply,
@@ -122,6 +130,10 @@ final class TurnRecording
             $recording->toolCalls[] = ['tool' => Scalar::string($call['tool'] ?? null), 'input' => Scalar::keyed($call['input'] ?? null)];
         }
         $recording->components = Scalar::strings($data['components'] ?? null);
+        foreach (Scalar::rows($data['payloads'] ?? null) as $shown) {
+            $recording->payloads[] = ['component' => Scalar::string($shown['component'] ?? null), 'payload' => Scalar::keyed($shown['payload'] ?? null)];
+        }
+        $recording->transcript = Scalar::rows($data['transcript'] ?? null);
         $recording->skillsLoaded = Scalar::strings($data['skillsLoaded'] ?? null);
         foreach (Scalar::rows($data['toolResults'] ?? null) as $result) {
             $recording->toolResults[] = [
