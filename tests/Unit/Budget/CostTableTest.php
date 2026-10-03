@@ -12,16 +12,16 @@ final class CostTableTest extends TestCase
 {
     public function testAConfiguredModelWithoutAPriceIsRefused(): void
     {
-        $this->expectExceptionMessage('The model "gpt-5.4-mini" has no price');
+        $this->expectExceptionMessage('The model "gpt-6-nano" has no price');
 
-        new CostTable([], ['claude-sonnet-5', 'gpt-5.4-mini']);
+        new CostTable([], ['claude-sonnet-5', 'gpt-6-nano']);
     }
 
     public function testAConfiguredPriceIsUsedWithItsOwnCacheRates(): void
     {
-        $costs = new CostTable(['gpt-5.4-mini' => ['input' => 0.25, 'output' => 2.0, 'cache_write' => 0.25, 'cache_read' => 0.025]], ['gpt-5.4-mini']);
+        $costs = new CostTable(['gpt-6-nano' => ['input' => 0.25, 'output' => 2.0, 'cache_write' => 0.25, 'cache_read' => 0.025]], ['gpt-6-nano']);
 
-        self::assertEqualsWithDelta(0.25 + 2.0 + 0.25 + 0.025, $costs->costOf('gpt-5.4-mini', new Usage(1_000_000, 1_000_000, 1_000_000, 1_000_000)), 1e-9);
+        self::assertEqualsWithDelta(0.25 + 2.0 + 0.25 + 0.025, $costs->costOf('gpt-6-nano', new Usage(1_000_000, 1_000_000, 1_000_000, 1_000_000)), 1e-9);
     }
 
     public function testAConfiguredPriceReplacesTheDefault(): void

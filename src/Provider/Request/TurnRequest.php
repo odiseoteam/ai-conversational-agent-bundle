@@ -31,6 +31,8 @@ final readonly class TurnRequest
         public float $timeoutSeconds = 120.0,
         /** Ask the provider to cache the tool list as part of the stable prefix. */
         public bool $cacheTools = true,
+        /** Groups the rounds of one conversation, for a provider that caches on its own. */
+        public ?string $cacheKey = null,
     ) {
     }
 }

@@ -52,6 +52,12 @@ final class CostTable
             'claude-sonnet-4-6' => $claude(3.0, 15.0),
             'claude-haiku-4-5' => $claude(1.0, 5.0),
             'claude-haiku-4-5-20251001' => $claude(1.0, 5.0),
+            // OpenAI's standard tier under 272K tokens of context: no cache-write surcharge, and
+            // its adapter reports no writes.
+            'gpt-5.5' => new ModelPrice(5.0, 30.0, 5.0, 0.5),
+            'gpt-5.4' => new ModelPrice(2.5, 15.0, 2.5, 0.25),
+            'gpt-5.4-mini' => new ModelPrice(0.75, 4.5, 0.75, 0.075),
+            'gpt-5-mini' => new ModelPrice(0.25, 2.0, 0.25, 0.025),
         ];
     }
 

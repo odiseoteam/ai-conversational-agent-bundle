@@ -8,6 +8,14 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- The OpenAI adapter (`openai`), over `symfony/ai-open-ai-platform` and the Responses API, loaded
+  when the bridge is installed. The system blocks go as developer messages, tool calls and
+  results as `function_call` and `function_call_output`, and a reasoning model's encrypted items
+  are kept in the transcript and sent back (`store: false`). `prompt_cache_key` keeps a
+  conversation's rounds on one cache; cached input is counted as a cache read. The effort maps
+  to `none`…`xhigh`. A call cut at the output limit, which the bridge reports without usage, is
+  charged the output cap. Prices for gpt-5.5, gpt-5.4, gpt-5.4-mini and gpt-5-mini.
+- `TurnRequest::$cacheKey`, set by the loop to the session tag.
 - Doctrine ORM stores for sessions, memory and spend (`OrmSessionStore`, `OrmMemoryStore`,
   `OrmSpendLedger`) over four mapped superclasses in `Bridge\Doctrine\Model`. The host names its
   entities in `orm.classes`; with `orm.enabled: false` the stores stay in memory.

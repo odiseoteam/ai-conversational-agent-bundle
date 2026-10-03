@@ -126,7 +126,9 @@ abstract class PlatformProvider implements ModelProvider
             $content,
             $toolUses,
             $truncated ? StopReason::MaxTokens : self::stopReason($finishReason instanceof FinishReason ? $finishReason : null),
-            $this->usage($tokenUsage instanceof TokenUsageInterface ? $tokenUsage : null),
+            $truncated && !$tokenUsage instanceof TokenUsageInterface
+                ? $this->usageWhenCut($request)
+                : $this->usage($tokenUsage instanceof TokenUsageInterface ? $tokenUsage : null),
         ));
     }
 
@@ -154,6 +156,15 @@ abstract class PlatformProvider implements ModelProvider
             $usage->getCacheCreationTokens() ?? 0,
             $usage->getCacheReadTokens() ?? 0,
         );
+    }
+
+    /**
+     * What a call cut at the output limit is charged when the bridge reports no usage for it.
+     * Nothing by default: a bridge that reports it never gets here.
+     */
+    protected function usageWhenCut(TurnRequest $request): Usage
+    {
+        return new Usage();
     }
 
     /**
