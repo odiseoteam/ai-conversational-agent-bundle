@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-03
+
 ### Added
 
 - The OpenAI adapter (`openai`), over `symfony/ai-open-ai-platform` and the Responses API, loaded
