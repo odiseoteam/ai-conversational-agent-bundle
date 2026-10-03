@@ -18,6 +18,8 @@ deptrac:
                       value: src/Provider/Anthropic/.*
                     - type: directory
                       value: src/Provider/Platform/.*
+                    - type: directory
+                      value: src/Provider/OpenAi/.*
 
         - name: Bridge
           collectors:
@@ -28,6 +30,11 @@ deptrac:
           collectors:
               - type: directory
                 value: src/Provider/Anthropic/.*
+
+        - name: OpenAi
+          collectors:
+              - type: directory
+                value: src/Provider/OpenAi/.*
 
         - name: Platform
           collectors:
@@ -49,10 +56,15 @@ deptrac:
         Bridge:
             - Agent
             - Anthropic
+            - OpenAi
             - Platform
             - Framework
             - SymfonyAi
         Anthropic:
+            - Agent
+            - Platform
+            - SymfonyAi
+        OpenAi:
             - Agent
             - Platform
             - SymfonyAi

@@ -39,12 +39,14 @@
         "phpunit/phpunit": "^11.5",
         "shipmonk/composer-dependency-analyser": "^1.8",
         "symfony/ai-anthropic-platform": "^0.13",
+        "symfony/ai-open-ai-platform": "^0.13",
         "symfony/http-client": "^7.3|^8.0"
     },
     "suggest": {
         "doctrine/doctrine-bundle": "Registers the ORM mappings",
         "doctrine/orm": "For the ORM session, memory and spend-ledger stores",
-        "symfony/ai-anthropic-platform": "For the Anthropic model provider adapter"
+        "symfony/ai-anthropic-platform": "For the Anthropic model provider adapter",
+        "symfony/ai-open-ai-platform": "For the OpenAI model provider adapter"
     },
     "autoload": {
         "psr-4": {

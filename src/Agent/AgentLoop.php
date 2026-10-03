@@ -166,6 +166,7 @@ final class AgentLoop
                     thinkingEffort: $can->thinking ? $this->config->thinkingEffort : null,
                     timeoutSeconds: $this->config->requestTimeoutSeconds,
                     cacheTools: $can->promptCaching,
+                    cacheKey: $session->sessionTag(),
                 );
 
                 $response = null;

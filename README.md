@@ -63,7 +63,9 @@ Register `Odiseo\AiConversationalAgentBundle\Bridge\Symfony\OdiseoAiConversation
 budgets, memory, fence, sessions, conversations, skills and evals directories.
 
 For Claude, install `symfony/ai-bundle` and `symfony/ai-anthropic-platform`, register `Symfony\AI\AiBundle\AiBundle`
-(Flex does it) and configure the platform; the bundle wraps its `ai.platform.anthropic` service:
+(Flex does it) and configure the platform; the bundle wraps its `ai.platform.anthropic` service.
+For OpenAI, the same with `symfony/ai-open-ai-platform` and `ai.platform.openai` (`api_key`
+only: its caching is automatic). Both can be installed, each role on either:
 
 ```yaml
 ai:
@@ -71,6 +73,8 @@ ai:
         anthropic:
             api_key: '%env(ANTHROPIC_API_KEY)%'
             cache_retention: none
+        openai:
+            api_key: '%env(OPENAI_API_KEY)%'
 ```
 
 `cache_retention: none` matters: the bundle places its own cache breakpoints, and with the
@@ -151,9 +155,10 @@ odiseo_ai_conversational_agent:
 ```
 
 A platform is an adapter tagged `odiseo_ai_conversational_agent.provider` with its `platform`
-name. The Anthropic one (`anthropic`) is registered when `symfony/ai-anthropic-platform` is
-installed and wraps the AI bundle's `ai.platform.anthropic`; your own adapter implements
-`ModelProvider` and is tagged the same way. To replace one role's provider outright, redefine
+name. `anthropic` and `openai` are registered when their Symfony AI bridge is installed and wrap
+the AI bundle's `ai.platform.<name>`; your own adapter extends `PlatformProvider` or implements
+`ModelProvider`, and is tagged the same way. The conversation, its tool results and the memory
+go to the provider each role is on. To replace one role's provider outright, redefine
 `odiseo_ai_conversational_agent.provider.<role>`.
 
 Every configured model needs a price, or the agent refuses to start: an unpriced model would

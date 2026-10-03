@@ -10,6 +10,7 @@ use Odiseo\AiConversationalAgentBundle\Capability\Capability;
 use Odiseo\AiConversationalAgentBundle\Eval\Grader\Grader;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
 use Symfony\AI\Platform\Bridge\Anthropic\Claude;
+use Symfony\AI\Platform\Bridge\OpenAi\Gpt;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -233,6 +234,9 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
         $container->import(self::CONFIG_DIR.'/services/'.($config['orm']['enabled'] ? 'orm' : 'in_memory').'.php');
         if (class_exists(Claude::class)) {
             $container->import(self::CONFIG_DIR.'/services/anthropic.php');
+        }
+        if (class_exists(Gpt::class)) {
+            $container->import(self::CONFIG_DIR.'/services/openai.php');
         }
 
         if (null !== $config['skills_dir']) {

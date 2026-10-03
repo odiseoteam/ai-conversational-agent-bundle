@@ -16,6 +16,7 @@ return (new Configuration())
         'doctrine/orm',
         'doctrine/persistence',
         'symfony/ai-anthropic-platform',
+        'symfony/ai-open-ai-platform',
     ], [ErrorType::DEV_DEPENDENCY_IN_PROD])
     // Defined next to ContainerConfigurator and loaded with it.
     ->ignoreUnknownFunctions([
