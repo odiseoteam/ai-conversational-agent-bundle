@@ -13,6 +13,14 @@ enum ChipMode
     /** The component's own `suggestions` field, so the round that renders it can end the turn. */
     case Field;
 
+    /** The same field, required by the schema; a call that leaves it out still renders. */
+    case RequiredField;
+
     /** Nowhere: the component carries its own next step and ends the turn without chips. */
     case None;
+
+    public function inField(): bool
+    {
+        return self::Field === $this || self::RequiredField === $this;
+    }
 }

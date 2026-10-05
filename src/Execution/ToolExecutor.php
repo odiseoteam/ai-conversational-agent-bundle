@@ -67,7 +67,7 @@ final class ToolExecutor
 
         return match ($component->chips) {
             ChipMode::Tool => ChipComponent::TOOL === $tool,
-            ChipMode::Field => self::carriesChips($outcome),
+            ChipMode::Field, ChipMode::RequiredField => self::carriesChips($outcome),
             ChipMode::None => true,
         };
     }
@@ -196,7 +196,7 @@ final class ToolExecutor
         }
 
         $chips = [];
-        if (ChipMode::Field === $component->chips) {
+        if ($component->chips->inField()) {
             $raw = $input[ChipComponent::FIELD] ?? null;
             $chips = Sanitizer::suggestionChips(\is_array($raw) ? $raw : [], $context->limits->maxChipsPerTurn);
             unset($input[ChipComponent::FIELD]);

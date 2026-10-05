@@ -43,7 +43,7 @@ final class ToolSurface
         return $this->tools = array_map(
             fn (ToolSpec $tool): ToolSpec => match (true) {
                 $tool->wantsStatusLine => $this->withStatus($tool),
-                ChipMode::Field === ($components[$tool->name] ?? null)?->chips => $this->withChips($tool),
+                true === ($components[$tool->name] ?? null)?->chips->inField() => $this->withChips($tool, ChipMode::RequiredField === $components[$tool->name]->chips),
                 default => $tool,
             },
             $this->capabilities->tools(),
@@ -54,21 +54,27 @@ final class ToolSurface
      * A component that takes the turn's chips gets the field last, so the model writes them
      * once the component itself is written.
      */
-    private function withChips(ToolSpec $tool): ToolSpec
+    private function withChips(ToolSpec $tool, bool $required): ToolSpec
     {
         $schema = $tool->inputSchema;
         $schema['properties'] = [
             ...Scalar::keyed($schema['properties'] ?? null),
             ChipComponent::FIELD => [
                 'type' => 'array',
+                ...($required ? ['minItems' => 1] : []),
                 'maxItems' => $this->limits->maxChipsPerTurn,
                 'items' => ['type' => 'string', 'maxLength' => Sanitizer::SUGGESTION_CHIP_MAX_CHARS],
                 'description' => \sprintf(
-                    'The turn\'s chips, when this is its last component: 1-%d short imperatives, each a different kind of step, none of them something this turn already showed.',
+                    $required
+                        ? 'The turn\'s chips: 1-%d short imperatives, each a different kind of step, none of them something this turn already showed. When another component follows in the turn, the last one\'s are shown.'
+                        : 'The turn\'s chips, when this is its last component: 1-%d short imperatives, each a different kind of step, none of them something this turn already showed.',
                     $this->limits->maxChipsPerTurn,
                 ),
             ],
         ];
+        if ($required) {
+            $schema['required'] = [...Scalar::strings($schema['required'] ?? null), ChipComponent::FIELD];
+        }
 
         return new ToolSpec($tool->name, $tool->description, $schema, $tool->wantsStatusLine);
     }

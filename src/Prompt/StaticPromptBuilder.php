@@ -50,7 +50,7 @@ final class StaticPromptBuilder
         $tool = ChipComponent::TOOL;
         $quality = ' a turn that only answered a question included. Each chip is something the person taps instead of typing: a short imperative, a different kind of step from the others, and nothing this turn already displayed; do not pad the count. After a clarifying question, the chips are the likely answers. Do not offer as a chip something you have just said cannot be done.';
 
-        if (!\in_array(ChipMode::Field, $modes, true)) {
+        if (!array_filter($modes, static fn (ChipMode $mode): bool => $mode->inField())) {
             $rule = \sprintf("\n- Every turn but a sign-off ends with chips, up to %d, through %s,", $max, $tool)
                 .$quality
                 .\sprintf(" Call it together with the turn's last component, in the same round, without waiting for that component's result; %s on its own in a later round is wrong, and only a turn with no component calls it alone, after the text. It ends your reply, and a turn with several components carries it once, at the end.", $tool);

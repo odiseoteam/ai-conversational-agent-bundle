@@ -12,7 +12,8 @@ All notable changes to this project are documented here. The format is based on
   `Field` adds an optional `suggestions` field, last in the tool's schema; the executor sanitizes
   the chips and emits the `suggestions` component after the card, so the round that renders it
   ends the turn. Chips sent with a card that dropped something are not shown, and the result says
-  so. `None` is a card that ends the turn without chips. `Tool`, the default, keeps the chips tool.
+  so. `RequiredField` is the same field, required by the schema; a call without it still renders.
+  `None` is a card that ends the turn without chips. `Tool`, the default, keeps the chips tool.
   The prompt's chips rule follows the modes the deployment registers.
 - `closes_on` in the eval code grader: the tool the turn's last round must call.
 

@@ -263,8 +263,34 @@ final class AgentLoopTest extends TestCase
         };
 
         self::assertSame(['ids', 'suggestions'], $properties(ChipMode::Field), 'last, after the card');
+        self::assertSame(['ids', 'suggestions'], $properties(ChipMode::RequiredField));
         self::assertSame(['ids'], $properties(ChipMode::Tool));
         self::assertSame(['ids'], $properties(ChipMode::None));
+    }
+
+    public function testACardThatRequiresItsChipsSaysSoInItsSchemaAndStillRendersWithoutThem(): void
+    {
+        $provider = new FakeProvider([
+            FakeProvider::toolCall('find_records', ['query' => 'something'], 'tu-1'),
+            FakeProvider::toolCall('present_records', ['ids' => ['R-1']], 'tu-2'),
+            FakeProvider::toolCall(ChipComponent::TOOL, ['suggestions' => ['See the other one']], 'tu-3'),
+        ]);
+        $builder = new AgentBuilder($provider, extra: [new DirectoryCapability(chips: ChipMode::RequiredField)]);
+
+        $schema = [];
+        foreach ($builder->surface->tools() as $tool) {
+            if ('present_records' === $tool->name) {
+                $schema = $tool->inputSchema;
+            }
+        }
+        self::assertSame(['ids', 'suggestions'], Dig::array($schema, 'required'));
+        self::assertSame(1, Dig::value($schema, 'properties', 'suggestions', 'minItems'));
+
+        $messages = [Transcript::userMessage('show me')];
+        $events = $this->collect($builder, $messages);
+
+        self::assertSame(['records', ChipComponent::COMPONENT], array_map(static fn (AgentEvent $e): mixed => $e->data['component'], $this->ofType($events, EventType::Ui)));
+        self::assertCount(3, $provider->requests(), 'the card is shown and the chips get their round');
     }
 
     public function testTheFirstRoundIsPinnedToTheGroundingRead(): void
