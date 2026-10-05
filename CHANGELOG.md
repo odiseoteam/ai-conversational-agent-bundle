@@ -19,6 +19,9 @@ All notable changes to this project are documented here. The format is based on
 ### Changed
 
 - The chips tool is listed after every other tool.
+- The loop and its services log to the `conversational_agent` Monolog channel
+  (`OdiseoAiConversationalAgentBundle::LOG_CHANNEL`) instead of `app`. An application that
+  filtered the `model call` lines by channel follows the new one.
 
 ## [0.2.0] - 2026-10-03
 

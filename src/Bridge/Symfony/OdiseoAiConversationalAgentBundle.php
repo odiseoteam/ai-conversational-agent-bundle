@@ -35,6 +35,8 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
     public const EVAL_GRADER_TAG = 'odiseo_ai_conversational_agent.eval_grader';
     /** An adapter, with the platform it talks to as the tag's `platform` attribute. */
     public const PROVIDER_TAG = 'odiseo_ai_conversational_agent.provider';
+    /** The Monolog channel of the loop and its services; the handlers are the application's. */
+    public const LOG_CHANNEL = 'conversational_agent';
 
     protected string $extensionAlias = 'odiseo_ai_conversational_agent';
 
