@@ -28,6 +28,7 @@ final readonly class PresentationComponent
         public \Closure $validate,
         public ?\Closure $enrich = null,
         public ?\Closure $partial = null,
+        public ChipMode $chips = ChipMode::Tool,
     ) {
     }
 }

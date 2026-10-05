@@ -15,6 +15,7 @@ final readonly class ExecutorWording
         /** Formatted with {name}. */
         public string $unavailableText = '{name} is temporarily unavailable. Work with what you already have, or tell the visitor.',
         public string $tooManyComponentsText = 'This turn has already presented {count} components; say the rest in text or end the turn.',
+        public string $chipsHeldText = 'The suggestions sent with it were not shown; send the turn\'s suggestions again.',
         /** Who sees the status line, for the tool schemas. */
         public string $statusReader = 'the visitor',
     ) {

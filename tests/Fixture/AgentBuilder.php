@@ -70,7 +70,7 @@ final class AgentBuilder
         $this->capabilities = new CapabilityRegistry($capabilities);
         $wording = new ExecutorWording();
         $this->executor = new ToolExecutor($this->capabilities, $wording);
-        $this->surface = new ToolSurface($this->capabilities, $wording);
+        $this->surface = new ToolSurface($this->capabilities, $wording, $config->limits);
         $this->ledger = new InMemorySpendLedger();
         $this->sessionStore = new InMemorySessionStore();
         $this->prompt = new StaticPromptBuilder($config, $this->capabilities, $skills, $this->fence);

@@ -6,6 +6,20 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- `ChipMode` on `PresentationComponent`: where the chips of a turn that ends on it come from.
+  `Field` adds an optional `suggestions` field, last in the tool's schema; the executor sanitizes
+  the chips and emits the `suggestions` component after the card, so the round that renders it
+  ends the turn. Chips sent with a card that dropped something are not shown, and the result says
+  so. `None` is a card that ends the turn without chips. `Tool`, the default, keeps the chips tool.
+  The prompt's chips rule follows the modes the deployment registers.
+- `closes_on` in the eval code grader: the tool the turn's last round must call.
+
+### Changed
+
+- The chips tool is listed after every other tool.
+
 ## [0.2.0] - 2026-10-03
 
 ### Added

@@ -133,7 +133,7 @@ return static function (ContainerConfigurator $container): void {
     $services->set($id.'execution.wording', ExecutorWording::class);
     $services->alias(ExecutorWording::class, $id.'execution.wording');
     $services->set($id.'execution.tool_surface', ToolSurface::class)
-        ->args([service($id.'capability.registry'), service($id.'execution.wording')]);
+        ->args([service($id.'capability.registry'), service($id.'execution.wording'), service($id.'limits')]);
     $services->set($id.'execution.tool_executor', ToolExecutor::class)
         ->args([service($id.'capability.registry'), service($id.'execution.wording'), service('logger')]);
     $services->set($id.'execution.host_tool_invoker', HostToolInvoker::class)

@@ -21,7 +21,7 @@ final class CodeGrader implements Grader
             'calls_tool', 'calls_one_of', 'never_calls', 'first_tool', 'first_tool_not',
             'ui_components', 'no_ui', 'skill_loaded', 'skill_not_loaded', 'no_skill_load',
             'reply_includes', 'reply_omits', 'memory_contains', 'memory_not_contains',
-            'max_tool_calls', 'blocked_by',
+            'max_tool_calls', 'blocked_by', 'closes_on',
         ];
     }
 
@@ -119,7 +119,41 @@ final class CodeGrader implements Grader
             }
         }
 
+        // A round after the one that called it, even one with only chips, is a round the person waited through.
+        if (isset($expected['closes_on'])) {
+            $tool = Scalar::string($expected['closes_on']);
+            $last = $this->lastRoundTools($recording->transcript);
+            if (!\in_array($tool, $last, true)) {
+                $failures[] = \sprintf('expected the turn to close in the round that calls %s; the last round called %s', $tool, $this->render($last));
+            }
+        }
+
         return $failures;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $transcript
+     *
+     * @return list<string>
+     */
+    private function lastRoundTools(array $transcript): array
+    {
+        foreach (array_reverse($transcript) as $message) {
+            if ('assistant' !== ($message['role'] ?? null)) {
+                continue;
+            }
+
+            $tools = [];
+            foreach (\is_array($message['content'] ?? null) ? $message['content'] : [] as $block) {
+                if (\is_array($block) && 'tool_use' === ($block['type'] ?? null)) {
+                    $tools[] = Scalar::string($block['name'] ?? null);
+                }
+            }
+
+            return $tools;
+        }
+
+        return [];
     }
 
     /** @param list<string> $haystacks */

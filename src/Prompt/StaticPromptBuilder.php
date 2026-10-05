@@ -10,6 +10,7 @@ use Odiseo\AiConversationalAgentBundle\Capability\PromptSection;
 use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
 use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
 use Odiseo\AiConversationalAgentBundle\Presentation\ChipComponent;
+use Odiseo\AiConversationalAgentBundle\Presentation\ChipMode;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
 
 /**
@@ -38,19 +39,40 @@ final class StaticPromptBuilder
         return $this->text ??= $this->assemble();
     }
 
+    /**
+     * Where the chips go depends on what the deployment's components declare: with none that
+     * takes them in a field, the rule is the chips tool beside the last component.
+     */
+    private function chipRule(): string
+    {
+        $modes = array_map(static fn ($component): ChipMode => $component->chips, $this->capabilities->components());
+        $max = $this->config->limits->maxChipsPerTurn;
+        $tool = ChipComponent::TOOL;
+        $quality = ' a turn that only answered a question included. Each chip is something the person taps instead of typing: a short imperative, a different kind of step from the others, and nothing this turn already displayed; do not pad the count. After a clarifying question, the chips are the likely answers. Do not offer as a chip something you have just said cannot be done.';
+
+        if (!\in_array(ChipMode::Field, $modes, true)) {
+            $rule = \sprintf("\n- Every turn but a sign-off ends with chips, up to %d, through %s,", $max, $tool)
+                .$quality
+                .\sprintf(" Call it together with the turn's last component, in the same round, without waiting for that component's result; %s on its own in a later round is wrong, and only a turn with no component calls it alone, after the text. It ends your reply, and a turn with several components carries it once, at the end.", $tool);
+        } else {
+            $rule = \sprintf("\n- Every turn but a sign-off ends with chips, up to %d,", $max)
+                .$quality
+                .\sprintf(" A component with a `%s` field takes the turn's chips in that field: fill it on the turn's last component and do not call %s as well. Call %s only when the last component has no such field, in the same round as that component, or on a turn with no component, after the text. The chips end your reply, and a turn with several components carries them once, on the last one.", ChipComponent::FIELD, $tool, $tool);
+        }
+
+        if (\in_array(ChipMode::None, $modes, true)) {
+            $rule .= ' A component whose description says it ends the turn takes no chips.';
+        }
+
+        return $rule.' A person signing off gets a short acknowledgment and nothing else.';
+    }
+
     private function assemble(): string
     {
         $config = $this->config;
         $hasChips = null !== $this->capabilities->capabilityForTool(ChipComponent::TOOL);
 
-        $chipRule = $hasChips
-            ? \sprintf(
-                "\n- Every turn but a sign-off ends with chips, up to %d, through %s, a turn that only answered a question included. Each chip is something the person taps instead of typing: a short imperative, a different kind of step from the others, and nothing this turn already displayed; do not pad the count. After a clarifying question, the chips are the likely answers. Do not offer as a chip something you have just said cannot be done. Call it together with the turn's last component, in the same round, without waiting for that component's result; %s on its own in a later round is wrong, and only a turn with no component calls it alone, after the text. It ends your reply, and a turn with several components carries it once, at the end. A person signing off gets a short acknowledgment and nothing else.",
-                $config->limits->maxChipsPerTurn,
-                ChipComponent::TOOL,
-                ChipComponent::TOOL,
-            )
-            : '';
+        $chipRule = $hasChips ? $this->chipRule() : '';
 
         $sections = [
             $this->intro(),

@@ -7,6 +7,7 @@ namespace Odiseo\AiConversationalAgentBundle\Tests\Unit\Agent;
 use Odiseo\AiConversationalAgentBundle\Agent\Transcript;
 use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
 use Odiseo\AiConversationalAgentBundle\Presentation\ChipComponent;
+use Odiseo\AiConversationalAgentBundle\Presentation\ChipMode;
 use Odiseo\AiConversationalAgentBundle\Provider\Fake\FakeProvider;
 use Odiseo\AiConversationalAgentBundle\Provider\ProviderCapabilities;
 use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
@@ -179,6 +180,91 @@ final class AgentLoopTest extends TestCase
         self::assertSame('end_turn', $this->last($events)->data['stop_reason']);
         self::assertCount(2, $this->ofType($events, EventType::Ui));
         self::assertCount(2, $provider->requests(), 'the closing round is not asked for');
+    }
+
+    public function testACardThatCarriesItsChipsEndsTheTurnInItsOwnRound(): void
+    {
+        $provider = new FakeProvider([
+            FakeProvider::toolCall('find_records', ['query' => 'something'], 'tu-1'),
+            FakeProvider::toolCall('present_records', ['ids' => ['R-1'], 'suggestions' => ['See the other one', '  ']], 'tu-2'),
+        ]);
+        $builder = new AgentBuilder($provider, extra: [new DirectoryCapability(chips: ChipMode::Field)]);
+
+        $messages = [Transcript::userMessage('show me')];
+        $events = $this->collect($builder, $messages);
+
+        $ui = $this->ofType($events, EventType::Ui);
+        self::assertSame(['records', ChipComponent::COMPONENT], array_map(static fn (AgentEvent $e): mixed => $e->data['component'], $ui));
+        self::assertSame(['items' => [['id' => 'R-1', 'title' => 'First']]], $ui[0]->data['payload'], 'the chips are not part of the card');
+        self::assertSame(['suggestions' => ['See the other one']], $ui[1]->data['payload']);
+        self::assertCount(2, $provider->requests(), 'no round is spent on the chips');
+    }
+
+    public function testACardThatLeavesItsChipsOutGetsAnotherRound(): void
+    {
+        $provider = new FakeProvider([
+            FakeProvider::toolCall('find_records', ['query' => 'something'], 'tu-1'),
+            FakeProvider::toolCall('present_records', ['ids' => ['R-1']], 'tu-2'),
+            FakeProvider::toolCall(ChipComponent::TOOL, ['suggestions' => ['See the other one']], 'tu-3'),
+        ]);
+        $builder = new AgentBuilder($provider, extra: [new DirectoryCapability(chips: ChipMode::Field)]);
+
+        $messages = [Transcript::userMessage('show me')];
+        $events = $this->collect($builder, $messages);
+
+        self::assertCount(2, $this->ofType($events, EventType::Ui));
+        self::assertCount(3, $provider->requests());
+    }
+
+    public function testChipsSentWithACardThatDroppedSomethingAreHeld(): void
+    {
+        $provider = new FakeProvider([
+            FakeProvider::toolCall('find_records', ['query' => 'something'], 'tu-1'),
+            FakeProvider::toolCall('present_records', ['ids' => ['R-1', 'R-9'], 'suggestions' => ['Compare R-1 and R-9']], 'tu-2'),
+            FakeProvider::text('R-9 is not one of ours.'),
+        ]);
+        $builder = new AgentBuilder($provider, extra: [new DirectoryCapability(chips: ChipMode::Field)]);
+
+        $messages = [Transcript::userMessage('show me')];
+        $events = $this->collect($builder, $messages);
+
+        self::assertSame(['records'], array_map(static fn (AgentEvent $e): mixed => $e->data['component'], $this->ofType($events, EventType::Ui)));
+        self::assertStringContainsString('were not shown', Dig::string($messages, 4, 'content', 0, 'content'));
+        self::assertCount(3, $provider->requests(), 'the model answers the note');
+    }
+
+    public function testACardThatTakesNoChipsEndsTheTurnWithoutThem(): void
+    {
+        $provider = new FakeProvider([
+            FakeProvider::toolCall('find_records', ['query' => 'something'], 'tu-1'),
+            FakeProvider::toolCall('present_records', ['ids' => ['R-1']], 'tu-2'),
+        ]);
+        $builder = new AgentBuilder($provider, extra: [new DirectoryCapability(chips: ChipMode::None)]);
+
+        $messages = [Transcript::userMessage('show me')];
+        $events = $this->collect($builder, $messages);
+
+        self::assertSame('end_turn', $this->last($events)->data['stop_reason']);
+        self::assertCount(1, $this->ofType($events, EventType::Ui));
+        self::assertCount(2, $provider->requests());
+    }
+
+    public function testOnlyACardThatTakesChipsGetsTheField(): void
+    {
+        $properties = static function (ChipMode $mode): array {
+            $builder = new AgentBuilder(new FakeProvider([]), extra: [new DirectoryCapability(chips: $mode)]);
+            foreach ($builder->surface->tools() as $tool) {
+                if ('present_records' === $tool->name) {
+                    return array_keys(Dig::array($tool->inputSchema, 'properties'));
+                }
+            }
+
+            return [];
+        };
+
+        self::assertSame(['ids', 'suggestions'], $properties(ChipMode::Field), 'last, after the card');
+        self::assertSame(['ids'], $properties(ChipMode::Tool));
+        self::assertSame(['ids'], $properties(ChipMode::None));
     }
 
     public function testTheFirstRoundIsPinnedToTheGroundingRead(): void
