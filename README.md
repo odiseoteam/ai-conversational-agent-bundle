@@ -141,6 +141,30 @@ alias: `ContextProvider`, `PrincipalResolver`, `TurnHook`, `ConsoleEnvironment`,
 `ConversationInitializer`, `SessionStore`, `MemoryStore` and `SpendLedger`. Capabilities are
 collected by the `odiseo_ai_conversational_agent.capability` tag.
 
+### Logging
+
+The loop and its services log to the `conversational_agent` channel: one `model call` line per
+round, with the session, the model, the usage and the tools called, plus the warnings and
+errors of a turn. The handlers are the application's. To keep the channel in its own file and
+out of the main one:
+
+```yaml
+monolog:
+    handlers:
+        main:
+            channels: ['!event', '!conversational_agent']
+        conversational_agent:
+            type: rotating_file
+            path: '%kernel.logs_dir%/conversational_agent.log'
+            level: info
+            date_format: 'Y-m'
+            max_files: 12
+            channels: [conversational_agent]
+```
+
+A `fingers_crossed` main handler only writes the `info` lines of a request that failed, so
+without a handler of its own the `model call` lines of a production turn are not kept.
+
 ### Models
 
 Each role (the turn, the memory extraction, the eval judge) names its platform and model; both
