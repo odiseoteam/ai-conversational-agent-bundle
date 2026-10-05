@@ -12,8 +12,6 @@ use Odiseo\AiConversationalAgentBundle\Provider\Request\SystemBlock;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
 use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
 use Odiseo\AiConversationalAgentBundle\Support\Scalar;
-use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 
 /**
  * What the agent remembers between sessions: the two memory tools, the facts injected into
@@ -35,7 +33,6 @@ final class MemoryRuntime
         private readonly Fence $fence,
         private readonly string $extractionPrompt,
         private readonly MemoryWriteFilter $writeFilter = new MemoryWriteFilter(),
-        private readonly LoggerInterface $logger = new NullLogger(),
     ) {
     }
 
@@ -120,8 +117,8 @@ final class MemoryRuntime
     }
 
     /**
-     * Extract what the finished turn taught and store it. Runs once the reply has streamed;
-     * never raises, because a memory failure must not surface as a failed turn. The caller
+     * Extract what the finished turn taught and store it. Runs once the reply has streamed; a
+     * failure is raised to the caller, who knows whether anyone is left to retry it. The caller
      * sees the model's response through $onResponse, to charge and log it like any round.
      *
      * The model records each fact through `record_fact`, against the facts already saved. A
@@ -136,53 +133,47 @@ final class MemoryRuntime
             return [];
         }
 
-        try {
-            $existing = $this->live($this->store->all($subject));
-            $response = $provider->complete(new TurnRequest(
-                model: $this->config->memoryModel,
-                system: [new SystemBlock($this->extractionPrompt)],
-                messages: [[
-                    'role' => 'user',
-                    'content' => [['type' => 'text', 'text' => "Already saved facts:\n".$this->render($existing)."\n\nConversation:\n".$this->fence->fencePayload($transcript, 8000)]],
-                ]],
-                tools: [self::recordFactTool()],
-                maxTokens: 600,
-                thinkingEffort: null,
-                timeoutSeconds: $this->config->requestTimeoutSeconds,
-                cacheTools: false,
-            ));
-            if (null !== $onResponse) {
-                $onResponse($response);
-            }
-
-            $held = [];
-            foreach ($existing as $fact) {
-                $held[$fact->key] = self::normalize($fact->value);
-            }
-            $written = 0;
-            foreach ($response->toolUses as $call) {
-                if (self::RECORD_FACT !== $call->name || $written >= self::MAX_NEW_FACTS) {
-                    continue;
-                }
-                $key = trim(Scalar::string($call->input['key'] ?? null));
-                $value = self::normalize(Scalar::string($call->input['value'] ?? null));
-                $current = $held[$key] ?? null;
-                if ($current === $value || (null === $current && $this->restates($value, $held))) {
-                    continue;
-                }
-                $outcome = $this->save($subject, $sessionTag, $call->input);
-                if (!$outcome->refused() && str_starts_with($outcome->resultText, 'Saved')) {
-                    $held[$key] = $value;
-                    ++$written;
-                }
-            }
-
-            return $this->live($this->store->all($subject));
-        } catch (\Throwable $error) {
-            $this->logger->warning('memory extraction failed', ['session' => $sessionTag, 'exception' => $error]);
-
-            return [];
+        $existing = $this->live($this->store->all($subject));
+        $response = $provider->complete(new TurnRequest(
+            model: $this->config->memoryModel,
+            system: [new SystemBlock($this->extractionPrompt)],
+            messages: [[
+                'role' => 'user',
+                'content' => [['type' => 'text', 'text' => "Already saved facts:\n".$this->render($existing)."\n\nConversation:\n".$this->fence->fencePayload($transcript, 8000)]],
+            ]],
+            tools: [self::recordFactTool()],
+            maxTokens: 600,
+            thinkingEffort: null,
+            timeoutSeconds: $this->config->requestTimeoutSeconds,
+            cacheTools: false,
+        ));
+        if (null !== $onResponse) {
+            $onResponse($response);
         }
+
+        $held = [];
+        foreach ($existing as $fact) {
+            $held[$fact->key] = self::normalize($fact->value);
+        }
+        $written = 0;
+        foreach ($response->toolUses as $call) {
+            if (self::RECORD_FACT !== $call->name || $written >= self::MAX_NEW_FACTS) {
+                continue;
+            }
+            $key = trim(Scalar::string($call->input['key'] ?? null));
+            $value = self::normalize(Scalar::string($call->input['value'] ?? null));
+            $current = $held[$key] ?? null;
+            if ($current === $value || (null === $current && $this->restates($value, $held))) {
+                continue;
+            }
+            $outcome = $this->save($subject, $sessionTag, $call->input);
+            if (!$outcome->refused() && str_starts_with($outcome->resultText, 'Saved')) {
+                $held[$key] = $value;
+                ++$written;
+            }
+        }
+
+        return $this->live($this->store->all($subject));
     }
 
     private static function recordFactTool(): ToolSpec

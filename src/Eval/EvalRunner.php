@@ -122,6 +122,7 @@ final class EvalRunner
             foreach ($this->turns->run($record, $session, $turn) as $event) {
                 $recording->record($event);
             }
+            $this->turns->remember($this->turns->memoryOf($record, $session));
         }
 
         $recording->transcript = $record->messages;

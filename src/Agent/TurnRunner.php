@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Agent;
 
 use Odiseo\AiConversationalAgentBundle\Host\TurnHook;
+use Odiseo\AiConversationalAgentBundle\Memory\ExtractMemory;
 use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
 use Odiseo\AiConversationalAgentBundle\Session\SessionRecord;
 use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
@@ -14,9 +15,9 @@ use Psr\Log\NullLogger;
 
 /**
  * One turn of a session, the same for every surface: the person's message enters the record
- * with whatever the host queued for the model meanwhile, the host's hook runs, the loop
- * streams, and memory is extracted once the reply is out. A channel adapter (HTTP, console,
- * messaging) only has to render the events.
+ * with whatever the host queued for the model meanwhile, the host's hook runs and the loop
+ * streams. A channel adapter (HTTP, console, messaging) only has to render the events and say
+ * when the turn's memory is extracted: in place, or once its response is out.
  */
 final class TurnRunner
 {
@@ -43,12 +44,21 @@ final class TurnRunner
             }
             yield $event;
         }
+    }
 
-        // The reply is already out: a failure here is logged, never shown.
+    /** What the turn just run leaves to extract; the surface decides when. */
+    public function memoryOf(SessionRecord $record, SessionContext $session): ExtractMemory
+    {
+        return $this->agent->memoryOf($record->messages, $session);
+    }
+
+    /** Extracts in place. The reply is already out: a failure is logged, never shown. */
+    public function remember(ExtractMemory $turn): void
+    {
         try {
-            $this->agent->updateMemory($record->messages, $session);
+            $this->agent->extractMemory($turn);
         } catch (\Throwable $failed) {
-            $this->logger->error('memory extraction failed', ['session' => $session->sessionTag(), 'exception' => $failed]);
+            $this->logger->error('memory extraction failed', ['session' => (new SessionContext($turn->sessionId, $turn->principalId))->sessionTag(), 'exception' => $failed]);
         }
     }
 }
