@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller;
 
 use Odiseo\AiConversationalAgentBundle\Agent\TurnRunner;
+use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\EventListener\MemoryExtractionListener;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Session\SessionResolver;
 use Odiseo\AiConversationalAgentBundle\Provider\AuthenticationException;
 use Odiseo\AiConversationalAgentBundle\Streaming\SseEncoder;
@@ -17,7 +18,8 @@ use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 
 /**
  * One turn as Server-Sent Events. The record is mutated while the turn runs and written on
- * kernel.terminate, which fires once the stream has ended.
+ * kernel.terminate, which fires once the stream has ended; the turn's memory is extracted
+ * from there too.
  */
 final class ChatController
 {
@@ -27,6 +29,7 @@ final class ChatController
         private readonly LoggerInterface $logger,
         private readonly RateLimiterFactoryInterface $perIp,
         private readonly RateLimiterFactoryInterface $perSession,
+        private readonly MemoryExtractionListener $memory,
     ) {
     }
 
@@ -59,6 +62,7 @@ final class ChatController
                 foreach ($this->turns->run($record, $session, $message) as $event) {
                     $this->write(SseEncoder::encode($event));
                 }
+                $this->memory->defer($this->turns->memoryOf($record, $session));
             } catch (AuthenticationException $failed) {
                 $this->logger->error('the model credential was rejected', ['exception' => $failed]);
                 $this->write(SseEncoder::encode(ApiError::event('not_configured')));

@@ -12,7 +12,9 @@ use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Command\EvalCommand;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\ChatController;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\MemoryController;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller\SessionController;
+use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\EventListener\MemoryExtractionListener;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\EventListener\SessionWriteBackListener;
+use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Messenger\ExtractMemoryHandler;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\OdiseoAiConversationalAgentBundle;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\ProviderRegistry;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Session\SessionResolver;
@@ -202,8 +204,7 @@ return static function (ContainerConfigurator $container): void {
         service($id.'fence'),
         param($id.'memory.extraction_prompt'),
         service($id.'memory.write_filter'),
-        service('logger'),
-    ])->tag('monolog.logger', $logChannel);
+    ]);
     $services->alias(MemoryRuntime::class, $id.'memory.runtime');
 
     // Budget
@@ -234,6 +235,13 @@ return static function (ContainerConfigurator $container): void {
         ->args([service($id.'session.resolver'), service('logger')])
         ->tag('monolog.logger', $logChannel)
         ->tag('kernel.event_listener', ['event' => 'kernel.terminate', 'method' => 'onTerminate']);
+    $services->set($id.'event_listener.memory_extraction', MemoryExtractionListener::class)
+        ->args([service($id.'agent.turn_runner'), service('logger'), service('messenger.default_bus')->nullOnInvalid()])
+        ->tag('monolog.logger', $logChannel)
+        ->tag('kernel.event_listener', ['event' => 'kernel.terminate', 'method' => 'onTerminate']);
+    $services->set($id.'messenger.extract_memory_handler', ExtractMemoryHandler::class)
+        ->args([service($id.'agent.loop')])
+        ->tag('messenger.message_handler');
 
     $services->set($id.'console_environment.null', NullConsoleEnvironment::class);
     $services->alias(ConsoleEnvironment::class, $id.'console_environment.null');
@@ -250,6 +258,7 @@ return static function (ContainerConfigurator $container): void {
             service('logger'),
             service('limiter.odiseo_agent_chat_turn'),
             service('limiter.odiseo_agent_chat_turn_per_session'),
+            service($id.'event_listener.memory_extraction'),
         ])
         ->tag('monolog.logger', $logChannel)
         ->tag('controller.service_arguments');

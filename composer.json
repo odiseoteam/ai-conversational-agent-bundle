@@ -25,6 +25,7 @@
         "symfony/event-dispatcher": "^7.3|^8.0",
         "symfony/http-foundation": "^7.3|^8.0",
         "symfony/http-kernel": "^7.3|^8.0",
+        "symfony/messenger": "^7.3|^8.0",
         "symfony/rate-limiter": "^7.3|^8.0",
         "symfony/yaml": "^7.3|^8.0"
     },

@@ -14,6 +14,7 @@ use Odiseo\AiConversationalAgentBundle\Execution\TurnScope;
 use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
 use Odiseo\AiConversationalAgentBundle\Grounding\ForcedRead;
 use Odiseo\AiConversationalAgentBundle\Grounding\GroundingResolver;
+use Odiseo\AiConversationalAgentBundle\Memory\ExtractMemory;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryFact;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryRuntime;
 use Odiseo\AiConversationalAgentBundle\Prompt\ContextBlockBuilder;
@@ -289,11 +290,33 @@ final class AgentLoop
      */
     public function updateMemory(array $messages, SessionContext $session): array
     {
+        return $this->extractMemory($this->memoryOf($messages, $session));
+    }
+
+    /**
+     * The finished turn as what is left to extract from it, for a host that extracts later.
+     *
+     * @param list<array<string, mixed>> $messages
+     */
+    public function memoryOf(array $messages, SessionContext $session): ExtractMemory
+    {
+        return new ExtractMemory($session->principalId, $session->sessionId, Transcript::text(Transcript::latestExchange($messages)));
+    }
+
+    /**
+     * Throws when the extraction fails, so whoever runs it decides what a failure costs.
+     *
+     * @return list<MemoryFact>
+     */
+    public function extractMemory(ExtractMemory $turn): array
+    {
+        $session = new SessionContext($turn->sessionId, $turn->principalId);
+
         return $this->memory->extract(
             $this->memoryProvider ?? $this->provider,
-            $session->principalId,
+            $turn->principalId,
             $session->sessionTag(),
-            Transcript::text(Transcript::latestExchange($messages)),
+            $turn->exchange,
             function (ProviderResponse $response) use ($session): void {
                 $this->budget->charge($session->sessionId, $this->config->memoryModel, $response->usage, new \DateTimeImmutable());
                 $this->log($session, 'memory', $response, $this->config->memoryModel);

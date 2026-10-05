@@ -46,7 +46,8 @@ it knows about commerce.
 - **Gates** — fencing of external text (`Fence`), grounding rules that force a tool when the
   message matches a lexicon, provenance checks and payload guards on what is presented.
 - **Sessions and memory** — ORM stores for session state, transcript, long-term facts per
-  subject, and a spend ledger; memory extraction runs after the turn with a cheaper model.
+  subject, and a spend ledger; memory extraction runs once the response is out, with a cheaper model
+  (in the same process, or in a worker when `ExtractMemory` is routed to a transport).
 - **Presentation** — `ui` events carrying components the host renders; the model only names
   them.
 - **Evals** — JSON cases run through the same turn runner as the chat, graded by code and by a

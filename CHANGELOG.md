@@ -23,6 +23,13 @@ All notable changes to this project are documented here. The format is based on
 - The loop and its services log to the `conversational_agent` Monolog channel
   (`OdiseoAiConversationalAgentBundle::LOG_CHANNEL`) instead of `app`. An application that
   filtered the `model call` lines by channel follows the new one.
+- The memory extraction no longer runs inside the streamed turn. The chat controller leaves an
+  `ExtractMemory` message and a `kernel.terminate` listener dispatches it once the response is
+  out: unrouted, Messenger handles it in the same process; routed to a transport, a worker does.
+  `agent:chat` and the evals extract in place. `symfony/messenger` is now required.
+- `TurnRunner::run()` only runs the turn; `memoryOf()` and `remember()` extract. A failed
+  extraction is raised by `AgentLoop::extractMemory()` instead of being swallowed in
+  `MemoryRuntime`, so a transport can retry it.
 
 ## [0.2.0] - 2026-10-03
 

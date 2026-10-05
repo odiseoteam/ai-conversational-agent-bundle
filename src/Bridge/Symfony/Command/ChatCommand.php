@@ -74,6 +74,7 @@ final class ChatCommand extends Command
                 continue;
             }
 
+            $this->turns->remember($this->turns->memoryOf($record, $session));
             $this->sessions->save($record);
         }
 
