@@ -57,7 +57,7 @@ final class StaticPromptBuilder
         } else {
             $rule = \sprintf("\n- Every turn but a sign-off ends with chips, up to %d,", $max)
                 .$quality
-                .\sprintf(" A component with a `%s` field takes the turn's chips in that field: fill it on the turn's last component and do not call %s as well. Call %s only when the last component has no such field, in the same round as that component, or on a turn with no component, after the text. The chips end your reply, and a turn with several components carries them once, on the last one.", ChipComponent::FIELD, $tool, $tool);
+                .\sprintf(" A component with a `%s` field takes the turn's chips in that field: fill it on the turn's last component and do not call %s as well. A turn with no component (a clarifying question, a confirmed change, an answered question) ends with %s, after the text, however the earlier turns carried their chips; so does a turn whose last component has no such field, in the same round as that component. The chips end your reply, and a turn with several components carries them once, on the last one.", ChipComponent::FIELD, $tool, $tool);
         }
 
         if (\in_array(ChipMode::None, $modes, true)) {
