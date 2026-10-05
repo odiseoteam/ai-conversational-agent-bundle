@@ -14,6 +14,7 @@ use Odiseo\AiConversationalAgentBundle\Execution\ExecutorWording;
 use Odiseo\AiConversationalAgentBundle\Gate\ProvenanceGate;
 use Odiseo\AiConversationalAgentBundle\Grounding\GroundingRule;
 use Odiseo\AiConversationalAgentBundle\Grounding\Matcher;
+use Odiseo\AiConversationalAgentBundle\Presentation\ChipMode;
 use Odiseo\AiConversationalAgentBundle\Presentation\PresentationComponent;
 use Odiseo\AiConversationalAgentBundle\Session\SeenRecord;
 use Odiseo\AiConversationalAgentBundle\Session\TurnState;
@@ -27,8 +28,10 @@ final class DirectoryCapability implements Capability, DomainErrorMapper
     public array $runs = [];
 
     /** @param array<string, string> $records id => title */
-    public function __construct(private readonly array $records = ['R-1' => 'First', 'R-2' => 'Second'])
-    {
+    public function __construct(
+        private readonly array $records = ['R-1' => 'First', 'R-2' => 'Second'],
+        private readonly ChipMode $chips = ChipMode::Tool,
+    ) {
     }
 
     public function name(): string
@@ -124,6 +127,7 @@ final class DirectoryCapability implements Capability, DomainErrorMapper
 
                 return ['items' => $items];
             },
+            $this->chips,
         )];
     }
 

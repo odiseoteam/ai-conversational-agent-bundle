@@ -16,7 +16,6 @@ use Odiseo\AiConversationalAgentBundle\Grounding\ForcedRead;
 use Odiseo\AiConversationalAgentBundle\Grounding\GroundingResolver;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryFact;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryRuntime;
-use Odiseo\AiConversationalAgentBundle\Presentation\ChipComponent;
 use Odiseo\AiConversationalAgentBundle\Prompt\ContextBlockBuilder;
 use Odiseo\AiConversationalAgentBundle\Prompt\PromptAssembler;
 use Odiseo\AiConversationalAgentBundle\Prompt\StaticPromptBuilder;
@@ -223,7 +222,7 @@ final class AgentLoop
 
                 $blocks = [];
                 $closesTurn = $this->config->closeOnPresentation;
-                $chipsInRound = false;
+                $chipsSettled = false;
 
                 // The calls eager dispatch did not reach (dispatch off, or a buffer that never
                 // parsed) run now from the canonical arguments; without eager dispatch every
@@ -253,7 +252,7 @@ final class AgentLoop
                     $outcome = $settled[$call->id];
                     $blocks[] = Transcript::toolResultBlock($call->id, $outcome);
                     $closesTurn = $closesTurn && $this->executor->endsClean($call->name, $outcome);
-                    $chipsInRound = $chipsInRound || (ChipComponent::TOOL === $call->name && !$outcome->refused());
+                    $chipsSettled = $chipsSettled || $this->executor->settlesChips($call->name, $outcome);
                 }
 
                 $messages[] = ['role' => 'user', 'content' => $blocks];
@@ -261,7 +260,7 @@ final class AgentLoop
 
                 // A round whose calls all rendered leaves the model nothing to add; asking for
                 // a closing line would only cost a round the person waits through.
-                if ($closesTurn && $chipsInRound) {
+                if ($closesTurn && $chipsSettled) {
                     $stopReason = 'end_turn';
                     break;
                 }

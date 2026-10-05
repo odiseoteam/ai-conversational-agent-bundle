@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Capability;
 
 use Odiseo\AiConversationalAgentBundle\Grounding\GroundingRule;
+use Odiseo\AiConversationalAgentBundle\Presentation\ChipComponent;
 use Odiseo\AiConversationalAgentBundle\Presentation\PresentationComponent;
 
 /**
@@ -50,13 +51,19 @@ final class CapabilityRegistry
     public function tools(): array
     {
         $tools = [];
+        $chips = [];
         foreach ($this->capabilities as $capability) {
             foreach ($capability->tools() as $tool) {
+                if (ChipComponent::TOOL === $tool->name) {
+                    $chips[] = $tool;
+                    continue;
+                }
                 $tools[] = $tool;
             }
         }
 
-        return $tools;
+        // Last, after the cards, as the reference lists it.
+        return [...$tools, ...$chips];
     }
 
     public function capabilityForTool(string $tool): ?Capability

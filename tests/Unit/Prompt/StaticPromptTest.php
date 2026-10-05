@@ -7,6 +7,7 @@ namespace Odiseo\AiConversationalAgentBundle\Tests\Unit\Prompt;
 use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
 use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
 use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
+use Odiseo\AiConversationalAgentBundle\Presentation\ChipMode;
 use Odiseo\AiConversationalAgentBundle\Prompt\StaticPromptBuilder;
 use Odiseo\AiConversationalAgentBundle\Skill\Skill;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
@@ -50,6 +51,21 @@ final class StaticPromptTest extends TestCase
     public function testTheChipsRuleAppearsOnlyWhenTheChipsToolIsRegistered(): void
     {
         self::assertStringNotContainsString('present_suggestions', $this->builder(capabilities: [])->build());
+    }
+
+    public function testTheChipsRuleFollowsWhereTheComponentsTakeThem(): void
+    {
+        $limits = $this->config()->limits;
+        $rule = fn (ChipMode $mode): string => $this->builder(capabilities: [
+            new DirectoryCapability(chips: $mode),
+            new \Odiseo\AiConversationalAgentBundle\Presentation\SuggestionsCapability($limits),
+        ])->build();
+
+        self::assertStringContainsString('through present_suggestions', $rule(ChipMode::Tool));
+        self::assertStringNotContainsString('`suggestions` field', $rule(ChipMode::Tool));
+        self::assertStringContainsString('takes the turn\'s chips in that field', $rule(ChipMode::Field));
+        self::assertStringNotContainsString('on its own in a later round is wrong', $rule(ChipMode::Field));
+        self::assertStringContainsString('says it ends the turn takes no chips', $rule(ChipMode::None));
     }
 
     public function testTheSkillsSectionIsAbsentWithoutSkills(): void

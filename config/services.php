@@ -68,6 +68,7 @@ use function Symfony\Component\DependencyInjection\Loader\Configurator\tagged_lo
 return static function (ContainerConfigurator $container): void {
     $id = 'odiseo_ai_conversational_agent.';
     $capabilityTag = OdiseoAiConversationalAgentBundle::CAPABILITY_TAG;
+    $logChannel = ['channel' => OdiseoAiConversationalAgentBundle::LOG_CHANNEL];
     $services = $container->services();
 
     // Agent
@@ -133,9 +134,10 @@ return static function (ContainerConfigurator $container): void {
     $services->set($id.'execution.wording', ExecutorWording::class);
     $services->alias(ExecutorWording::class, $id.'execution.wording');
     $services->set($id.'execution.tool_surface', ToolSurface::class)
-        ->args([service($id.'capability.registry'), service($id.'execution.wording')]);
+        ->args([service($id.'capability.registry'), service($id.'execution.wording'), service($id.'limits')]);
     $services->set($id.'execution.tool_executor', ToolExecutor::class)
-        ->args([service($id.'capability.registry'), service($id.'execution.wording'), service('logger')]);
+        ->args([service($id.'capability.registry'), service($id.'execution.wording'), service('logger')])
+        ->tag('monolog.logger', $logChannel);
     $services->set($id.'execution.host_tool_invoker', HostToolInvoker::class)
         ->args([service($id.'execution.tool_executor'), service($id.'fence'), service($id.'limits')]);
     $services->alias(HostToolInvoker::class, $id.'execution.host_tool_invoker');
@@ -176,7 +178,7 @@ return static function (ContainerConfigurator $container): void {
         service(ContextProvider::class),
         service('logger'),
         service($id.'provider.memory'),
-    ]);
+    ])->tag('monolog.logger', $logChannel);
     $services->alias(AgentLoop::class, $id.'agent.loop');
 
     $services->set($id.'turn_hook.null', NullTurnHook::class);
@@ -187,7 +189,7 @@ return static function (ContainerConfigurator $container): void {
         service(TurnHook::class),
         param($id.'identity.app_events_label'),
         service('logger'),
-    ]);
+    ])->tag('monolog.logger', $logChannel);
     $services->alias(TurnRunner::class, $id.'agent.turn_runner');
 
     // Memory
@@ -201,7 +203,7 @@ return static function (ContainerConfigurator $container): void {
         param($id.'memory.extraction_prompt'),
         service($id.'memory.write_filter'),
         service('logger'),
-    ]);
+    ])->tag('monolog.logger', $logChannel);
     $services->alias(MemoryRuntime::class, $id.'memory.runtime');
 
     // Budget
@@ -217,7 +219,7 @@ return static function (ContainerConfigurator $container): void {
         service($id.'budget.cost_table'),
         service(ClientKeyResolver::class),
         service('logger'),
-    ]);
+    ])->tag('monolog.logger', $logChannel);
 
     // Surfaces: the host names its principal and hooks; what it does not set falls back to a no-op.
 
@@ -230,6 +232,7 @@ return static function (ContainerConfigurator $container): void {
 
     $services->set($id.'event_listener.session_write_back', SessionWriteBackListener::class)
         ->args([service($id.'session.resolver'), service('logger')])
+        ->tag('monolog.logger', $logChannel)
         ->tag('kernel.event_listener', ['event' => 'kernel.terminate', 'method' => 'onTerminate']);
 
     $services->set($id.'console_environment.null', NullConsoleEnvironment::class);
@@ -248,6 +251,7 @@ return static function (ContainerConfigurator $container): void {
             service('limiter.odiseo_agent_chat_turn'),
             service('limiter.odiseo_agent_chat_turn_per_session'),
         ])
+        ->tag('monolog.logger', $logChannel)
         ->tag('controller.service_arguments');
     $services->set($id.'controller.memory', MemoryController::class)
         ->public()

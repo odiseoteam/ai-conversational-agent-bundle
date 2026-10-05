@@ -12,4 +12,7 @@ final class ChipComponent
 {
     public const TOOL = 'present_suggestions';
     public const COMPONENT = 'suggestions';
+
+    /** The argument a ChipMode::Field component takes its chips in. */
+    public const FIELD = 'suggestions';
 }

@@ -34,7 +34,7 @@ final class SuggestionsCapability implements Capability
         return [new ToolSpec(
             ChipComponent::TOOL,
             \sprintf(
-                'Give the turn its 1-%d chips; it ends the reply. Call it in the same round as the turn\'s last component, without waiting for that component\'s result. Alone, after the text, only on a turn with no component (a terms answer, a clarifying question, a confirmed add or save).',
+                'Give the turn its 1-%d chips; it ends the reply. Call it in the same round as the turn\'s last component, without waiting for that component\'s result, unless that component has its own `suggestions` field. Alone, after the text, only on a turn with no component (a terms answer, a clarifying question, a confirmed add or save).',
                 $this->limits->maxChipsPerTurn,
             ),
             [

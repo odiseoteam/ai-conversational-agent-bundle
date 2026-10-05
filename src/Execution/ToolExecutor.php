@@ -8,10 +8,12 @@ use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
 use Odiseo\AiConversationalAgentBundle\Fencing\Sanitizer;
 use Odiseo\AiConversationalAgentBundle\Presentation\ChipComponent;
+use Odiseo\AiConversationalAgentBundle\Presentation\ChipMode;
 use Odiseo\AiConversationalAgentBundle\Presentation\PartialFrame;
 use Odiseo\AiConversationalAgentBundle\Presentation\PresentationComponent;
 use Odiseo\AiConversationalAgentBundle\Presentation\PresentationRunner;
 use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
+use Odiseo\AiConversationalAgentBundle\Streaming\EventType;
 use Odiseo\AiConversationalAgentBundle\Streaming\PartialJson;
 use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
 use Psr\Log\LoggerInterface;
@@ -50,6 +52,24 @@ final class ToolExecutor
         return $this->presents($tool)
             && !$outcome->refused()
             && $outcome->resultText === $this->wording->displayedText;
+    }
+
+    /**
+     * True when the call leaves the turn's chips settled, so a clean round can end the turn: the
+     * chips tool, a component that carried them in its field, or one that takes none.
+     */
+    public function settlesChips(string $tool, ToolOutcome $outcome): bool
+    {
+        $component = $this->components()[$tool] ?? null;
+        if (null === $component || $outcome->refused()) {
+            return false;
+        }
+
+        return match ($component->chips) {
+            ChipMode::Tool => ChipComponent::TOOL === $tool,
+            ChipMode::Field, ChipMode::RequiredField => self::carriesChips($outcome),
+            ChipMode::None => true,
+        };
     }
 
     /**
@@ -175,12 +195,44 @@ final class ToolExecutor
             );
         }
 
-        $outcome = PresentationRunner::run($component, $input, $context, $this->wording->displayedText);
-        if (!$outcome->refused()) {
-            $context->scope->countComponent($isChips);
+        $chips = [];
+        if ($component->chips->inField()) {
+            $raw = $input[ChipComponent::FIELD] ?? null;
+            $chips = Sanitizer::suggestionChips(\is_array($raw) ? $raw : [], $context->limits->maxChipsPerTurn);
+            unset($input[ChipComponent::FIELD]);
         }
 
-        return $outcome;
+        $outcome = PresentationRunner::run($component, $input, $context, $this->wording->displayedText);
+        if ($outcome->refused()) {
+            return $outcome;
+        }
+        $context->scope->countComponent($isChips);
+
+        if ([] === $chips) {
+            return $outcome;
+        }
+
+        // Chips written before the result was known may point at something the host dropped.
+        if (!$this->endsClean($component->tool, $outcome)) {
+            return new ToolOutcome($outcome->resultText.' '.$this->wording->chipsHeldText, $outcome->events);
+        }
+        $context->scope->countComponent(true);
+
+        return new ToolOutcome(
+            $outcome->resultText,
+            [...$outcome->events, AgentEvent::ui(ChipComponent::COMPONENT, [ChipComponent::FIELD => $chips])],
+        );
+    }
+
+    private static function carriesChips(ToolOutcome $outcome): bool
+    {
+        foreach ($outcome->events as $event) {
+            if (EventType::Ui === $event->type && ChipComponent::COMPONENT === ($event->data['component'] ?? null)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** @return array<string, PresentationComponent> */
