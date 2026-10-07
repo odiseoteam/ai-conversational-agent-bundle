@@ -11,6 +11,8 @@ final class TurnScope
 
     private bool $chipsSent = false;
 
+    private bool $textWritten = false;
+
     public function componentsPresented(): int
     {
         return $this->componentsPresented;
@@ -30,5 +32,15 @@ final class TurnScope
     public function chipsSent(): bool
     {
         return $this->chipsSent;
+    }
+
+    public function markText(): void
+    {
+        $this->textWritten = true;
+    }
+
+    public function textWritten(): bool
+    {
+        return $this->textWritten;
     }
 }

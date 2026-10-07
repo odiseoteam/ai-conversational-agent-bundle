@@ -31,6 +31,9 @@ final class ToolExecutor
     /** @var array<string, PresentationComponent>|null */
     private ?array $components = null;
 
+    /** @var array<string, array<string, mixed>>|null */
+    private ?array $schemas = null;
+
     public function __construct(
         private readonly CapabilityRegistry $capabilities,
         private readonly ExecutorWording $wording = new ExecutorWording(),
@@ -179,6 +182,17 @@ final class ToolExecutor
             return ToolOutcome::error(\sprintf('Unknown tool: %s', $tool));
         }
 
+        $problems = ToolInputCheck::problems($this->schemas()[$tool] ?? [], $input);
+        if ([] !== $problems) {
+            $this->logger->warning('tool {tool} called with invalid arguments', [
+                'tool' => $tool,
+                'session' => $context->session->sessionTag(),
+                'problems' => $problems,
+            ]);
+
+            return ToolOutcome::error(strtr($this->wording->invalidInputText, ['{name}' => $tool, '{problems}' => implode('; ', $problems)]));
+        }
+
         return $capability->execute($tool, $input, $context);
     }
 
@@ -193,6 +207,11 @@ final class ToolExecutor
                 'component_cap',
                 str_replace('{count}', (string) $limit, $this->wording->tooManyComponentsText),
             );
+        }
+
+        // Chips alone would close the turn with nothing answered.
+        if ($isChips && !$context->scope->textWritten() && 0 === $context->scope->componentsPresented()) {
+            return ToolOutcome::held('chips_alone', $this->wording->chipsAloneText);
         }
 
         $chips = [];
@@ -233,6 +252,19 @@ final class ToolExecutor
         }
 
         return false;
+    }
+
+    /** @return array<string, array<string, mixed>> */
+    private function schemas(): array
+    {
+        if (null === $this->schemas) {
+            $this->schemas = [];
+            foreach ($this->capabilities->tools() as $spec) {
+                $this->schemas[$spec->name] = $spec->inputSchema;
+            }
+        }
+
+        return $this->schemas;
     }
 
     /** @return array<string, PresentationComponent> */

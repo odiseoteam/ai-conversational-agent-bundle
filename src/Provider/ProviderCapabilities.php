@@ -25,6 +25,7 @@ final readonly class ProviderCapabilities
         'parallel_tool_calls' => 'parallelToolCalls',
         'tool_input_deltas' => 'toolInputDeltas',
         'temperature' => 'temperature',
+        'text_beside_tool_calls' => 'textBesideToolCalls',
     ];
 
     public function __construct(
@@ -37,6 +38,8 @@ final readonly class ProviderCapabilities
         public bool $parallelToolCalls = false,
         public bool $toolInputDeltas = false,
         public bool $temperature = true,
+        /** Writes text in the same response as its tool calls without being told it may. */
+        public bool $textBesideToolCalls = true,
     ) {
     }
 

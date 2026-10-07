@@ -16,6 +16,21 @@ All notable changes to this project are documented here. The format is based on
   `None` is a card that ends the turn without chips. `Tool`, the default, keeps the chips tool.
   The prompt's chips rule follows the modes the deployment registers.
 - `closes_on` in the eval code grader: the tool the turn's last round must call.
+- `ToolInputCheck`: before a tool runs, its arguments are checked against its schema. A required
+  argument missing, a value outside its enum, or an argument the schema does not declare where
+  `additionalProperties` is `false` stops the call, and the model gets an error naming each
+  problem (and where a misplaced argument goes) so it can call again. The text is
+  `ExecutorWording::$invalidInputText`. Types are still left to the handlers.
+- The chips tool called in a turn that has no text and no component yet is held
+  (`chips_alone`) and the model is told to write the reply first, so a model that calls tools
+  without writing (OpenAI's) no longer ends a turn with chips and nothing answered. The text is
+  `ExecutorWording::$chipsAloneText`.
+- `text_beside_tool_calls` capability (`ProviderCapabilities::$textBesideToolCalls`, true by
+  default, false for the OpenAI adapter): a model without it gets one more section at the end of
+  the turn's static prompt saying a response can carry text and tool calls together, so the
+  sentence a rule asks for is written with the calls instead of dropped. The shared prompt is
+  unchanged and stays the cached prefix; the memory extraction and the judge do not get it.
+  `StaticPromptBuilder::buildFor()` returns the prompt for one model's capabilities.
 
 ### Changed
 

@@ -141,6 +141,21 @@ final class AgentLoopTest extends TestCase
         self::assertStringNotContainsString('cache_hint', (string) json_encode($request->messages));
     }
 
+    public function testAModelThatDoesNotWriteBesideItsToolCallsIsToldItMay(): void
+    {
+        $note = 'One response can carry text and tool calls together.';
+
+        $silent = new FakeProvider([FakeProvider::text('Hi.')], new ProviderCapabilities(textBesideToolCalls: false));
+        $messages = [Transcript::userMessage('hi')];
+        $this->collect(new AgentBuilder($silent), $messages);
+        self::assertStringContainsString($note, (string) $silent->lastRequest()?->system[0]->text);
+
+        $writer = new FakeProvider([FakeProvider::text('Hi.')]);
+        $messages = [Transcript::userMessage('hi')];
+        $this->collect(new AgentBuilder($writer), $messages);
+        self::assertStringNotContainsString($note, (string) $writer->lastRequest()?->system[0]->text);
+    }
+
     public function testTheMemoryIsExtractedByItsOwnProvider(): void
     {
         $turn = new FakeProvider([FakeProvider::text('Noted.')]);
@@ -231,6 +246,78 @@ final class AgentLoopTest extends TestCase
         self::assertSame(['records'], array_map(static fn (AgentEvent $e): mixed => $e->data['component'], $this->ofType($events, EventType::Ui)));
         self::assertStringContainsString('were not shown', Dig::string($messages, 4, 'content', 0, 'content'));
         self::assertCount(3, $provider->requests(), 'the model answers the note');
+    }
+
+    public function testChipsBeforeAnyReplyAreHeldUntilTheModelWrites(): void
+    {
+        $provider = new FakeProvider([
+            FakeProvider::toolCall(ChipComponent::TOOL, ['suggestions' => ['See the 3 m one']], 'tu-1'),
+            FakeProvider::toolCall(ChipComponent::TOOL, ['suggestions' => ['See the 3 m one']], 'tu-2', 'The 3 m one is the tallest.'),
+        ]);
+        $builder = new AgentBuilder($provider, extra: [new DirectoryCapability()]);
+
+        $messages = [Transcript::userMessage('nothing taller?')];
+        $events = $this->collect($builder, $messages);
+
+        self::assertSame('chips_alone', $this->ofType($events, EventType::ToolResult)[0]->data['reason']);
+        self::assertStringContainsString('Write the reply first', Dig::string($messages, 2, 'content', 0, 'content'));
+        self::assertSame('The 3 m one is the tallest.', $this->text($events));
+        self::assertCount(1, $this->ofType($events, EventType::Ui), 'the chips are shown once, after the reply');
+        self::assertSame('end_turn', $this->last($events)->data['stop_reason']);
+        self::assertCount(2, $provider->requests());
+    }
+
+    public function testChipsAfterTheReplyEndTheTurn(): void
+    {
+        $provider = new FakeProvider([
+            FakeProvider::toolCall(ChipComponent::TOOL, ['suggestions' => ['See the 3 m one']], 'tu-1', 'The 3 m one is the tallest.'),
+        ]);
+        $builder = new AgentBuilder($provider, extra: [new DirectoryCapability()]);
+
+        $messages = [Transcript::userMessage('nothing taller?')];
+        $events = $this->collect($builder, $messages);
+
+        self::assertCount(1, $this->ofType($events, EventType::Ui));
+        self::assertSame('end_turn', $this->last($events)->data['stop_reason']);
+        self::assertCount(1, $provider->requests());
+    }
+
+    public function testChipsAfterAToolRoundWithAReplyInItEndTheTurn(): void
+    {
+        $provider = new FakeProvider([
+            FakeProvider::toolCall('find_records', ['query' => 'something'], 'tu-1', 'Looking it up.'),
+            FakeProvider::toolCall(ChipComponent::TOOL, ['suggestions' => ['See the other one']], 'tu-2'),
+        ]);
+        $builder = new AgentBuilder($provider, extra: [new DirectoryCapability()]);
+
+        $messages = [Transcript::userMessage('show me')];
+        $events = $this->collect($builder, $messages);
+
+        self::assertCount(1, $this->ofType($events, EventType::Ui), 'the reply earlier in the turn counts');
+        self::assertCount(2, $provider->requests());
+    }
+
+    public function testArgumentsTheSchemaRulesOutAreSentBackWithoutRunningTheTool(): void
+    {
+        $provider = new FakeProvider([
+            FakeProvider::toolCall('find_records', ['query' => 'something', 'sort' => 'newest'], 'tu-1'),
+            FakeProvider::toolCall('find_records', ['query' => 'something'], 'tu-2'),
+            FakeProvider::text('Found two.'),
+        ]);
+        $builder = new AgentBuilder($provider, extra: [new DirectoryCapability()]);
+
+        $messages = [Transcript::userMessage('show me')];
+        $state = new TurnState();
+        $events = $this->collect($builder, $messages, $state);
+
+        $result = $this->ofType($events, EventType::ToolResult)[0];
+        self::assertTrue($result->data['is_error']);
+        self::assertSame(
+            'find_records was not run: `sort` is not a parameter here (allowed: query). Correct the arguments and call it again.',
+            Dig::string($messages, 2, 'content', 0, 'content'),
+        );
+        self::assertTrue($state->hasSeen('R-1'), 'the corrected call runs');
+        self::assertSame('Found two.', $this->text($events));
     }
 
     public function testACardThatTakesNoChipsEndsTheTurnWithoutThem(): void

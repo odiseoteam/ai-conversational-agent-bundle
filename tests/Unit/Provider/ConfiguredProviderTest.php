@@ -24,6 +24,17 @@ final class ConfiguredProviderTest extends TestCase
         self::assertTrue($provider->capabilities('claude-sonnet-5')->forcedToolChoice);
     }
 
+    public function testAModelThatWritesBesideItsToolCallsCanSaySo(): void
+    {
+        $provider = new ConfiguredProvider(
+            new FakeProvider([], new ProviderCapabilities(textBesideToolCalls: false)),
+            ['gpt-6' => ['text_beside_tool_calls' => true]],
+        );
+
+        self::assertTrue($provider->capabilities('gpt-6')->textBesideToolCalls);
+        self::assertFalse($provider->capabilities('gpt-5.6-luna')->textBesideToolCalls);
+    }
+
     public function testAnUnknownCapabilityIsRefused(): void
     {
         $this->expectExceptionMessage('Unknown capability "forced_tools"');

@@ -153,6 +153,7 @@ final class OpenAiProviderTest extends TestCase
         self::assertFalse($provider->capabilities('gpt-5.4-mini')->temperature);
         self::assertFalse($provider->capabilities('gpt-4.1-mini')->thinking);
         self::assertFalse($provider->capabilities('gpt-5.4-mini')->promptCaching, 'caching is automatic: no markers');
+        self::assertFalse($provider->capabilities('gpt-5.6-luna')->textBesideToolCalls, 'its prompt says text and tool calls go together');
     }
 
     private function provider(string $body): OpenAiProvider

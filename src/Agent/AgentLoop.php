@@ -97,7 +97,7 @@ final class AgentLoop
         // What the model can do decides what is asked of it: no markers without caching, no
         // thinking without it, no eager dispatch without the deltas it reads.
         $can = $this->provider->capabilities($this->config->model);
-        $system = PromptAssembler::systemBlocks($this->staticPrompt->build(), $context);
+        $system = PromptAssembler::systemBlocks($this->staticPrompt->buildFor($can), $context);
         if (!$can->promptCaching) {
             $system = array_map(static fn (SystemBlock $block): SystemBlock => new SystemBlock($block->text), $system);
         }
@@ -178,6 +178,9 @@ final class AgentLoop
                 $streamed = new StreamedRound($this->executor, $toolContext, $this->config->eagerToolDispatch && $can->toolInputDeltas && !$forceText);
                 foreach ($this->provider->stream($request) as $event) {
                     if ($event instanceof TextChunk) {
+                        if ('' !== trim($event->text)) {
+                            $scope->markText();
+                        }
                         yield AgentEvent::textDelta($event->text);
                         continue;
                     }

@@ -18,6 +18,9 @@ final readonly class ExecutorWording
         public string $chipsHeldText = 'The suggestions sent with it were not shown; send the turn\'s suggestions again.',
         /** Who sees the status line, for the tool schemas. */
         public string $statusReader = 'the visitor',
+        /** Formatted with {name} and {problems}. */
+        public string $invalidInputText = '{name} was not run: {problems}. Correct the arguments and call it again.',
+        public string $chipsAloneText = 'The suggestions were not shown: this turn has no reply yet. Write the reply first, then send the suggestions with it.',
     ) {
     }
 }

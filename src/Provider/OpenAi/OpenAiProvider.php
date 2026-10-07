@@ -39,6 +39,8 @@ final class OpenAiProvider extends PlatformProvider
             toolInputDeltas: true,
             // A reasoning model rejects a temperature.
             temperature: !$reasoning,
+            // Left alone, a response is either text or tool calls.
+            textBesideToolCalls: false,
         );
     }
 

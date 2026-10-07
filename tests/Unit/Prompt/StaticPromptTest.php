@@ -9,6 +9,7 @@ use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
 use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
 use Odiseo\AiConversationalAgentBundle\Presentation\ChipMode;
 use Odiseo\AiConversationalAgentBundle\Prompt\StaticPromptBuilder;
+use Odiseo\AiConversationalAgentBundle\Provider\ProviderCapabilities;
 use Odiseo\AiConversationalAgentBundle\Skill\Skill;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\DirectoryCapability;
@@ -27,6 +28,23 @@ final class StaticPromptTest extends TestCase
         $second = $this->builder()->build();
 
         self::assertSame($first, $second);
+    }
+
+    public function testAModelThatWritesBesideItsToolCallsGetsTheSharedPrompt(): void
+    {
+        $builder = $this->builder();
+
+        self::assertSame($builder->build(), $builder->buildFor(new ProviderCapabilities()));
+    }
+
+    public function testAModelThatDoesNotIsToldItMay(): void
+    {
+        $builder = $this->builder();
+        $text = $builder->buildFor(new ProviderCapabilities(textBesideToolCalls: false));
+
+        self::assertTrue(str_starts_with($text, $builder->build()), 'the shared prompt stays the cached prefix');
+        self::assertStringContainsString('One response can carry text and tool calls together.', $text);
+        self::assertSame($text, $builder->buildFor(new ProviderCapabilities(textBesideToolCalls: false)));
     }
 
     public function testItCarriesTheIdentityTheFenceNoticeAndTheSkillIndex(): void

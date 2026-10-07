@@ -11,6 +11,7 @@ use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
 use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
 use Odiseo\AiConversationalAgentBundle\Presentation\ChipComponent;
 use Odiseo\AiConversationalAgentBundle\Presentation\ChipMode;
+use Odiseo\AiConversationalAgentBundle\Provider\ProviderCapabilities;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
 
 /**
@@ -37,6 +38,20 @@ final class StaticPromptBuilder
     public function build(): string
     {
         return $this->text ??= $this->assemble();
+    }
+
+    /**
+     * The prompt for one model: a model that writes text or calls tools, never both, is told
+     * it may do both, so the sentence a rule asks for is not dropped.
+     */
+    public function buildFor(ProviderCapabilities $can): string
+    {
+        if ($can->textBesideToolCalls) {
+            return $this->build();
+        }
+
+        return $this->build()."\n\n# Text and tool calls\n\n"
+            .'- One response can carry text and tool calls together. Write the sentence a rule above asks for (an answer, a gap, a clarifying question) as text in the same response as its tool calls, before them, not in a response of its own. A turn that ends with nothing the person can read, or with only chips, is wrong.';
     }
 
     /**
