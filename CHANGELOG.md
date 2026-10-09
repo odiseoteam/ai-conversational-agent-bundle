@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- Claude Haiku 5.5 (`claude-haiku-5-5`): its price, and no temperature on the request.
+- `editable_history` capability (`ProviderCapabilities::$editableHistory`, true by default): a
+  model without it checks that the history before a replayed thinking block was not edited, so
+  the history is not compacted while it thinks. False on Anthropic for Fable 5.1, Opus 5.5,
+  Sonnet 5.5 and Haiku 5.5.
 - `ChipMode` on `PresentationComponent`: where the chips of a turn that ends on it come from.
   `Field` adds an optional `suggestions` field, last in the tool's schema; the executor sanitizes
   the chips and emits the `suggestions` component after the card, so the round that renders it

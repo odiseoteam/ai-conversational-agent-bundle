@@ -273,7 +273,10 @@ final class AgentLoop
             Transcript::closeOpenToolUses($messages, $settled);
         }
 
-        $cleared = Transcript::compact($messages, $lastPromptTokens, $this->config->compactHistoryAboveTokens);
+        // Clearing old results under replayed thinking is a 400 on the models that check it.
+        $cleared = $can->editableHistory || !$can->thinking || null === $this->config->thinkingEffort
+            ? Transcript::compact($messages, $lastPromptTokens, $this->config->compactHistoryAboveTokens)
+            : 0;
 
         yield AgentEvent::turnComplete(
             $stopReason,

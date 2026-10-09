@@ -35,7 +35,9 @@ final class AnthropicProvider extends PlatformProvider
             parallelToolCalls: true,
             toolInputDeltas: true,
             // The Claude 5 models reject a temperature.
-            temperature: 1 !== preg_match('/^claude-(fable|opus|sonnet)-5/', $model),
+            temperature: 1 !== preg_match('/^claude-(fable|opus|sonnet|haiku)-5/', $model),
+            // These check that the history before a replayed thinking block was not edited.
+            editableHistory: 1 !== preg_match('/^claude-(fable-5-1|opus-5-5|sonnet-5-5|haiku-5-5)/', $model),
         );
     }
 
