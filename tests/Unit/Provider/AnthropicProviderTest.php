@@ -184,6 +184,10 @@ final class AnthropicProviderTest extends TestCase
         self::assertFalse($provider->capabilities('claude-sonnet-5')->temperature);
         self::assertTrue($provider->capabilities('claude-sonnet-5')->forcedToolChoice);
         self::assertFalse($provider->capabilities('claude-sonnet-5-5')->forcedToolChoice);
+        self::assertTrue($provider->capabilities('claude-haiku-5-5')->thinking);
+        self::assertFalse($provider->capabilities('claude-haiku-5-5')->temperature);
+        self::assertFalse($provider->capabilities('claude-haiku-5-5')->editableHistory);
+        self::assertTrue($provider->capabilities('claude-sonnet-5')->editableHistory);
     }
 
     public function testSonnetFiveFiveTurnsThinkingDownInsteadOfOff(): void

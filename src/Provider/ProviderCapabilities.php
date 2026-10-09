@@ -26,6 +26,7 @@ final readonly class ProviderCapabilities
         'tool_input_deltas' => 'toolInputDeltas',
         'temperature' => 'temperature',
         'text_beside_tool_calls' => 'textBesideToolCalls',
+        'editable_history' => 'editableHistory',
     ];
 
     public function __construct(
@@ -40,6 +41,8 @@ final readonly class ProviderCapabilities
         public bool $temperature = true,
         /** Writes text in the same response as its tool calls without being told it may. */
         public bool $textBesideToolCalls = true,
+        /** Accepts earlier turns edited under its thinking blocks; without it the history is not compacted. */
+        public bool $editableHistory = true,
     ) {
     }
 

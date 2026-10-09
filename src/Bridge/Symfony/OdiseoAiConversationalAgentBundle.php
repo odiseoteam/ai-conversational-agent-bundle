@@ -116,7 +116,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                     ->end()->end()
                 ->end()
                 ->arrayNode('capabilities')
-                    ->info('What a model can do, for one its adapter does not know yet: forced_tool_choice, thinking, prompt_caching, tool_input_deltas, temperature, server_tools, parallel_tool_calls, text_beside_tool_calls.')
+                    ->info('What a model can do, for one its adapter does not know yet: forced_tool_choice, thinking, prompt_caching, tool_input_deltas, temperature, server_tools, parallel_tool_calls, text_beside_tool_calls, editable_history.')
                     ->useAttributeAsKey('model')
                     ->arrayPrototype()->useAttributeAsKey('name')->booleanPrototype()->end()->end()
                 ->end()

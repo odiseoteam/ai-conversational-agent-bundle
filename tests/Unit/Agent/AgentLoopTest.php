@@ -141,6 +141,29 @@ final class AgentLoopTest extends TestCase
         self::assertStringNotContainsString('cache_hint', (string) json_encode($request->messages));
     }
 
+    public function testTheHistoryUnderCheckedThinkingIsNotCompacted(): void
+    {
+        $config = new AgentConfig(brandName: 'Odiseo', thinkingEffort: 'low', compactHistoryAboveTokens: 1);
+        $history = static fn (): array => [
+            Transcript::userMessage('hi'),
+            ['role' => 'assistant', 'content' => [['type' => 'tool_use', 'id' => 'tu-1', 'name' => 'search', 'input' => []]]],
+            ['role' => 'user', 'content' => [['type' => 'tool_result', 'tool_use_id' => 'tu-1', 'content' => 'Found 2.']]],
+            ['role' => 'assistant', 'content' => [['type' => 'text', 'text' => 'Two.']]],
+            Transcript::userMessage('more'),
+            ['role' => 'assistant', 'content' => [['type' => 'text', 'text' => 'Sure.']]],
+            Transcript::userMessage('again'),
+        ];
+
+        $checked = $history();
+        $events = $this->collect(new AgentBuilder(new FakeProvider([FakeProvider::text('Hi.')], new ProviderCapabilities(thinking: true, editableHistory: false)), $config), $checked);
+        self::assertSame(0, $this->last($events)->data['results_cleared']);
+        self::assertSame('Found 2.', Dig::value($checked, 2, 'content', 0, 'content'));
+
+        $editable = $history();
+        $events = $this->collect(new AgentBuilder(new FakeProvider([FakeProvider::text('Hi.')], new ProviderCapabilities(thinking: true)), $config), $editable);
+        self::assertSame(1, $this->last($events)->data['results_cleared']);
+    }
+
     public function testAModelThatDoesNotWriteBesideItsToolCallsIsToldItMay(): void
     {
         $note = 'One response can carry text and tool calls together.';
