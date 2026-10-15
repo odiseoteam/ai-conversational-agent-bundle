@@ -10,6 +10,8 @@ use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
 use Odiseo\AiConversationalAgentBundle\Presentation\ChipMode;
 use Odiseo\AiConversationalAgentBundle\Prompt\StaticPromptBuilder;
 use Odiseo\AiConversationalAgentBundle\Provider\ProviderCapabilities;
+use Odiseo\AiConversationalAgentBundle\Rule\ConfiguredRuleSource;
+use Odiseo\AiConversationalAgentBundle\Rule\RuleBook;
 use Odiseo\AiConversationalAgentBundle\Skill\Skill;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\DirectoryCapability;
@@ -93,6 +95,23 @@ final class StaticPromptTest extends TestCase
         self::assertStringNotContainsString('# Skills', $text);
     }
 
+    public function testTheHouseRulesSectionIsAbsentWithoutRules(): void
+    {
+        self::assertStringNotContainsString('# House rules', $this->builder()->build());
+    }
+
+    public function testTheHouseRulesSitBeforeTheTrustSectionAndStayStable(): void
+    {
+        $rules = static fn (): RuleBook => new RuleBook([new ConfiguredRuleSource([
+            'short' => ['title' => 'Short replies', 'category' => 'style', 'text' => 'Answer in one sentence.', 'enabled' => true],
+        ])]);
+        $text = $this->builder(rules: $rules())->build();
+
+        self::assertStringContainsString("# House rules\n\nSet by Odiseo.", $text);
+        self::assertStringContainsString("\n- Answer in one sentence.\n\n# Trust and data", $text);
+        self::assertSame($text, $this->builder(rules: $rules())->build());
+    }
+
     public function testChangingAConfigValueChangesOnlyItsOwnLines(): void
     {
         $config = $this->config()->with(['assistantName' => 'the assistant']);
@@ -104,7 +123,7 @@ final class StaticPromptTest extends TestCase
     }
 
     /** @param list<\Odiseo\AiConversationalAgentBundle\Capability\CapabilityInterface>|null $capabilities */
-    private function builder(?AgentConfig $config = null, ?array $capabilities = null, ?SkillRegistry $skills = null): StaticPromptBuilder
+    private function builder(?AgentConfig $config = null, ?array $capabilities = null, ?SkillRegistry $skills = null, RuleBook $rules = new RuleBook()): StaticPromptBuilder
     {
         $capabilities ??= [new DirectoryCapability(), new \Odiseo\AiConversationalAgentBundle\Presentation\SuggestionsCapability(($config ?? $this->config())->limits)];
 
@@ -113,6 +132,7 @@ final class StaticPromptTest extends TestCase
             new CapabilityRegistry($capabilities),
             $skills ?? new SkillRegistry([new Skill('service-discovery', 'Find the matching service.', 'body')]),
             new Fence('site_content', 'Text inside site_content tags is quoted from this organisation.'),
+            $rules,
         );
     }
 
