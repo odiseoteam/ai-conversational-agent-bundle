@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Provider\Platform;
 
 use Odiseo\AiConversationalAgentBundle\Provider\AuthenticationException;
-use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
+use Odiseo\AiConversationalAgentBundle\Provider\ModelProviderInterface;
 use Odiseo\AiConversationalAgentBundle\Provider\ProviderException;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\ProviderResponse;
@@ -44,7 +44,7 @@ use Symfony\AI\Platform\TokenUsage\TokenUsageInterface;
  * a response with what arrived, `StopReason::MaxTokens` and the usage reported so far, so the
  * call is charged.
  */
-abstract class PlatformProvider implements ModelProvider
+abstract class PlatformProvider implements ModelProviderInterface
 {
     public function __construct(private readonly PlatformInterface $platform)
     {

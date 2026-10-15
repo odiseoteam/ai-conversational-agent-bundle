@@ -8,7 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\MemoryFactInterface;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryFact;
-use Odiseo\AiConversationalAgentBundle\Memory\MemoryStore;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryStoreInterface;
 use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /**
@@ -16,7 +16,7 @@ use Odiseo\AiConversationalAgentBundle\Support\Scalar;
  * instead of piling up near-duplicates. Search is a case-insensitive substring match per word
  * over key and value: a subject holds a handful of facts, so nothing heavier is warranted.
  */
-final class OrmMemoryStore implements MemoryStore
+final class OrmMemoryStore implements MemoryStoreInterface
 {
     /** @param class-string<MemoryFactInterface> $factClass */
     public function __construct(

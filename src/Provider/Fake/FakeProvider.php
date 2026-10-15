@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Provider\Fake;
 
-use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
+use Odiseo\AiConversationalAgentBundle\Provider\ModelProviderInterface;
 use Odiseo\AiConversationalAgentBundle\Provider\ProviderCapabilities;
 use Odiseo\AiConversationalAgentBundle\Provider\ProviderException;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
@@ -21,7 +21,7 @@ use Odiseo\AiConversationalAgentBundle\Support\Scalar;
  * A scripted model, for tests and for eval replays. It answers with the responses it was
  * given, in order, and records every request so a test can assert on the prompt bytes.
  */
-final class FakeProvider implements ModelProvider
+final class FakeProvider implements ModelProviderInterface
 {
     /** @var list<ProviderResponse> */
     private array $responses;

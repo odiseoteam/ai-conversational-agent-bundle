@@ -7,7 +7,7 @@ namespace Odiseo\AiConversationalAgentBundle\Memory;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
 use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
 use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
-use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
+use Odiseo\AiConversationalAgentBundle\Provider\ModelProviderInterface;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\SystemBlock;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
 use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
@@ -28,7 +28,7 @@ final class MemoryRuntime
     private const MAX_NEW_FACTS = 3;
 
     public function __construct(
-        private readonly MemoryStore $store,
+        private readonly MemoryStoreInterface $store,
         private readonly AgentConfig $config,
         private readonly Fence $fence,
         private readonly string $extractionPrompt,
@@ -36,7 +36,7 @@ final class MemoryRuntime
     ) {
     }
 
-    public function store(): MemoryStore
+    public function store(): MemoryStoreInterface
     {
         return $this->store;
     }
@@ -127,7 +127,7 @@ final class MemoryRuntime
      *
      * @return list<MemoryFact>
      */
-    public function extract(ModelProvider $provider, string $subject, string $sessionTag, string $transcript, ?\Closure $onResponse = null): array
+    public function extract(ModelProviderInterface $provider, string $subject, string $sessionTag, string $transcript, ?\Closure $onResponse = null): array
     {
         if (!$this->config->enableMemory || '' === trim($transcript)) {
             return [];

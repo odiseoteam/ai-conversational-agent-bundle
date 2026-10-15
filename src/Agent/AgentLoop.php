@@ -20,7 +20,7 @@ use Odiseo\AiConversationalAgentBundle\Memory\MemoryRuntime;
 use Odiseo\AiConversationalAgentBundle\Prompt\ContextBlockBuilder;
 use Odiseo\AiConversationalAgentBundle\Prompt\PromptAssembler;
 use Odiseo\AiConversationalAgentBundle\Prompt\StaticPromptBuilder;
-use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
+use Odiseo\AiConversationalAgentBundle\Provider\ModelProviderInterface;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\SystemBlock;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\ToolChoice;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
@@ -57,7 +57,7 @@ final class AgentLoop
 {
     public function __construct(
         private readonly AgentConfig $config,
-        private readonly ModelProvider $provider,
+        private readonly ModelProviderInterface $provider,
         private readonly CapabilityRegistry $capabilities,
         private readonly ToolExecutor $executor,
         private readonly ToolSurface $toolSurface,
@@ -66,10 +66,10 @@ final class AgentLoop
         private readonly Fence $fence,
         private readonly MemoryRuntime $memory,
         private readonly BudgetPolicy $budget,
-        private readonly ContextProvider $context = new NullContextProvider(),
+        private readonly ContextProviderInterface $context = new NullContextProvider(),
         private readonly LoggerInterface $logger = new NullLogger(),
         /** Runs the memory extraction; the turn's provider when null. */
-        private readonly ?ModelProvider $memoryProvider = null,
+        private readonly ?ModelProviderInterface $memoryProvider = null,
     ) {
     }
 

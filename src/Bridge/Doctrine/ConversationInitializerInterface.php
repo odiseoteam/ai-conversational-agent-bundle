@@ -12,7 +12,7 @@ use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\ConversationInterfa
  * relates a conversation to (a customer, a channel) it sets here, where it still knows who is
  * asking. Nothing the host sets is read back by the core.
  */
-interface ConversationInitializer
+interface ConversationInitializerInterface
 {
     public function initialize(ConversationInterface $conversation): void;
 }

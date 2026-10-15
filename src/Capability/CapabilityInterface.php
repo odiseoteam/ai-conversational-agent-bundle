@@ -15,7 +15,7 @@ use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
  * the ToolContext. It contributes tools, the prompt rules that belong to those tools,
  * grounding rules, presentation components, and the handlers behind them.
  */
-interface Capability
+interface CapabilityInterface
 {
     /** Stable identifier, e.g. "content.search". Used for ordering and for logs. */
     public function name(): string;

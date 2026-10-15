@@ -39,6 +39,13 @@ All notable changes to this project are documented here. The format is based on
 
 ### Changed
 
+- Every port interface ends in `Interface`, like the model interfaces already did:
+  `CapabilityInterface`, `ContextProviderInterface`, `ConversationInitializerInterface`,
+  `ClientKeyResolverInterface`, `SpendLedgerInterface`, `EvalEnvironmentInterface`,
+  `EvalIsolationInterface`, `GraderInterface`, `DomainErrorMapperInterface`,
+  `ConsoleEnvironmentInterface`, `PrincipalResolverInterface`, `TurnHookInterface`,
+  `MemoryStoreInterface`, `ModelProviderInterface` and `StreamEventInterface`. Implement and
+  alias the new names.
 - Default models: the turn and the memory extraction run on Claude Haiku 5.5
   (`claude-haiku-5-5`, the turn still at `low` effort) and the eval judge on Claude Sonnet 5.5
   (`claude-sonnet-5-5`), instead of Sonnet 5, Haiku 4.5 and Sonnet 5. Verdicts stored with the

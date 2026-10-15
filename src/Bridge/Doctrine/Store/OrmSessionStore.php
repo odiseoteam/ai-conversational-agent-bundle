@@ -8,7 +8,7 @@ use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\OptimisticLockException;
-use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\ConversationInitializer;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\ConversationInitializerInterface;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\ConversationInterface;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\Message;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\MessageInterface;
@@ -41,7 +41,7 @@ final class OrmSessionStore extends SessionStore
         private readonly string $conversationClass,
         private readonly string $messageClass,
         private readonly int $retentionDays = 30,
-        private readonly ConversationInitializer $initializer = new NullConversationInitializer(),
+        private readonly ConversationInitializerInterface $initializer = new NullConversationInitializer(),
     ) {
     }
 

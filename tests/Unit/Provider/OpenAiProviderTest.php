@@ -13,7 +13,7 @@ use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\ProviderResponse;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\StopReason;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
-use Odiseo\AiConversationalAgentBundle\Provider\Stream\StreamEvent;
+use Odiseo\AiConversationalAgentBundle\Provider\Stream\StreamEventInterface;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\TextChunk;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\ToolCallStarted;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\ToolInputChunk;
@@ -169,7 +169,7 @@ final class OpenAiProviderTest extends TestCase
         return new OpenAiProvider(Factory::createPlatform('sk-test', $client));
     }
 
-    /** @return list<StreamEvent> */
+    /** @return list<StreamEventInterface> */
     private function events(OpenAiProvider $provider, TurnRequest $request): array
     {
         $events = [];
@@ -180,7 +180,7 @@ final class OpenAiProviderTest extends TestCase
         return $events;
     }
 
-    /** @param list<StreamEvent> $events */
+    /** @param list<StreamEventInterface> $events */
     private static function finished(array $events): ProviderResponse
     {
         $last = $events[\count($events) - 1] ?? null;

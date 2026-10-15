@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Presentation;
 
-use Odiseo\AiConversationalAgentBundle\Capability\Capability;
+use Odiseo\AiConversationalAgentBundle\Capability\CapabilityInterface;
 use Odiseo\AiConversationalAgentBundle\Capability\Limits;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
@@ -18,7 +18,7 @@ use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
  * They are sanitized here rather than in the tool schema, because the schemas are cache-frozen;
  * a call whose every chip sanitizes away fails, since the chips are its whole content.
  */
-final class SuggestionsCapability implements Capability
+final class SuggestionsCapability implements CapabilityInterface
 {
     public function __construct(private readonly Limits $limits)
     {

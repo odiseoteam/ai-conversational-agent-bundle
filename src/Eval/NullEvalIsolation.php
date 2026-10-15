@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Eval;
 
 /** Without a database there is nothing to undo: each case already gets its own session and memory subject. */
-final class NullEvalIsolation implements EvalIsolation
+final class NullEvalIsolation implements EvalIsolationInterface
 {
     public function isolate(\Closure $case): mixed
     {

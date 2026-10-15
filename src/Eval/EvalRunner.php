@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Eval;
 
 use Odiseo\AiConversationalAgentBundle\Agent\TurnRunner;
-use Odiseo\AiConversationalAgentBundle\Budget\SpendLedger;
+use Odiseo\AiConversationalAgentBundle\Budget\SpendLedgerInterface;
 use Odiseo\AiConversationalAgentBundle\Eval\Grader\CodeGrader;
-use Odiseo\AiConversationalAgentBundle\Eval\Grader\Grader;
+use Odiseo\AiConversationalAgentBundle\Eval\Grader\GraderInterface;
 use Odiseo\AiConversationalAgentBundle\Eval\Grader\JudgeGrader;
-use Odiseo\AiConversationalAgentBundle\Host\PrincipalResolver;
+use Odiseo\AiConversationalAgentBundle\Host\PrincipalResolverInterface;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryCategory;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryFact;
-use Odiseo\AiConversationalAgentBundle\Memory\MemoryStore;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryStoreInterface;
 use Odiseo\AiConversationalAgentBundle\Provider\AuthenticationException;
 use Odiseo\AiConversationalAgentBundle\Provider\ProviderException;
 use Odiseo\AiConversationalAgentBundle\Session\SeenRecord;
@@ -34,26 +34,26 @@ use Odiseo\AiConversationalAgentBundle\Support\Scalar;
  */
 final class EvalRunner
 {
-    /** @var list<Grader> */
+    /** @var list<GraderInterface> */
     private readonly array $graders;
 
     /** @var \Closure(int): void */
     private readonly \Closure $pause;
 
     /**
-     * @param iterable<Grader>           $graders
+     * @param iterable<GraderInterface>  $graders
      * @param (\Closure(int): void)|null $pause   seconds between retries; tests pass a no-op
      */
     public function __construct(
         private readonly TurnRunner $turns,
         private readonly SessionStore $sessions,
-        private readonly MemoryStore $memory,
-        private readonly SpendLedger $ledger,
-        private readonly PrincipalResolver $principal,
+        private readonly MemoryStoreInterface $memory,
+        private readonly SpendLedgerInterface $ledger,
+        private readonly PrincipalResolverInterface $principal,
         iterable $graders = [],
         private readonly ?JudgeGrader $judge = null,
-        private readonly EvalEnvironment $environment = new NullEvalEnvironment(),
-        private readonly EvalIsolation $isolation = new NullEvalIsolation(),
+        private readonly EvalEnvironmentInterface $environment = new NullEvalEnvironment(),
+        private readonly EvalIsolationInterface $isolation = new NullEvalIsolation(),
         private readonly string $timezone = 'UTC',
         private readonly int $retries = 2,
         ?\Closure $pause = null,

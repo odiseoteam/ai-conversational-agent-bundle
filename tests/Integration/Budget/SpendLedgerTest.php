@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Tests\Integration\Budget;
 
 use Odiseo\AiConversationalAgentBundle\Budget\InMemorySpendLedger;
-use Odiseo\AiConversationalAgentBundle\Budget\SpendLedger;
+use Odiseo\AiConversationalAgentBundle\Budget\SpendLedgerInterface;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Entity\TestSpendEntry;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Orm;
@@ -14,14 +14,14 @@ use PHPUnit\Framework\TestCase;
 
 final class SpendLedgerTest extends TestCase
 {
-    /** @return iterable<string, array{0: \Closure(): SpendLedger}> */
+    /** @return iterable<string, array{0: \Closure(): SpendLedgerInterface}> */
     public static function ledgers(): iterable
     {
-        yield 'memory' => [static fn (): SpendLedger => new InMemorySpendLedger()];
-        yield 'orm' => [static fn (): SpendLedger => Orm::spendLedger()];
+        yield 'memory' => [static fn (): SpendLedgerInterface => new InMemorySpendLedger()];
+        yield 'orm' => [static fn (): SpendLedgerInterface => Orm::spendLedger()];
     }
 
-    /** @param \Closure(): SpendLedger $make */
+    /** @param \Closure(): SpendLedgerInterface $make */
     #[DataProvider('ledgers')]
     public function testSpendSumsBySessionClientAndDay(\Closure $make): void
     {

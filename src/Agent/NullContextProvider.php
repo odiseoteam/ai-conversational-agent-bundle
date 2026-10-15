@@ -7,7 +7,7 @@ namespace Odiseo\AiConversationalAgentBundle\Agent;
 use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
 use Odiseo\AiConversationalAgentBundle\Session\TurnState;
 
-final class NullContextProvider implements ContextProvider
+final class NullContextProvider implements ContextProviderInterface
 {
     public function contextPayload(SessionContext $session, TurnState $state): array
     {

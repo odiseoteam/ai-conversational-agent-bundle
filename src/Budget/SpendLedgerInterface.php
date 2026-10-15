@@ -11,7 +11,7 @@ use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
  * bill running away. The client key (an IP, typically) is what survives a fresh session; it
  * is still not an abuse control — that is what the rate limiter at the edge is for.
  */
-interface SpendLedger
+interface SpendLedgerInterface
 {
     /** $model and $usage are the detail behind $usd; a ledger may keep them, the caps only sum $usd. */
     public function record(string $sessionId, \DateTimeImmutable $at, float $usd, ?string $clientKey = null, ?string $model = null, ?Usage $usage = null): void;

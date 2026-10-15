@@ -6,14 +6,14 @@ namespace Odiseo\AiConversationalAgentBundle\Provider;
 
 use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\ProviderResponse;
-use Odiseo\AiConversationalAgentBundle\Provider\Stream\StreamEvent;
+use Odiseo\AiConversationalAgentBundle\Provider\Stream\StreamEventInterface;
 
 /**
  * A model behind one adapter. The interface is defined by what this product needs — streaming,
  * prompt caching, forced reads, server-side tools, usage accounting — not by the shape of any
  * one vendor's API, so a second adapter is a mapping rather than a translation.
  */
-interface ModelProvider
+interface ModelProviderInterface
 {
     /** What this provider can do with $model. */
     public function capabilities(string $model): ProviderCapabilities;
@@ -21,7 +21,7 @@ interface ModelProvider
     /**
      * One streamed model call. The last event is always TurnFinished.
      *
-     * @return iterable<StreamEvent>
+     * @return iterable<StreamEventInterface>
      *
      * @throws ProviderException
      */

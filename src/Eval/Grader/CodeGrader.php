@@ -13,7 +13,7 @@ use Odiseo\AiConversationalAgentBundle\Support\Scalar;
  * the reply's wording is graded only for strings that must or must not appear. `rubric` goes to
  * the judge, and a vertical's state to its own grader.
  */
-final class CodeGrader implements Grader
+final class CodeGrader implements GraderInterface
 {
     public function keys(): array
     {

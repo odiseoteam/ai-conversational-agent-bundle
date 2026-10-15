@@ -11,7 +11,7 @@ use Odiseo\AiConversationalAgentBundle\Session\TurnState;
  * customer, an eval-only listing) and reads back the state the case ended in, so graders and a
  * replay see it without the host.
  */
-interface EvalEnvironment
+interface EvalEnvironmentInterface
 {
     /**
      * Runs inside the case's isolation, after the session starts and before the first turn. The

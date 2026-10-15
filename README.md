@@ -119,11 +119,12 @@ odiseo_ai_conversational_agent:
 ```
 
 A conversation the core creates carries the session id, the principal and the state document.
-Anything else the host's schema relates it to it sets through a `ConversationInitializer`,
-called on the new entity before it is persisted, while the request still knows who is asking:
+Anything else the host's schema relates it to it sets through a
+`ConversationInitializerInterface`, called on the new entity before it is persisted, while the
+request still knows who is asking:
 
 ```php
-final class LinkTheCustomer implements ConversationInitializer
+final class LinkTheCustomer implements ConversationInitializerInterface
 {
     public function initialize(ConversationInterface $conversation): void
     {
@@ -132,15 +133,17 @@ final class LinkTheCustomer implements ConversationInitializer
 }
 ```
 
-Point the `ConversationInitializer` alias at it and the core will call it; unset, nothing happens.
+Point the `ConversationInitializerInterface` alias at it and the core will call it; unset, nothing
+happens.
 
 ### Services
 
 Every service is registered as `odiseo_ai_conversational_agent.*` with explicit arguments.
 The classes and ports a host uses are aliases, and a host replaces a port by redefining its
-alias: `ContextProvider`, `PrincipalResolver`, `TurnHook`, `ConsoleEnvironment`,
-`ConversationInitializer`, `SessionStore`, `MemoryStore` and `SpendLedger`. Capabilities are
-collected by the `odiseo_ai_conversational_agent.capability` tag.
+alias: `ContextProviderInterface`, `PrincipalResolverInterface`, `TurnHookInterface`,
+`ConsoleEnvironmentInterface`, `ConversationInitializerInterface`, `SessionStore`,
+`MemoryStoreInterface` and `SpendLedgerInterface`. Capabilities implement `CapabilityInterface`
+and are collected by the `odiseo_ai_conversational_agent.capability` tag.
 
 ### Logging
 
@@ -185,8 +188,8 @@ judge on Claude Sonnet 5.5.
 A platform is an adapter tagged `odiseo_ai_conversational_agent.provider` with its `platform`
 name. `anthropic` and `openai` are registered when their Symfony AI bridge is installed and wrap
 the AI bundle's `ai.platform.<name>`; your own adapter extends `PlatformProvider` or implements
-`ModelProvider`, and is tagged the same way. The conversation, its tool results and the memory
-go to the provider each role is on. To replace one role's provider outright, redefine
+`ModelProviderInterface`, and is tagged the same way. The conversation, its tool results and the
+memory go to the provider each role is on. To replace one role's provider outright, redefine
 `odiseo_ai_conversational_agent.provider.<role>`.
 
 Every configured model needs a price, or the agent refuses to start: an unpriced model would
@@ -223,10 +226,10 @@ from a daily cron.
 
 A case file in `evals_dir` holds a JSON array of cases, each with a precondition (`state`), the
 visitor's `turns` and the `expected` keys it is about; a `rubric` goes to the judge
-(`models.judge`), and every other key to a tagged grader. A vertical adds
-the keys of its own state with its own `Grader`, and builds the preconditions the core cannot
-by aliasing `EvalEnvironment`. With the ORM each case runs in a transaction that is rolled back,
-so nothing it writes stays and its spend does not count against the day's budget.
+(`models.judge`), and every other key to a tagged grader. A vertical adds the keys of its own
+state with its own `GraderInterface`, and builds the preconditions the core cannot by aliasing
+`EvalEnvironmentInterface`. With the ORM each case runs in a transaction that is rolled back, so
+nothing it writes stays and its spend does not count against the day's budget.
 
 ```bash
 bin/console agent:eval                       # every case, once
@@ -243,7 +246,7 @@ its stored verdict only while the judge model and the rubric are unchanged.
 
 | Bundle | PHP             | Symfony         | Database                             | Model                                  |
 | ------ | --------------- | --------------- | ------------------------------------ | -------------------------------------- |
-| `0.x`  | 8.2 · 8.3 · 8.4 | 7.3 · 7.4 · 8.x | Any Doctrine ORM platform; CI covers SQLite, MySQL and PostgreSQL | Claude, through Symfony AI; or your own `ModelProvider` |
+| `0.x`  | 8.2 · 8.3 · 8.4 | 7.3 · 7.4 · 8.x | Any Doctrine ORM platform; CI covers SQLite, MySQL and PostgreSQL | Claude, through Symfony AI; or your own `ModelProviderInterface` |
 
 The bundle is in `0.x`: minor versions may break the API until `1.0`.
 

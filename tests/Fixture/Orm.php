@@ -13,7 +13,7 @@ use Doctrine\ORM\Mapping\Driver\SimplifiedXmlDriver;
 use Doctrine\ORM\ORMSetup;
 use Doctrine\ORM\Tools\SchemaTool;
 use Doctrine\Persistence\Mapping\Driver\MappingDriverChain;
-use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\ConversationInitializer;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\ConversationInitializerInterface;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\NullConversationInitializer;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmMemoryStore;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmSessionStore;
@@ -77,7 +77,7 @@ final class Orm
         ]))->parse($dsn);
     }
 
-    public static function sessionStore(?EntityManagerInterface $em = null, int $retentionDays = 30, ?ConversationInitializer $initializer = null): OrmSessionStore
+    public static function sessionStore(?EntityManagerInterface $em = null, int $retentionDays = 30, ?ConversationInitializerInterface $initializer = null): OrmSessionStore
     {
         return new OrmSessionStore(
             $em ?? self::entityManager(),

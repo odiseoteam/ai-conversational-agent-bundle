@@ -8,7 +8,7 @@ namespace Odiseo\AiConversationalAgentBundle\Memory;
  * Where facts live, keyed by subject (the principal). A deployment puts its own store behind
  * this; the runtime above it does not change.
  */
-interface MemoryStore
+interface MemoryStoreInterface
 {
     public function save(string $subject, MemoryFact $fact): void;
 

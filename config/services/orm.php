@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\ConversationInitializer;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\ConversationInitializerInterface;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\NullConversationInitializer;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmMemoryStore;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmSessionStore;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmSpendLedger;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\TransactionalEvalIsolation;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Command\PruneCommand;
-use Odiseo\AiConversationalAgentBundle\Budget\SpendLedger;
-use Odiseo\AiConversationalAgentBundle\Eval\EvalIsolation;
-use Odiseo\AiConversationalAgentBundle\Memory\MemoryStore;
+use Odiseo\AiConversationalAgentBundle\Budget\SpendLedgerInterface;
+use Odiseo\AiConversationalAgentBundle\Eval\EvalIsolationInterface;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryStoreInterface;
 use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
@@ -26,28 +26,28 @@ return static function (ContainerConfigurator $container): void {
     // The host fills in what its own schema relates a conversation to by pointing this alias at
     // its own implementation.
     $services->set($id.'conversation_initializer.null', NullConversationInitializer::class);
-    $services->alias(ConversationInitializer::class, $id.'conversation_initializer.null');
+    $services->alias(ConversationInitializerInterface::class, $id.'conversation_initializer.null');
 
     $services->set($id.'store.session.orm', OrmSessionStore::class)->args([
         service('doctrine.orm.entity_manager'),
         param($id.'orm.classes.conversation'),
         param($id.'orm.classes.message'),
         param($id.'sessions.retention_days'),
-        service(ConversationInitializer::class),
+        service(ConversationInitializerInterface::class),
     ]);
     $services->alias(SessionStore::class, $id.'store.session.orm');
 
     $services->set($id.'store.memory.orm', OrmMemoryStore::class)
         ->args([service('doctrine.orm.entity_manager'), param($id.'orm.classes.memory_fact')]);
-    $services->alias(MemoryStore::class, $id.'store.memory.orm');
+    $services->alias(MemoryStoreInterface::class, $id.'store.memory.orm');
 
     $services->set($id.'store.spend.orm', OrmSpendLedger::class)
         ->args([service('doctrine.orm.entity_manager'), param($id.'orm.classes.spend_entry')]);
-    $services->alias(SpendLedger::class, $id.'store.spend.orm');
+    $services->alias(SpendLedgerInterface::class, $id.'store.spend.orm');
 
     $services->set($id.'eval.isolation.transactional', TransactionalEvalIsolation::class)
         ->args([service('doctrine.orm.entity_manager'), service('doctrine')]);
-    $services->alias(EvalIsolation::class, $id.'eval.isolation.transactional');
+    $services->alias(EvalIsolationInterface::class, $id.'eval.isolation.transactional');
 
     $services->set($id.'command.prune', PruneCommand::class)
         ->args([
