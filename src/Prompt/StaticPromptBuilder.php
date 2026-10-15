@@ -12,11 +12,13 @@ use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
 use Odiseo\AiConversationalAgentBundle\Presentation\ChipComponent;
 use Odiseo\AiConversationalAgentBundle\Presentation\ChipMode;
 use Odiseo\AiConversationalAgentBundle\Provider\ProviderCapabilities;
+use Odiseo\AiConversationalAgentBundle\Rule\Rule;
+use Odiseo\AiConversationalAgentBundle\Rule\RuleBook;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
 
 /**
  * The cached half of the system prompt: identity, the rules that apply on most turns, the
- * trust rules, and the skill index. Rules for one tool live in that tool's description; the
+ * organisation's own rules, the trust rules, and the skill index. Rules for one tool live in that tool's description; the
  * rules for one flow live in its skill.
  *
  * Everything here depends on deployment configuration and the registered capabilities only, so
@@ -32,6 +34,7 @@ final class StaticPromptBuilder
         private readonly CapabilityRegistry $capabilities,
         private readonly SkillRegistry $skills,
         private readonly Fence $fence,
+        private readonly RuleBook $rules = new RuleBook(),
     ) {
     }
 
@@ -110,6 +113,7 @@ final class StaticPromptBuilder
                 \sprintf('- At most %d primary components in a turn, and never two showing the same thing. In your text, name a record rather than its position; positions shift as components reflow. When a call is rejected, fix the payload and call it again; typing the content out is not the fallback.', $config->limits->maxComponentsPerTurn),
                 '- Identify records by their id and let the interface fill in the details, so the person sees canonical values.'.$chipRule,
             ], PromptSection::Presentation),
+            $this->rulesSection(),
             $this->trustSection(),
             $this->section('Boundaries', [
                 \sprintf('- Stay within %s for %s. On professional questions (medical, legal, financial) and safety-critical work, help with the choice and say that the how-to belongs to a qualified professional.', $config->scope, $config->brandName),
@@ -152,6 +156,19 @@ final class StaticPromptBuilder
         return "# Skills\n\n"
             ."Each entry below is a flow whose rules are in the skill, not here. When a request matches an entry, on whichever turn it arrives, call `load_skill` in the same round as your first read, however clear the flow looks. One obvious lookup for a thing the person named needs no skill.\n\n"
             .$this->skills->indexBlock();
+    }
+
+    /** Placed before the trust and boundary sections, which a rule never overrides. */
+    private function rulesSection(): string
+    {
+        $rules = $this->rules->rules();
+        if ([] === $rules) {
+            return '';
+        }
+
+        return "# House rules\n\n"
+            .\sprintf('Set by %s. They add to the guidance above; where one conflicts with Trust and data or Boundaries, those win.', $this->config->brandName)."\n\n"
+            .implode("\n", array_map(static fn (Rule $rule): string => '- '.$rule->text, $rules));
     }
 
     private function trustSection(): string

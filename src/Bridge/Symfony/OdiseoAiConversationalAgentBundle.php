@@ -8,6 +8,8 @@ use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\DoctrineOrmMappi
 use Doctrine\ORM\EntityManagerInterface;
 use Odiseo\AiConversationalAgentBundle\Capability\CapabilityInterface;
 use Odiseo\AiConversationalAgentBundle\Eval\Grader\GraderInterface;
+use Odiseo\AiConversationalAgentBundle\Rule\RuleCategory;
+use Odiseo\AiConversationalAgentBundle\Rule\RuleSourceInterface;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
 use Symfony\AI\Platform\Bridge\Anthropic\Claude;
 use Symfony\AI\Platform\Bridge\OpenAi\Gpt;
@@ -35,6 +37,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
     public const EVAL_GRADER_TAG = 'odiseo_ai_conversational_agent.eval_grader';
     /** An adapter, with the platform it talks to as the tag's `platform` attribute. */
     public const PROVIDER_TAG = 'odiseo_ai_conversational_agent.provider';
+    public const RULE_SOURCE_TAG = 'odiseo_ai_conversational_agent.rule_source';
     /** The Monolog channel of the loop and its services; the handlers are the application's. */
     public const LOG_CHANNEL = 'conversational_agent';
 
@@ -151,7 +154,20 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                     ->integerNode('max_chips_per_turn')->defaultValue(4)->end()
                     ->integerNode('max_context_chars')->defaultValue(2000)->end()
                     ->integerNode('compact_history_above_tokens')->defaultValue(100000)->end()
+                    ->integerNode('max_rules')->defaultValue(20)->end()
+                    ->integerNode('max_rule_chars')->defaultValue(400)->end()
                 ->end()->end()
+                ->arrayNode('rules')
+                    ->info('The organisation\'s own behaviour rules, keyed by id. Only the text reaches the cached prompt, by category and then in the order written; a disabled rule is left out.')
+                    ->useAttributeAsKey('id')
+                    ->normalizeKeys(false)
+                    ->arrayPrototype()->children()
+                        ->scalarNode('title')->isRequired()->cannotBeEmpty()->end()
+                        ->enumNode('category')->values(array_map(static fn (RuleCategory $c): string => $c->value, RuleCategory::cases()))->defaultValue(RuleCategory::Other->value)->end()
+                        ->scalarNode('text')->isRequired()->cannotBeEmpty()->end()
+                        ->booleanNode('enabled')->defaultTrue()->end()
+                    ->end()->end()
+                ->end()
                 ->arrayNode('memory')->addDefaultsIfNotSet()->children()
                     ->booleanNode('enabled')->defaultTrue()->end()
                     ->integerNode('tier_one_cap')->defaultValue(8)->end()
@@ -194,7 +210,34 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                 ->end()
                 ->scalarNode('skills_dir')->defaultNull()->end()
                 ->scalarNode('evals_dir')->defaultNull()->end()
+            ->end()
+            // The configured rules break the deploy, not a turn; other sources are checked at runtime.
+            ->validate()
+                ->ifTrue(static fn (array $config): bool => null !== self::rulesProblem($config))
+                ->then(static function (array $config): never {
+                    throw new \InvalidArgumentException((string) self::rulesProblem($config));
+                })
             ->end();
+    }
+
+    /** @param array<mixed> $config */
+    private static function rulesProblem(array $config): ?string
+    {
+        /** @var array<string, array{text: string, enabled: bool}> $rules */
+        $rules = $config['rules'] ?? [];
+        /** @var array{max_rules: int, max_rule_chars: int} $limits */
+        $limits = $config['limits'];
+
+        foreach ($rules as $id => $rule) {
+            if ($rule['enabled'] && mb_strlen($rule['text']) > $limits['max_rule_chars']) {
+                return \sprintf('Rule "%s" is %d characters long; the limit is %d (limits.max_rule_chars).', $id, mb_strlen($rule['text']), $limits['max_rule_chars']);
+            }
+        }
+        $enabled = \count(array_filter($rules, static fn (array $rule): bool => $rule['enabled']));
+
+        return $enabled > $limits['max_rules']
+            ? \sprintf('%d rules are enabled; the limit is %d (limits.max_rules).', $enabled, $limits['max_rules'])
+            : null;
     }
 
     /**
@@ -208,6 +251,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
      *     capabilities: array<string, array<string, bool>>,
      *     budgets: array<string, int|float|null>,
      *     limits: array<string, int>,
+     *     rules: array<string, array{title: string, category: string, text: string, enabled: bool}>,
      *     memory: array{enabled: bool, tier_one_cap: int, retention_days: ?int, blocked_patterns: list<string>, extraction_prompt_file: ?string},
      *     latency: array<string, bool>,
      *     fence: array<string, string>,
@@ -223,6 +267,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
         // A host that autoconfigures its own capabilities and eval graders gets them tagged.
         $builder->registerForAutoconfiguration(CapabilityInterface::class)->addTag(self::CAPABILITY_TAG);
         $builder->registerForAutoconfiguration(GraderInterface::class)->addTag(self::EVAL_GRADER_TAG);
+        $builder->registerForAutoconfiguration(RuleSourceInterface::class)->addTag(self::RULE_SOURCE_TAG);
 
         foreach (['turn', 'memory', 'judge'] as $role) {
             $builder->setParameter(self::ID.'models.'.$role, $config['models'][$role]['model']);
@@ -231,6 +276,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
         $builder->setParameter(self::ID.'models.thinking_effort', $config['models']['turn']['thinking_effort']);
         $builder->setParameter(self::ID.'prices', $config['prices']);
         $builder->setParameter(self::ID.'capabilities', $config['capabilities']);
+        $builder->setParameter(self::ID.'rules', $config['rules']);
         foreach (['identity', 'budgets', 'limits', 'latency', 'fence', 'conversations', 'sessions'] as $section) {
             foreach ($config[$section] as $key => $value) {
                 $builder->setParameter(self::ID.$section.'.'.$key, $value);

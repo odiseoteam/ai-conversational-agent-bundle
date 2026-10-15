@@ -50,6 +50,8 @@ use Odiseo\AiConversationalAgentBundle\Presentation\SuggestionsCapability;
 use Odiseo\AiConversationalAgentBundle\Prompt\ContextBlockBuilder;
 use Odiseo\AiConversationalAgentBundle\Prompt\StaticPromptBuilder;
 use Odiseo\AiConversationalAgentBundle\Provider\ModelProviderInterface;
+use Odiseo\AiConversationalAgentBundle\Rule\ConfiguredRuleSource;
+use Odiseo\AiConversationalAgentBundle\Rule\RuleBook;
 use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillCapability;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
@@ -144,11 +146,24 @@ return static function (ContainerConfigurator $container): void {
         ->args([service($id.'execution.tool_executor'), service($id.'fence'), service($id.'limits')]);
     $services->alias(HostToolInvoker::class, $id.'execution.host_tool_invoker');
 
+    // Rules: the configured ones, plus any RuleSourceInterface the host tags.
+    $services->set($id.'rule.configured_source', ConfiguredRuleSource::class)
+        ->args([param($id.'rules')])
+        ->tag(OdiseoAiConversationalAgentBundle::RULE_SOURCE_TAG);
+    $services->set($id.'rule.book', RuleBook::class)->args([
+        tagged_iterator(OdiseoAiConversationalAgentBundle::RULE_SOURCE_TAG),
+        param($id.'limits.max_rules'),
+        param($id.'limits.max_rule_chars'),
+        service('logger'),
+    ])->tag('monolog.logger', $logChannel);
+    $services->alias(RuleBook::class, $id.'rule.book');
+
     $services->set($id.'prompt.static_builder', StaticPromptBuilder::class)->args([
         service($id.'config'),
         service($id.'capability.registry'),
         service($id.'skill.registry'),
         service($id.'fence'),
+        service($id.'rule.book'),
     ]);
     $services->set($id.'prompt.context_block_builder', ContextBlockBuilder::class)
         ->args([service($id.'fence')]);

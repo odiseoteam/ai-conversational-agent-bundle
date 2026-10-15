@@ -8,6 +8,12 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- Rules: the organisation's behaviour rules, configured under `rules` (title, category, text,
+  enabled) and rendered as a "House rules" section of the cached prompt, before the trust and
+  boundary sections. `RuleSourceInterface` adds other sources, tagged
+  `odiseo_ai_conversational_agent.rule_source`; `limits.max_rules` and `limits.max_rule_chars`
+  cap them: the configuration fails when the container is built, another source's rule is left
+  out and logged.
 - Claude Haiku 5.5 (`claude-haiku-5-5`): its price, and no temperature on the request.
 - `editable_history` capability (`ProviderCapabilities::$editableHistory`, true by default): a
   model without it checks that the history before a replayed thinking block was not edited, so
@@ -44,8 +50,8 @@ All notable changes to this project are documented here. The format is based on
   `ClientKeyResolverInterface`, `SpendLedgerInterface`, `EvalEnvironmentInterface`,
   `EvalIsolationInterface`, `GraderInterface`, `DomainErrorMapperInterface`,
   `ConsoleEnvironmentInterface`, `PrincipalResolverInterface`, `TurnHookInterface`,
-  `MemoryStoreInterface`, `ModelProviderInterface` and `StreamEventInterface`. Implement and
-  alias the new names.
+  `MemoryStoreInterface`, `ModelProviderInterface`, `StreamEventInterface` and the new
+  `RuleSourceInterface`. Implement and alias the new names.
 - Default models: the turn and the memory extraction run on Claude Haiku 5.5
   (`claude-haiku-5-5`, the turn still at `low` effort) and the eval judge on Claude Sonnet 5.5
   (`claude-sonnet-5-5`), instead of Sonnet 5, Haiku 4.5 and Sonnet 5. Verdicts stored with the
