@@ -9,7 +9,7 @@ namespace Odiseo\AiConversationalAgentBundle\Host;
  * guest token, a messaging-channel id). It is the only thing that enters the session store as
  * a principal; no request and no tool argument ever names one.
  */
-interface PrincipalResolver
+interface PrincipalResolverInterface
 {
     public function principalId(): string;
 

@@ -10,7 +10,7 @@ use Odiseo\AiConversationalAgentBundle\Eval\EvalResult;
 use Odiseo\AiConversationalAgentBundle\Eval\EvalRunner;
 use Odiseo\AiConversationalAgentBundle\Eval\EvalSuite;
 use Odiseo\AiConversationalAgentBundle\Eval\TurnRecording;
-use Odiseo\AiConversationalAgentBundle\Host\ConsoleEnvironment;
+use Odiseo\AiConversationalAgentBundle\Host\ConsoleEnvironmentInterface;
 use Odiseo\AiConversationalAgentBundle\Provider\AuthenticationException;
 use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -30,7 +30,7 @@ final class EvalCommand extends Command
 {
     public function __construct(
         private readonly EvalRunner $runner,
-        private readonly ConsoleEnvironment $environment,
+        private readonly ConsoleEnvironmentInterface $environment,
         private readonly AgentConfig $config,
         private readonly ?string $evalsDir,
         private readonly string $runsDir,

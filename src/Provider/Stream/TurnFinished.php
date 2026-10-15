@@ -6,7 +6,7 @@ namespace Odiseo\AiConversationalAgentBundle\Provider\Stream;
 
 use Odiseo\AiConversationalAgentBundle\Provider\Response\ProviderResponse;
 
-final readonly class TurnFinished implements StreamEvent
+final readonly class TurnFinished implements StreamEventInterface
 {
     public function __construct(public ProviderResponse $response)
     {

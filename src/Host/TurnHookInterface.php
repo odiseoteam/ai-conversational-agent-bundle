@@ -11,7 +11,7 @@ use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
  * store persists its cart here: the PHP session is written when the response is emitted, so
  * state created mid-stream would not attach to the visitor.
  */
-interface TurnHook
+interface TurnHookInterface
 {
     public function beforeTurn(SessionContext $session): void;
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Session;
 
-use Odiseo\AiConversationalAgentBundle\Host\PrincipalResolver;
+use Odiseo\AiConversationalAgentBundle\Host\PrincipalResolverInterface;
 use Odiseo\AiConversationalAgentBundle\Session\SessionConflictException;
 use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
 use Odiseo\AiConversationalAgentBundle\Session\SessionRecord;
@@ -30,7 +30,7 @@ final class SessionResolver
 
     public function __construct(
         private readonly SessionStore $sessions,
-        private readonly PrincipalResolver $principal,
+        private readonly PrincipalResolverInterface $principal,
         private readonly ?string $timezone = null,
     ) {
     }

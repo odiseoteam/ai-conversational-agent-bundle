@@ -7,11 +7,11 @@ namespace Odiseo\AiConversationalAgentBundle\Tests\Fixture;
 use Odiseo\AiConversationalAgentBundle\Agent\AgentLoop;
 use Odiseo\AiConversationalAgentBundle\Agent\TurnRunner;
 use Odiseo\AiConversationalAgentBundle\Budget\BudgetPolicy;
-use Odiseo\AiConversationalAgentBundle\Budget\ClientKeyResolver;
+use Odiseo\AiConversationalAgentBundle\Budget\ClientKeyResolverInterface;
 use Odiseo\AiConversationalAgentBundle\Budget\CostTable;
 use Odiseo\AiConversationalAgentBundle\Budget\InMemorySpendLedger;
-use Odiseo\AiConversationalAgentBundle\Budget\SpendLedger;
-use Odiseo\AiConversationalAgentBundle\Capability\Capability;
+use Odiseo\AiConversationalAgentBundle\Budget\SpendLedgerInterface;
+use Odiseo\AiConversationalAgentBundle\Capability\CapabilityInterface;
 use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
 use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
 use Odiseo\AiConversationalAgentBundle\Execution\ExecutorWording;
@@ -22,11 +22,11 @@ use Odiseo\AiConversationalAgentBundle\Host\NullTurnHook;
 use Odiseo\AiConversationalAgentBundle\Memory\InMemoryMemoryStore;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryCapability;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryRuntime;
-use Odiseo\AiConversationalAgentBundle\Memory\MemoryStore;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryStoreInterface;
 use Odiseo\AiConversationalAgentBundle\Presentation\SuggestionsCapability;
 use Odiseo\AiConversationalAgentBundle\Prompt\ContextBlockBuilder;
 use Odiseo\AiConversationalAgentBundle\Prompt\StaticPromptBuilder;
-use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
+use Odiseo\AiConversationalAgentBundle\Provider\ModelProviderInterface;
 use Odiseo\AiConversationalAgentBundle\Session\InMemorySessionStore;
 use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillCapability;
@@ -39,19 +39,19 @@ final class AgentBuilder
     public CapabilityRegistry $capabilities;
     public ToolExecutor $executor;
     public ToolSurface $surface;
-    public MemoryStore $memoryStore;
+    public MemoryStoreInterface $memoryStore;
     public MemoryRuntime $memory;
-    public SpendLedger $ledger;
+    public SpendLedgerInterface $ledger;
     public SessionStore $sessionStore;
     /** The client the budget charges; null is a console run. */
     public ?string $clientKey = null;
     public StaticPromptBuilder $prompt;
     /** Runs the memory extraction; the turn's provider when null. */
-    public ?ModelProvider $memoryProvider = null;
+    public ?ModelProviderInterface $memoryProvider = null;
 
-    /** @param list<Capability> $extra */
+    /** @param list<CapabilityInterface> $extra */
     public function __construct(
-        public readonly ModelProvider $provider,
+        public readonly ModelProviderInterface $provider,
         public readonly AgentConfig $config = new AgentConfig(brandName: 'Odiseo', assistantName: 'the assistant'),
         array $extra = [],
         public readonly SkillRegistry $skills = new SkillRegistry(),
@@ -93,7 +93,7 @@ final class AgentBuilder
             new ContextBlockBuilder($this->fence),
             $this->fence,
             $this->memory,
-            new BudgetPolicy($this->config, $this->ledger, new CostTable(), new class($this) implements ClientKeyResolver {
+            new BudgetPolicy($this->config, $this->ledger, new CostTable(), new class($this) implements ClientKeyResolverInterface {
                 public function __construct(private readonly AgentBuilder $builder)
                 {
                 }

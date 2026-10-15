@@ -103,7 +103,7 @@ final class StaticPromptTest extends TestCase
         self::assertSame(str_replace('Odiseo', 'Acme', $baseline), $renamed);
     }
 
-    /** @param list<\Odiseo\AiConversationalAgentBundle\Capability\Capability>|null $capabilities */
+    /** @param list<\Odiseo\AiConversationalAgentBundle\Capability\CapabilityInterface>|null $capabilities */
     private function builder(?AgentConfig $config = null, ?array $capabilities = null, ?SkillRegistry $skills = null): StaticPromptBuilder
     {
         $capabilities ??= [new DirectoryCapability(), new \Odiseo\AiConversationalAgentBundle\Presentation\SuggestionsCapability(($config ?? $this->config())->limits)];

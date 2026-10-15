@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Odiseo\AiConversationalAgentBundle\Agent\AgentLoop;
-use Odiseo\AiConversationalAgentBundle\Agent\ContextProvider;
+use Odiseo\AiConversationalAgentBundle\Agent\ContextProviderInterface;
 use Odiseo\AiConversationalAgentBundle\Agent\NullContextProvider;
 use Odiseo\AiConversationalAgentBundle\Agent\TurnRunner;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Budget\RequestClientKeyResolver;
@@ -19,14 +19,14 @@ use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\OdiseoAiConversationalAgen
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\ProviderRegistry;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Session\SessionResolver;
 use Odiseo\AiConversationalAgentBundle\Budget\BudgetPolicy;
-use Odiseo\AiConversationalAgentBundle\Budget\ClientKeyResolver;
+use Odiseo\AiConversationalAgentBundle\Budget\ClientKeyResolverInterface;
 use Odiseo\AiConversationalAgentBundle\Budget\CostTable;
-use Odiseo\AiConversationalAgentBundle\Budget\SpendLedger;
+use Odiseo\AiConversationalAgentBundle\Budget\SpendLedgerInterface;
 use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
 use Odiseo\AiConversationalAgentBundle\Capability\Limits;
 use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
-use Odiseo\AiConversationalAgentBundle\Eval\EvalEnvironment;
-use Odiseo\AiConversationalAgentBundle\Eval\EvalIsolation;
+use Odiseo\AiConversationalAgentBundle\Eval\EvalEnvironmentInterface;
+use Odiseo\AiConversationalAgentBundle\Eval\EvalIsolationInterface;
 use Odiseo\AiConversationalAgentBundle\Eval\EvalRunner;
 use Odiseo\AiConversationalAgentBundle\Eval\Grader\CodeGrader;
 use Odiseo\AiConversationalAgentBundle\Eval\Grader\JudgeGrader;
@@ -37,19 +37,19 @@ use Odiseo\AiConversationalAgentBundle\Execution\HostToolInvoker;
 use Odiseo\AiConversationalAgentBundle\Execution\ToolExecutor;
 use Odiseo\AiConversationalAgentBundle\Execution\ToolSurface;
 use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
-use Odiseo\AiConversationalAgentBundle\Host\ConsoleEnvironment;
+use Odiseo\AiConversationalAgentBundle\Host\ConsoleEnvironmentInterface;
 use Odiseo\AiConversationalAgentBundle\Host\NullConsoleEnvironment;
 use Odiseo\AiConversationalAgentBundle\Host\NullTurnHook;
-use Odiseo\AiConversationalAgentBundle\Host\PrincipalResolver;
-use Odiseo\AiConversationalAgentBundle\Host\TurnHook;
+use Odiseo\AiConversationalAgentBundle\Host\PrincipalResolverInterface;
+use Odiseo\AiConversationalAgentBundle\Host\TurnHookInterface;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryCapability;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryRuntime;
-use Odiseo\AiConversationalAgentBundle\Memory\MemoryStore;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryStoreInterface;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryWriteFilter;
 use Odiseo\AiConversationalAgentBundle\Presentation\SuggestionsCapability;
 use Odiseo\AiConversationalAgentBundle\Prompt\ContextBlockBuilder;
 use Odiseo\AiConversationalAgentBundle\Prompt\StaticPromptBuilder;
-use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
+use Odiseo\AiConversationalAgentBundle\Provider\ModelProviderInterface;
 use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillCapability;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
@@ -63,7 +63,7 @@ use function Symfony\Component\DependencyInjection\Loader\Configurator\tagged_lo
 /*
  * Every service is registered under an `odiseo_ai_conversational_agent.*` id with explicit
  * arguments; the classes and interfaces a host autowires are aliases. A host swaps a port by
- * redefining its alias (ContextProvider, TurnHook…), and a role's model provider by redefining
+ * redefining its alias (ContextProviderInterface, TurnHookInterface…), and a role's model provider by redefining
  * `odiseo_ai_conversational_agent.provider.<role>`. The parameters come from the
  * bundle's configuration.
  */
@@ -154,14 +154,14 @@ return static function (ContainerConfigurator $container): void {
         ->args([service($id.'fence')]);
 
     $services->set($id.'context_provider.null', NullContextProvider::class);
-    $services->alias(ContextProvider::class, $id.'context_provider.null');
+    $services->alias(ContextProviderInterface::class, $id.'context_provider.null');
 
     // One provider per role, picked by its platform when the service is built; a host replaces a
     // role's provider by redefining its service.
     $services->set($id.'provider.registry', ProviderRegistry::class)
         ->args([tagged_locator(OdiseoAiConversationalAgentBundle::PROVIDER_TAG, 'platform'), param($id.'capabilities')]);
     foreach (['turn', 'memory', 'judge'] as $role) {
-        $services->set($id.'provider.'.$role, ModelProvider::class)
+        $services->set($id.'provider.'.$role, ModelProviderInterface::class)
             ->factory([service($id.'provider.registry'), 'get'])
             ->args([param($id.'models.'.$role.'_platform')]);
     }
@@ -177,18 +177,18 @@ return static function (ContainerConfigurator $container): void {
         service($id.'fence'),
         service($id.'memory.runtime'),
         service($id.'budget.policy'),
-        service(ContextProvider::class),
+        service(ContextProviderInterface::class),
         service('logger'),
         service($id.'provider.memory'),
     ])->tag('monolog.logger', $logChannel);
     $services->alias(AgentLoop::class, $id.'agent.loop');
 
     $services->set($id.'turn_hook.null', NullTurnHook::class);
-    $services->alias(TurnHook::class, $id.'turn_hook.null');
+    $services->alias(TurnHookInterface::class, $id.'turn_hook.null');
 
     $services->set($id.'agent.turn_runner', TurnRunner::class)->args([
         service($id.'agent.loop'),
-        service(TurnHook::class),
+        service(TurnHookInterface::class),
         param($id.'identity.app_events_label'),
         service('logger'),
     ])->tag('monolog.logger', $logChannel);
@@ -199,7 +199,7 @@ return static function (ContainerConfigurator $container): void {
     $services->set($id.'memory.write_filter', MemoryWriteFilter::class)
         ->args([param($id.'memory.blocked_patterns')]);
     $services->set($id.'memory.runtime', MemoryRuntime::class)->args([
-        service(MemoryStore::class),
+        service(MemoryStoreInterface::class),
         service($id.'config'),
         service($id.'fence'),
         param($id.'memory.extraction_prompt'),
@@ -213,12 +213,12 @@ return static function (ContainerConfigurator $container): void {
         ->args([param($id.'prices'), [param($id.'models.turn'), param($id.'models.memory'), param($id.'models.judge')]]);
     $services->set($id.'budget.client_key_resolver', RequestClientKeyResolver::class)
         ->args([service('request_stack')]);
-    $services->alias(ClientKeyResolver::class, $id.'budget.client_key_resolver');
+    $services->alias(ClientKeyResolverInterface::class, $id.'budget.client_key_resolver');
     $services->set($id.'budget.policy', BudgetPolicy::class)->args([
         service($id.'config'),
-        service(SpendLedger::class),
+        service(SpendLedgerInterface::class),
         service($id.'budget.cost_table'),
-        service(ClientKeyResolver::class),
+        service(ClientKeyResolverInterface::class),
         service('logger'),
     ])->tag('monolog.logger', $logChannel);
 
@@ -226,7 +226,7 @@ return static function (ContainerConfigurator $container): void {
 
     $services->set($id.'session.resolver', SessionResolver::class)->args([
         service(SessionStore::class),
-        service(PrincipalResolver::class),
+        service(PrincipalResolverInterface::class),
         param($id.'timezone'),
     ]);
     $services->alias(SessionResolver::class, $id.'session.resolver');
@@ -244,11 +244,11 @@ return static function (ContainerConfigurator $container): void {
         ->tag('messenger.message_handler');
 
     $services->set($id.'console_environment.null', NullConsoleEnvironment::class);
-    $services->alias(ConsoleEnvironment::class, $id.'console_environment.null');
+    $services->alias(ConsoleEnvironmentInterface::class, $id.'console_environment.null');
 
     $services->set($id.'controller.session', SessionController::class)
         ->public()
-        ->args([service($id.'session.resolver'), service(PrincipalResolver::class), service('limiter.odiseo_agent_session_start')])
+        ->args([service($id.'session.resolver'), service(PrincipalResolverInterface::class), service('limiter.odiseo_agent_session_start')])
         ->tag('controller.service_arguments');
     $services->set($id.'controller.chat', ChatController::class)
         ->public()
@@ -264,7 +264,7 @@ return static function (ContainerConfigurator $container): void {
         ->tag('controller.service_arguments');
     $services->set($id.'controller.memory', MemoryController::class)
         ->public()
-        ->args([service($id.'session.resolver'), service(MemoryStore::class)])
+        ->args([service($id.'session.resolver'), service(MemoryStoreInterface::class)])
         ->tag('controller.service_arguments');
 
     $services->set($id.'command.chat', ChatCommand::class)
@@ -272,17 +272,17 @@ return static function (ContainerConfigurator $container): void {
             service($id.'agent.turn_runner'),
             service(SessionStore::class),
             service($id.'session.resolver'),
-            service(ConsoleEnvironment::class),
+            service(ConsoleEnvironmentInterface::class),
         ])
         ->tag('console.command');
 
-    // Evals: the host points EvalEnvironment at its own preconditions; with the ORM the cases run
+    // Evals: the host points EvalEnvironmentInterface at its own preconditions; with the ORM the cases run
     // in a transaction that is rolled back.
 
     $services->set($id.'eval.environment.null', NullEvalEnvironment::class);
-    $services->alias(EvalEnvironment::class, $id.'eval.environment.null');
+    $services->alias(EvalEnvironmentInterface::class, $id.'eval.environment.null');
     $services->set($id.'eval.isolation.null', NullEvalIsolation::class);
-    $services->alias(EvalIsolation::class, $id.'eval.isolation.null');
+    $services->alias(EvalIsolationInterface::class, $id.'eval.isolation.null');
 
     $services->set($id.'eval.code_grader', CodeGrader::class)->tag(OdiseoAiConversationalAgentBundle::EVAL_GRADER_TAG);
     $services->set($id.'eval.judge_grader', JudgeGrader::class)
@@ -290,13 +290,13 @@ return static function (ContainerConfigurator $container): void {
     $services->set($id.'eval.runner', EvalRunner::class)->args([
         service($id.'agent.turn_runner'),
         service(SessionStore::class),
-        service(MemoryStore::class),
-        service(SpendLedger::class),
-        service(PrincipalResolver::class),
+        service(MemoryStoreInterface::class),
+        service(SpendLedgerInterface::class),
+        service(PrincipalResolverInterface::class),
         tagged_iterator(OdiseoAiConversationalAgentBundle::EVAL_GRADER_TAG),
         service($id.'eval.judge_grader'),
-        service(EvalEnvironment::class),
-        service(EvalIsolation::class),
+        service(EvalEnvironmentInterface::class),
+        service(EvalIsolationInterface::class),
         param($id.'eval.timezone'),
     ]);
     $services->alias(EvalRunner::class, $id.'eval.runner');
@@ -304,7 +304,7 @@ return static function (ContainerConfigurator $container): void {
     $services->set($id.'command.eval', EvalCommand::class)
         ->args([
             service($id.'eval.runner'),
-            service(ConsoleEnvironment::class),
+            service(ConsoleEnvironmentInterface::class),
             service($id.'config'),
             param($id.'evals_dir'),
             param('kernel.project_dir').'/var/evals',

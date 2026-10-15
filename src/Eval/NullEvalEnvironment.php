@@ -6,7 +6,7 @@ namespace Odiseo\AiConversationalAgentBundle\Eval;
 
 use Odiseo\AiConversationalAgentBundle\Session\TurnState;
 
-final class NullEvalEnvironment implements EvalEnvironment
+final class NullEvalEnvironment implements EvalEnvironmentInterface
 {
     public function prepare(EvalCase $case, TurnState $state): void
     {

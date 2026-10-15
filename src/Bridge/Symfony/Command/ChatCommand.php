@@ -6,7 +6,7 @@ namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Command;
 
 use Odiseo\AiConversationalAgentBundle\Agent\TurnRunner;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Session\SessionResolver;
-use Odiseo\AiConversationalAgentBundle\Host\ConsoleEnvironment;
+use Odiseo\AiConversationalAgentBundle\Host\ConsoleEnvironmentInterface;
 use Odiseo\AiConversationalAgentBundle\Provider\AuthenticationException;
 use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
 use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
@@ -31,7 +31,7 @@ final class ChatCommand extends Command
         private readonly TurnRunner $turns,
         private readonly SessionStore $sessions,
         private readonly SessionResolver $resolver,
-        private readonly ConsoleEnvironment $environment,
+        private readonly ConsoleEnvironmentInterface $environment,
     ) {
         parent::__construct();
     }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Agent;
 
-use Odiseo\AiConversationalAgentBundle\Host\TurnHook;
+use Odiseo\AiConversationalAgentBundle\Host\TurnHookInterface;
 use Odiseo\AiConversationalAgentBundle\Memory\ExtractMemory;
 use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
 use Odiseo\AiConversationalAgentBundle\Session\SessionRecord;
@@ -23,7 +23,7 @@ final class TurnRunner
 {
     public function __construct(
         private readonly AgentLoop $agent,
-        private readonly TurnHook $hook,
+        private readonly TurnHookInterface $hook,
         private readonly string $appEventsLabel,
         private readonly LoggerInterface $logger = new NullLogger(),
     ) {

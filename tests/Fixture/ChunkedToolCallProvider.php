@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Tests\Fixture;
 
-use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
+use Odiseo\AiConversationalAgentBundle\Provider\ModelProviderInterface;
 use Odiseo\AiConversationalAgentBundle\Provider\ProviderCapabilities;
 use Odiseo\AiConversationalAgentBundle\Provider\ProviderException;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
@@ -25,7 +25,7 @@ use Odiseo\AiConversationalAgentBundle\Provider\Stream\TurnFinished;
  * Each call is [tool, id, chunks, finalInput]; $trailingText streams after the last call and
  * before the turn finishes. A second round answers with $closing.
  */
-final class ChunkedToolCallProvider implements ModelProvider
+final class ChunkedToolCallProvider implements ModelProviderInterface
 {
     private int $round = 0;
 

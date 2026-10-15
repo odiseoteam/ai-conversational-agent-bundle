@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony;
 
 use Odiseo\AiConversationalAgentBundle\Provider\ConfiguredProvider;
-use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
+use Odiseo\AiConversationalAgentBundle\Provider\ModelProviderInterface;
 use Symfony\Component\DependencyInjection\ServiceLocator;
 
 /**
@@ -16,8 +16,8 @@ use Symfony\Component\DependencyInjection\ServiceLocator;
 final class ProviderRegistry
 {
     /**
-     * @param ServiceLocator<ModelProvider>      $providers
-     * @param array<string, array<string, bool>> $capabilities the deployment's overrides, by model
+     * @param ServiceLocator<ModelProviderInterface> $providers
+     * @param array<string, array<string, bool>>     $capabilities the deployment's overrides, by model
      */
     public function __construct(
         private readonly ServiceLocator $providers,
@@ -25,7 +25,7 @@ final class ProviderRegistry
     ) {
     }
 
-    public function get(string $platform): ModelProvider
+    public function get(string $platform): ModelProviderInterface
     {
         if (!$this->providers->has($platform)) {
             throw new \InvalidArgumentException(\sprintf('No model provider for the platform "%s". Installed: %s.', $platform, implode(', ', array_keys($this->providers->getProvidedServices())) ?: 'none'));

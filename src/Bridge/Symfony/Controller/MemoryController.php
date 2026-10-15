@@ -6,7 +6,7 @@ namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller;
 
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Session\SessionResolver;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryFact;
-use Odiseo\AiConversationalAgentBundle\Memory\MemoryStore;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryStoreInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -15,7 +15,7 @@ final class MemoryController
 {
     public function __construct(
         private readonly SessionResolver $sessions,
-        private readonly MemoryStore $memory,
+        private readonly MemoryStoreInterface $memory,
     ) {
     }
 

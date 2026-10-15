@@ -8,7 +8,7 @@ use Odiseo\AiConversationalAgentBundle\Budget\CostTable;
 use Odiseo\AiConversationalAgentBundle\Eval\EvalCase;
 use Odiseo\AiConversationalAgentBundle\Eval\TurnRecording;
 use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
-use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
+use Odiseo\AiConversationalAgentBundle\Provider\ModelProviderInterface;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\SystemBlock;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
 use Odiseo\AiConversationalAgentBundle\Support\Scalar;
@@ -30,7 +30,7 @@ final class JudgeGrader
     private const MAX_MATERIAL_CHARS = 20_000;
 
     public function __construct(
-        private readonly ModelProvider $provider,
+        private readonly ModelProviderInterface $provider,
         private readonly Fence $fence,
         private readonly string $model = 'claude-sonnet-5-5',
         private readonly CostTable $costs = new CostTable(),

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Tests\Fixture;
 
-use Odiseo\AiConversationalAgentBundle\Capability\Capability;
+use Odiseo\AiConversationalAgentBundle\Capability\CapabilityInterface;
 use Odiseo\AiConversationalAgentBundle\Capability\PromptFragment;
 use Odiseo\AiConversationalAgentBundle\Capability\PromptSection;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
-use Odiseo\AiConversationalAgentBundle\Execution\DomainErrorMapper;
+use Odiseo\AiConversationalAgentBundle\Execution\DomainErrorMapperInterface;
 use Odiseo\AiConversationalAgentBundle\Execution\ExecutorWording;
 use Odiseo\AiConversationalAgentBundle\Gate\ProvenanceGate;
 use Odiseo\AiConversationalAgentBundle\Grounding\GroundingRule;
@@ -22,7 +22,7 @@ use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
 use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /** A minimal vertical: one read, one gated write, one card, one grounding rule, one domain error. */
-final class DirectoryCapability implements Capability, DomainErrorMapper
+final class DirectoryCapability implements CapabilityInterface, DomainErrorMapperInterface
 {
     /** @var array<string, int> tool => times execute() ran it */
     public array $runs = [];

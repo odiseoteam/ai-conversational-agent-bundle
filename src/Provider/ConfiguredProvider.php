@@ -11,11 +11,11 @@ use Odiseo\AiConversationalAgentBundle\Provider\Response\ProviderResponse;
  * A provider with the deployment's `capabilities` laid over what its adapter knows, for a model
  * the adapter does not know yet. Calls go through untouched.
  */
-final class ConfiguredProvider implements ModelProvider
+final class ConfiguredProvider implements ModelProviderInterface
 {
     /** @param array<string, array<string, bool>> $overrides by model, then by capability */
     public function __construct(
-        private readonly ModelProvider $provider,
+        private readonly ModelProviderInterface $provider,
         private readonly array $overrides,
     ) {
     }

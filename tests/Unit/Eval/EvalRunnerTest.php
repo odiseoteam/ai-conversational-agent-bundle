@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Tests\Unit\Eval;
 
 use Odiseo\AiConversationalAgentBundle\Eval\EvalCase;
-use Odiseo\AiConversationalAgentBundle\Eval\EvalEnvironment;
-use Odiseo\AiConversationalAgentBundle\Eval\EvalIsolation;
+use Odiseo\AiConversationalAgentBundle\Eval\EvalEnvironmentInterface;
+use Odiseo\AiConversationalAgentBundle\Eval\EvalIsolationInterface;
 use Odiseo\AiConversationalAgentBundle\Eval\EvalRunner;
 use Odiseo\AiConversationalAgentBundle\Eval\Grader\JudgeGrader;
 use Odiseo\AiConversationalAgentBundle\Eval\NullEvalEnvironment;
 use Odiseo\AiConversationalAgentBundle\Eval\NullEvalIsolation;
 use Odiseo\AiConversationalAgentBundle\Eval\TurnRecording;
-use Odiseo\AiConversationalAgentBundle\Host\PrincipalResolver;
+use Odiseo\AiConversationalAgentBundle\Host\PrincipalResolverInterface;
 use Odiseo\AiConversationalAgentBundle\Provider\AuthenticationException;
 use Odiseo\AiConversationalAgentBundle\Provider\Fake\FakeProvider;
-use Odiseo\AiConversationalAgentBundle\Provider\ModelProvider;
+use Odiseo\AiConversationalAgentBundle\Provider\ModelProviderInterface;
 use Odiseo\AiConversationalAgentBundle\Provider\ProviderCapabilities;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\TurnRequest;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\ProviderResponse;
@@ -68,7 +68,7 @@ final class EvalRunnerTest extends TestCase
 
     public function testTheRecordingAddsUpEveryTurnAndKeepsTheEndState(): void
     {
-        $environment = new class implements EvalEnvironment {
+        $environment = new class implements EvalEnvironmentInterface {
             public ?TurnState $state = null;
 
             public function prepare(EvalCase $case, TurnState $state): void
@@ -101,7 +101,7 @@ final class EvalRunnerTest extends TestCase
 
     public function testTheCaseRunsInsideTheIsolation(): void
     {
-        $isolation = new class implements EvalIsolation {
+        $isolation = new class implements EvalIsolationInterface {
             public int $cases = 0;
 
             public function isolate(\Closure $case): mixed
@@ -133,7 +133,7 @@ final class EvalRunnerTest extends TestCase
 
     public function testAnErrorOutsideTheModelIsAnErrorOnThatCase(): void
     {
-        $environment = new class implements EvalEnvironment {
+        $environment = new class implements EvalEnvironmentInterface {
             public function prepare(EvalCase $case, TurnState $state): void
             {
                 throw new \RuntimeException('Product X is not in the catalog.');
@@ -152,7 +152,7 @@ final class EvalRunnerTest extends TestCase
 
     public function testARejectedCredentialStopsTheRun(): void
     {
-        $provider = new class implements ModelProvider {
+        $provider = new class implements ModelProviderInterface {
             public function capabilities(string $model): ProviderCapabilities
             {
                 return new ProviderCapabilities();
@@ -213,8 +213,8 @@ final class EvalRunnerTest extends TestCase
      */
     private function runner(
         array $responses,
-        ?EvalEnvironment $environment = null,
-        ?EvalIsolation $isolation = null,
+        ?EvalEnvironmentInterface $environment = null,
+        ?EvalIsolationInterface $isolation = null,
         ?\Closure $pause = null,
     ): EvalRunner {
         $builder = new AgentBuilder(new FakeProvider($responses), extra: [new DirectoryCapability()]);
@@ -232,9 +232,9 @@ final class EvalRunnerTest extends TestCase
         );
     }
 
-    private static function guest(): PrincipalResolver
+    private static function guest(): PrincipalResolverInterface
     {
-        return new class implements PrincipalResolver {
+        return new class implements PrincipalResolverInterface {
             public function principalId(): string
             {
                 return 'guest';

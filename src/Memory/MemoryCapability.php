@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Memory;
 
-use Odiseo\AiConversationalAgentBundle\Capability\Capability;
+use Odiseo\AiConversationalAgentBundle\Capability\CapabilityInterface;
 use Odiseo\AiConversationalAgentBundle\Capability\PromptFragment;
 use Odiseo\AiConversationalAgentBundle\Capability\PromptSection;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
@@ -16,7 +16,7 @@ use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
  * it off changes what they do, not whether the model can be asked to remember something, so a
  * request to remember is always answered honestly.
  */
-final class MemoryCapability implements Capability
+final class MemoryCapability implements CapabilityInterface
 {
     public function __construct(private readonly MemoryRuntime $memory)
     {

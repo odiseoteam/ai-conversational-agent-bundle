@@ -6,8 +6,8 @@ namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony;
 
 use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\DoctrineOrmMappingsPass;
 use Doctrine\ORM\EntityManagerInterface;
-use Odiseo\AiConversationalAgentBundle\Capability\Capability;
-use Odiseo\AiConversationalAgentBundle\Eval\Grader\Grader;
+use Odiseo\AiConversationalAgentBundle\Capability\CapabilityInterface;
+use Odiseo\AiConversationalAgentBundle\Eval\Grader\GraderInterface;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
 use Symfony\AI\Platform\Bridge\Anthropic\Claude;
 use Symfony\AI\Platform\Bridge\OpenAi\Gpt;
@@ -19,7 +19,7 @@ use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
 
 /**
- * Wiring for the core. A vertical adds capabilities by implementing Capability; autoconfiguration
+ * Wiring for the core. A vertical adds capabilities by implementing CapabilityInterface; autoconfiguration
  * tags them and the registry assembles the tool surface, the prompt fragments, the grounding
  * rules and the components from whatever is registered.
  */
@@ -221,8 +221,8 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
         // A host that autoconfigures its own capabilities and eval graders gets them tagged.
-        $builder->registerForAutoconfiguration(Capability::class)->addTag(self::CAPABILITY_TAG);
-        $builder->registerForAutoconfiguration(Grader::class)->addTag(self::EVAL_GRADER_TAG);
+        $builder->registerForAutoconfiguration(CapabilityInterface::class)->addTag(self::CAPABILITY_TAG);
+        $builder->registerForAutoconfiguration(GraderInterface::class)->addTag(self::EVAL_GRADER_TAG);
 
         foreach (['turn', 'memory', 'judge'] as $role) {
             $builder->setParameter(self::ID.'models.'.$role, $config['models'][$role]['model']);

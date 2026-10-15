@@ -7,7 +7,7 @@ namespace Odiseo\AiConversationalAgentBundle\Tests\Integration\Memory;
 use Odiseo\AiConversationalAgentBundle\Memory\InMemoryMemoryStore;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryCategory;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryFact;
-use Odiseo\AiConversationalAgentBundle\Memory\MemoryStore;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryStoreInterface;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Orm;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -15,14 +15,14 @@ use PHPUnit\Framework\TestCase;
 /** The contract every memory store keeps, run against the in-memory one and the ORM one. */
 final class MemoryStoreTest extends TestCase
 {
-    /** @return iterable<string, array{0: \Closure(): MemoryStore}> */
+    /** @return iterable<string, array{0: \Closure(): MemoryStoreInterface}> */
     public static function stores(): iterable
     {
-        yield 'memory' => [static fn (): MemoryStore => new InMemoryMemoryStore()];
-        yield 'orm' => [static fn (): MemoryStore => Orm::memoryStore()];
+        yield 'memory' => [static fn (): MemoryStoreInterface => new InMemoryMemoryStore()];
+        yield 'orm' => [static fn (): MemoryStoreInterface => Orm::memoryStore()];
     }
 
-    /** @param \Closure(): MemoryStore $make */
+    /** @param \Closure(): MemoryStoreInterface $make */
     #[DataProvider('stores')]
     public function testFactsComeBackNewestFirstAndPerSubject(\Closure $make): void
     {
@@ -35,7 +35,7 @@ final class MemoryStoreTest extends TestCase
         self::assertSame(['size'], array_map(static fn (MemoryFact $f): string => $f->key, $store->all('s2')));
     }
 
-    /** @param \Closure(): MemoryStore $make */
+    /** @param \Closure(): MemoryStoreInterface $make */
     #[DataProvider('stores')]
     public function testASaveUnderAKnownKeyReplacesTheValue(\Closure $make): void
     {
@@ -50,7 +50,7 @@ final class MemoryStoreTest extends TestCase
         self::assertSame('b', $facts[0]->sourceSessionTag);
     }
 
-    /** @param \Closure(): MemoryStore $make */
+    /** @param \Closure(): MemoryStoreInterface $make */
     #[DataProvider('stores')]
     public function testSearchMatchesAnyWordInKeyOrValueIgnoringCase(\Closure $make): void
     {
@@ -65,7 +65,7 @@ final class MemoryStoreTest extends TestCase
         self::assertCount(2, $store->search('s1', '', 2));
     }
 
-    /** @param \Closure(): MemoryStore $make */
+    /** @param \Closure(): MemoryStoreInterface $make */
     #[DataProvider('stores')]
     public function testForgetAndClear(\Closure $make): void
     {

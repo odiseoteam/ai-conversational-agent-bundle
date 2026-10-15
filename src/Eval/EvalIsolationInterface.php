@@ -9,7 +9,7 @@ namespace Odiseo\AiConversationalAgentBundle\Eval;
  * whatever the host's tools wrote. A case starts from what the store holds, never from the
  * case before it, and its spend does not count against the day's budget.
  */
-interface EvalIsolation
+interface EvalIsolationInterface
 {
     /**
      * @template T

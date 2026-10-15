@@ -6,7 +6,7 @@ namespace Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\SpendEntryInterface;
-use Odiseo\AiConversationalAgentBundle\Budget\SpendLedger;
+use Odiseo\AiConversationalAgentBundle\Budget\SpendLedgerInterface;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
 use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
@@ -15,7 +15,7 @@ use Odiseo\AiConversationalAgentBundle\Support\Scalar;
  * day's spend and a session's spend are both a sum and the detail is there when a bill has
  * to be explained.
  */
-final class OrmSpendLedger implements SpendLedger
+final class OrmSpendLedger implements SpendLedgerInterface
 {
     /** @param class-string<SpendEntryInterface> $entryClass */
     public function __construct(

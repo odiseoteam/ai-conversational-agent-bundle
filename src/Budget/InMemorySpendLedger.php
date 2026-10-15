@@ -6,7 +6,7 @@ namespace Odiseo\AiConversationalAgentBundle\Budget;
 
 use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
 
-final class InMemorySpendLedger implements SpendLedger
+final class InMemorySpendLedger implements SpendLedgerInterface
 {
     /** @var array<string, float> */
     private array $bySession = [];

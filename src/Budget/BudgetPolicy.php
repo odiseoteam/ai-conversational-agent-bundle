@@ -18,9 +18,9 @@ final class BudgetPolicy
 {
     public function __construct(
         private readonly AgentConfig $config,
-        private readonly SpendLedger $ledger,
+        private readonly SpendLedgerInterface $ledger,
         private readonly CostTable $costs = new CostTable(),
-        private readonly ClientKeyResolver $client = new NullClientKeyResolver(),
+        private readonly ClientKeyResolverInterface $client = new NullClientKeyResolver(),
         private readonly LoggerInterface $logger = new NullLogger(),
     ) {
     }

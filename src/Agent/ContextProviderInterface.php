@@ -14,7 +14,7 @@ use Odiseo\AiConversationalAgentBundle\Session\TurnState;
  * It is prompt bytes behind the cache breakpoint, so it should be small and it should only
  * change when the thing it describes changes.
  */
-interface ContextProvider
+interface ContextProviderInterface
 {
     /** @return array<string, mixed> */
     public function contextPayload(SessionContext $session, TurnState $state): array;

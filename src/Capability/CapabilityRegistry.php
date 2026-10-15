@@ -15,22 +15,22 @@ use Odiseo\AiConversationalAgentBundle\Presentation\PresentationComponent;
  */
 final class CapabilityRegistry
 {
-    /** @var list<Capability> */
+    /** @var list<CapabilityInterface> */
     private array $capabilities;
 
-    /** @var array<string, Capability>|null */
+    /** @var array<string, CapabilityInterface>|null */
     private ?array $byTool = null;
 
-    /** @param iterable<Capability> $capabilities */
+    /** @param iterable<CapabilityInterface> $capabilities */
     public function __construct(iterable $capabilities)
     {
         $list = \is_array($capabilities) ? array_values($capabilities) : iterator_to_array($capabilities, false);
-        usort($list, static fn (Capability $a, Capability $b): int => $a->name() <=> $b->name());
+        usort($list, static fn (CapabilityInterface $a, CapabilityInterface $b): int => $a->name() <=> $b->name());
 
         $this->capabilities = $list;
     }
 
-    /** @return list<Capability> */
+    /** @return list<CapabilityInterface> */
     public function all(): array
     {
         return $this->capabilities;
@@ -66,7 +66,7 @@ final class CapabilityRegistry
         return [...$tools, ...$chips];
     }
 
-    public function capabilityForTool(string $tool): ?Capability
+    public function capabilityForTool(string $tool): ?CapabilityInterface
     {
         if (null === $this->byTool) {
             $this->byTool = [];

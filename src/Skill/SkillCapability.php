@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Skill;
 
-use Odiseo\AiConversationalAgentBundle\Capability\Capability;
+use Odiseo\AiConversationalAgentBundle\Capability\CapabilityInterface;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
 use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
@@ -14,7 +14,7 @@ use Odiseo\AiConversationalAgentBundle\Support\Scalar;
  * The flows' rules, loaded on demand. The static prompt carries only the index, so a rule that
  * applies to one flow costs nothing on the turns that are not that flow.
  */
-final class SkillCapability implements Capability
+final class SkillCapability implements CapabilityInterface
 {
     public const TOOL = 'load_skill';
 

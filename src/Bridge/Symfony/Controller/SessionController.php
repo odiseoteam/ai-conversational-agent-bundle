@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Controller;
 
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Session\SessionResolver;
-use Odiseo\AiConversationalAgentBundle\Host\PrincipalResolver;
+use Odiseo\AiConversationalAgentBundle\Host\PrincipalResolverInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
@@ -15,7 +15,7 @@ final class SessionController
 {
     public function __construct(
         private readonly SessionResolver $sessions,
-        private readonly PrincipalResolver $principal,
+        private readonly PrincipalResolverInterface $principal,
         private readonly RateLimiterFactoryInterface $limiter,
     ) {
     }

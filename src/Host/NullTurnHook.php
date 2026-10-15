@@ -6,7 +6,7 @@ namespace Odiseo\AiConversationalAgentBundle\Host;
 
 use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
 
-final class NullTurnHook implements TurnHook
+final class NullTurnHook implements TurnHookInterface
 {
     public function beforeTurn(SessionContext $session): void
     {

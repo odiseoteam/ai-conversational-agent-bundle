@@ -12,7 +12,7 @@ use Odiseo\AiConversationalAgentBundle\Eval\TurnRecording;
  * adds the keys of its own state (a cart, a ledger) without the core knowing them; an expected
  * key no grader owns fails the case instead of passing unchecked.
  */
-interface Grader
+interface GraderInterface
 {
     /** @return list<string> */
     public function keys(): array;

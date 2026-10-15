@@ -147,7 +147,7 @@ final class ToolExecutor
             return $this->dispatch($tool, $input, $context);
         } catch (\Throwable $error) {
             $capability = $this->capabilities->capabilityForTool($tool);
-            if ($capability instanceof DomainErrorMapper
+            if ($capability instanceof DomainErrorMapperInterface
                 && null !== $outcome = $capability->mapError($error, $this->wording)) {
                 return $outcome;
             }

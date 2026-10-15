@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Memory;
 
-final class InMemoryMemoryStore implements MemoryStore
+final class InMemoryMemoryStore implements MemoryStoreInterface
 {
     /** @var array<string, array<string, MemoryFact>> */
     private array $facts = [];

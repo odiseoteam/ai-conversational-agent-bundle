@@ -7,7 +7,7 @@ namespace Odiseo\AiConversationalAgentBundle\Tests\Unit\Bridge;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Command\EvalCommand;
 use Odiseo\AiConversationalAgentBundle\Eval\EvalRunner;
 use Odiseo\AiConversationalAgentBundle\Host\NullConsoleEnvironment;
-use Odiseo\AiConversationalAgentBundle\Host\PrincipalResolver;
+use Odiseo\AiConversationalAgentBundle\Host\PrincipalResolverInterface;
 use Odiseo\AiConversationalAgentBundle\Provider\Fake\FakeProvider;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\AgentBuilder;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\DirectoryCapability;
@@ -71,7 +71,7 @@ final class EvalCommandTest extends TestCase
     private function tester(array $responses): CommandTester
     {
         $builder = new AgentBuilder(new FakeProvider($responses), extra: [new DirectoryCapability()]);
-        $guest = new class implements PrincipalResolver {
+        $guest = new class implements PrincipalResolverInterface {
             public function principalId(): string
             {
                 return 'guest';

@@ -6,7 +6,7 @@ namespace Odiseo\AiConversationalAgentBundle\Tests\Integration\Bridge\Doctrine;
 
 use Doctrine\ORM\EntityManager;
 use Odiseo\AiConversationalAgentBundle\Agent\Transcript;
-use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\ConversationInitializer;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\ConversationInitializerInterface;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\ConversationInterface;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmSessionStore;
 use Odiseo\AiConversationalAgentBundle\Session\SessionConflictException;
@@ -85,7 +85,7 @@ final class OrmSessionStoreTest extends TestCase
     public function testTheHostFillsInItsOwnColumnsWhenTheConversationIsCreated(): void
     {
         $em = Orm::entityManager();
-        $initializer = new class implements ConversationInitializer {
+        $initializer = new class implements ConversationInitializerInterface {
             /** @var list<class-string> */
             public array $seen = [];
 

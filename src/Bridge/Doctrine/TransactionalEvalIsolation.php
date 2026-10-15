@@ -6,7 +6,7 @@ namespace Odiseo\AiConversationalAgentBundle\Bridge\Doctrine;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
-use Odiseo\AiConversationalAgentBundle\Eval\EvalIsolation;
+use Odiseo\AiConversationalAgentBundle\Eval\EvalIsolationInterface;
 
 /**
  * Runs a case inside a transaction on the entity manager's connection and rolls it back, then
@@ -14,7 +14,7 @@ use Odiseo\AiConversationalAgentBundle\Eval\EvalIsolation;
  * the same connection (a cart, an order) is undone with it. A failed flush closes the manager;
  * the registry reopens it, so the next case is not left with a closed one.
  */
-final class TransactionalEvalIsolation implements EvalIsolation
+final class TransactionalEvalIsolation implements EvalIsolationInterface
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
