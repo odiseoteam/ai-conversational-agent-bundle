@@ -35,8 +35,8 @@ final readonly class AgentConfig
         public string $replyLanguage = 'the language of the visitor\'s most recent message',
 
         // -- Models. The turn loop runs on $model and post-turn extraction on $memoryModel.
-        public string $model = 'claude-sonnet-5',
-        public string $memoryModel = 'claude-haiku-4-5-20251001',
+        public string $model = 'claude-haiku-5-5',
+        public string $memoryModel = 'claude-haiku-5-5',
         ThinkingEffort|string|null $thinkingEffort = ThinkingEffort::Low,
 
         // -- Budgets. The iteration cap is a runaway guard: a multi-part request has to finish
