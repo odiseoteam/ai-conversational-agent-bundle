@@ -175,9 +175,12 @@ can come from env vars, because a role's provider is picked when its service is 
 odiseo_ai_conversational_agent:
     models:
         turn: { platform: '%env(AGENT_TURN_PLATFORM)%', model: '%env(AGENT_TURN_MODEL)%', thinking_effort: low }
-        memory: { platform: anthropic, model: claude-haiku-4-5-20251001 }
-        judge: { platform: anthropic, model: claude-sonnet-5 }
+        memory: { platform: anthropic, model: claude-haiku-5-5 }
+        judge: { platform: anthropic, model: claude-sonnet-5-5 }
 ```
+
+Without them, the turn and the memory run on Claude Haiku 5.5 (the turn at `low` effort) and the
+judge on Claude Sonnet 5.5.
 
 A platform is an adapter tagged `odiseo_ai_conversational_agent.provider` with its `platform`
 name. `anthropic` and `openai` are registered when their Symfony AI bridge is installed and wrap
@@ -191,7 +194,8 @@ cost zero and no spend cap would stop it. The Claude models carry theirs; add or
 under `prices`, in USD per million tokens. An adapter knows what each of its models can do (a
 forced tool choice, thinking, a temperature…); for a model it does not know yet, say so under
 `capabilities`. A model the AI bundle's catalog does not list yet is declared under its
-`ai.model.<platform>`:
+`ai.model.<platform>`; the bundle does that itself for Claude Haiku 5.5 and Sonnet 5.5 until the
+catalog lists them:
 
 ```yaml
 odiseo_ai_conversational_agent:

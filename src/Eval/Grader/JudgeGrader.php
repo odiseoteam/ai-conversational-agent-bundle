@@ -32,7 +32,7 @@ final class JudgeGrader
     public function __construct(
         private readonly ModelProvider $provider,
         private readonly Fence $fence,
-        private readonly string $model = 'claude-sonnet-5',
+        private readonly string $model = 'claude-sonnet-5-5',
         private readonly CostTable $costs = new CostTable(),
     ) {
     }

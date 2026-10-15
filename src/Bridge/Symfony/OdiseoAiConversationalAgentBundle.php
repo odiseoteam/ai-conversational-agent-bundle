@@ -61,7 +61,10 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
         }
     }
 
-    /** The rate limiters the agent's routes consume; a host tunes them by redefining the same names. */
+    /**
+     * The rate limiters the agent's routes consume; a host tunes them by redefining the same names.
+     * Also the Claude models the defaults use that Symfony AI's catalog does not list yet.
+     */
     public function prependExtension(ContainerConfigurator $container, ContainerBuilder $builder): void
     {
         $limiter = ['policy' => 'sliding_window', 'interval' => '1 hour'];
@@ -70,6 +73,19 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
             'odiseo_agent_chat_turn' => $limiter + ['limit' => 60],
             'odiseo_agent_chat_turn_per_session' => $limiter + ['limit' => 40],
         ]]);
+
+        // TODO: remove each entry once symfony/ai-anthropic-platform's ModelCatalog lists it
+        // (0.14.1 lists neither; its main branch already has claude-sonnet-5-5).
+        if (class_exists(Claude::class) && $builder->hasExtension('ai')) {
+            $claude5 = ['class' => Claude::class, 'capabilities' => [
+                'input-messages', 'input-image', 'input-pdf', 'output-text', 'output-streaming',
+                'output-structured', 'thinking', 'tool-calling',
+            ]];
+            $builder->prependExtensionConfig('ai', ['model' => ['anthropic' => [
+                'claude-haiku-5-5' => $claude5,
+                'claude-sonnet-5-5' => $claude5,
+            ]]]);
+        }
     }
 
     public function configure(DefinitionConfigurator $definition): void
@@ -92,16 +108,16 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                     ->children()
                         ->arrayNode('turn')->addDefaultsIfNotSet()->children()
                             ->scalarNode('platform')->defaultValue('anthropic')->end()
-                            ->scalarNode('model')->defaultValue('claude-sonnet-5')->end()
+                            ->scalarNode('model')->defaultValue('claude-haiku-5-5')->end()
                             ->scalarNode('thinking_effort')->defaultValue('low')->info('low, medium, high, xhigh, max or off; ignored by a model without thinking.')->end()
                         ->end()->end()
                         ->arrayNode('memory')->addDefaultsIfNotSet()->children()
                             ->scalarNode('platform')->defaultValue('anthropic')->end()
-                            ->scalarNode('model')->defaultValue('claude-haiku-4-5-20251001')->end()
+                            ->scalarNode('model')->defaultValue('claude-haiku-5-5')->end()
                         ->end()->end()
                         ->arrayNode('judge')->addDefaultsIfNotSet()->children()
                             ->scalarNode('platform')->defaultValue('anthropic')->end()
-                            ->scalarNode('model')->defaultValue('claude-sonnet-5')->end()
+                            ->scalarNode('model')->defaultValue('claude-sonnet-5-5')->end()
                         ->end()->end()
                     ->end()
                 ->end()

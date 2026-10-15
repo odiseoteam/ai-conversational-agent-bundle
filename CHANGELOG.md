@@ -39,6 +39,11 @@ All notable changes to this project are documented here. The format is based on
 
 ### Changed
 
+- Default models: the turn and the memory extraction run on Claude Haiku 5.5
+  (`claude-haiku-5-5`, the turn still at `low` effort) and the eval judge on Claude Sonnet 5.5
+  (`claude-sonnet-5-5`), instead of Sonnet 5, Haiku 4.5 and Sonnet 5. Verdicts stored with the
+  old judge no longer match its fingerprint and are scored again. Both models are declared in
+  Symfony AI's `ai.model.anthropic` until its catalog lists them.
 - The chips tool is listed after every other tool.
 - The loop and its services log to the `conversational_agent` Monolog channel
   (`OdiseoAiConversationalAgentBundle::LOG_CHANNEL`) instead of `app`. An application that
