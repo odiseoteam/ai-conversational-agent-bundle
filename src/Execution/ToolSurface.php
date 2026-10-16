@@ -10,6 +10,7 @@ use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
 use Odiseo\AiConversationalAgentBundle\Fencing\Sanitizer;
 use Odiseo\AiConversationalAgentBundle\Presentation\ChipComponent;
 use Odiseo\AiConversationalAgentBundle\Presentation\ChipMode;
+use Odiseo\AiConversationalAgentBundle\Presentation\PresentationComponent;
 use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /**
@@ -43,7 +44,7 @@ final class ToolSurface
         return $this->tools = array_map(
             fn (ToolSpec $tool): ToolSpec => match (true) {
                 $tool->wantsStatusLine => $this->withStatus($tool),
-                true === ($components[$tool->name] ?? null)?->chips->inField() => $this->withChips($tool, ChipMode::RequiredField === $components[$tool->name]->chips),
+                true === ($components[$tool->name] ?? null)?->chips->inField() => $this->withChips($tool, $components[$tool->name]),
                 default => $tool,
             },
             $this->capabilities->tools(),
@@ -52,10 +53,12 @@ final class ToolSurface
 
     /**
      * A component that takes the turn's chips gets the field last, so the model writes them
-     * once the component itself is written.
+     * once the component itself is written. The component's chip note follows the tool's
+     * description, where the model weighs it more than inside the field.
      */
-    private function withChips(ToolSpec $tool, bool $required): ToolSpec
+    private function withChips(ToolSpec $tool, PresentationComponent $component): ToolSpec
     {
+        $required = ChipMode::RequiredField === $component->chips;
         $schema = $tool->inputSchema;
         $schema['properties'] = [
             ...Scalar::keyed($schema['properties'] ?? null),
@@ -76,7 +79,9 @@ final class ToolSurface
             $schema['required'] = [...Scalar::strings($schema['required'] ?? null), ChipComponent::FIELD];
         }
 
-        return new ToolSpec($tool->name, $tool->description, $schema, $tool->wantsStatusLine);
+        $description = '' === $component->chipNote ? $tool->description : $tool->description.' '.$component->chipNote;
+
+        return new ToolSpec($tool->name, $description, $schema, $tool->wantsStatusLine);
     }
 
     /**

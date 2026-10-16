@@ -18,6 +18,9 @@ final readonly class PresentationComponent
      * lists closed, half-written strings left out): it must tolerate any field missing and
      * throw on nothing. A component without one renders only once its call is complete.
      *
+     * $chipNote says what the rendered card already shows and which chips fit beside it, so
+     * the chips do not repeat the card; it follows the tool's description.
+     *
      * @param \Closure(array<string, mixed>): array<string, mixed>                                  $validate
      * @param (\Closure(array<string, mixed>, EnrichmentContext): array<string, mixed>)|null        $enrich
      * @param (\Closure(array<string, mixed>, EnrichmentContext): (array<string, mixed>|null))|null $partial
@@ -29,6 +32,7 @@ final readonly class PresentationComponent
         public ?\Closure $enrich = null,
         public ?\Closure $partial = null,
         public ChipMode $chips = ChipMode::Tool,
+        public string $chipNote = '',
     ) {
     }
 }

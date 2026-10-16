@@ -31,6 +31,7 @@ final class DirectoryCapability implements CapabilityInterface, DomainErrorMappe
     public function __construct(
         private readonly array $records = ['R-1' => 'First', 'R-2' => 'Second'],
         private readonly ChipMode $chips = ChipMode::Tool,
+        private readonly string $chipNote = '',
     ) {
     }
 
@@ -128,6 +129,7 @@ final class DirectoryCapability implements CapabilityInterface, DomainErrorMappe
                 return ['items' => $items];
             },
             $this->chips,
+            $this->chipNote,
         )];
     }
 
