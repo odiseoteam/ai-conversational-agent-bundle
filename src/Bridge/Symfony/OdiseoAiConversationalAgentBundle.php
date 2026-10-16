@@ -10,6 +10,7 @@ use Odiseo\AiConversationalAgentBundle\Capability\CapabilityInterface;
 use Odiseo\AiConversationalAgentBundle\Eval\Grader\GraderInterface;
 use Odiseo\AiConversationalAgentBundle\Knowledge\KnowledgeSearchInterface;
 use Odiseo\AiConversationalAgentBundle\Knowledge\KnowledgeSourceInterface;
+use Odiseo\AiConversationalAgentBundle\Prompt\StaticPromptBuilder;
 use Odiseo\AiConversationalAgentBundle\Rule\RuleCategory;
 use Odiseo\AiConversationalAgentBundle\Rule\RuleSourceInterface;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
@@ -161,6 +162,8 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                     ->integerNode('compact_history_above_tokens')->defaultValue(100000)->end()
                     ->integerNode('max_rules')->defaultValue(20)->end()
                     ->integerNode('max_rule_chars')->defaultValue(400)->end()
+                    ->integerNode('max_guides')->defaultValue(20)->end()
+                    ->integerNode('max_guide_when_chars')->defaultValue(200)->end()
                 ->end()->end()
                 ->arrayNode('rules')
                     ->info('The organisation\'s own behaviour rules, keyed by id. Only the text reaches the cached prompt, by category and then in the order written; a disabled rule is left out.')
@@ -218,6 +221,9 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                 ->scalarNode('knowledge_dir')->defaultNull()
                     ->info('Markdown documents for the knowledge base; null leaves the file source out.')
                 ->end()
+                ->scalarNode('guides_notice')->defaultValue(StaticPromptBuilder::GUIDES_NOTICE)
+                    ->info('The line above the guide index in the cached prompt: when to read a guide, and with which tool.')
+                ->end()
             ->end()
             // The configured rules break the deploy, not a turn; other sources are checked at runtime.
             ->validate()
@@ -269,6 +275,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
      *     skills_dir: ?string,
      *     evals_dir: ?string,
      *     knowledge_dir: ?string,
+     *     guides_notice: string,
      * } $config
      */
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
@@ -305,6 +312,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
         $builder->setParameter(self::ID.'evals_dir', $config['evals_dir']);
         $builder->setParameter(self::ID.'skills_dir', $config['skills_dir']);
         $builder->setParameter(self::ID.'knowledge_dir', $config['knowledge_dir']);
+        $builder->setParameter(self::ID.'guides_notice', $config['guides_notice']);
 
         $container->import(self::CONFIG_DIR.'/services.php');
         $container->import(self::CONFIG_DIR.'/services/'.($config['orm']['enabled'] ? 'orm' : 'in_memory').'.php');

@@ -9,6 +9,8 @@ use Odiseo\AiConversationalAgentBundle\Capability\PromptFragment;
 use Odiseo\AiConversationalAgentBundle\Capability\PromptSection;
 use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
 use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
+use Odiseo\AiConversationalAgentBundle\Knowledge\GuideIndex;
+use Odiseo\AiConversationalAgentBundle\Knowledge\KnowledgeDocument;
 use Odiseo\AiConversationalAgentBundle\Presentation\ChipComponent;
 use Odiseo\AiConversationalAgentBundle\Presentation\ChipMode;
 use Odiseo\AiConversationalAgentBundle\Provider\ProviderCapabilities;
@@ -18,7 +20,7 @@ use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
 
 /**
  * The cached half of the system prompt: identity, the rules that apply on most turns, the
- * organisation's own rules, the trust rules, and the skill index. Rules for one tool live in that tool's description; the
+ * organisation's own rules, the trust rules, and the skill and guide indexes. Rules for one tool live in that tool's description; the
  * rules for one flow live in its skill.
  *
  * Everything here depends on deployment configuration and the registered capabilities only, so
@@ -27,6 +29,8 @@ use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
  */
 final class StaticPromptBuilder
 {
+    public const GUIDES_NOTICE = 'When a request touches one of these guides, read it before answering or recommending: it is the organisation\'s own advice.';
+
     private ?string $text = null;
 
     public function __construct(
@@ -35,6 +39,8 @@ final class StaticPromptBuilder
         private readonly SkillRegistry $skills,
         private readonly Fence $fence,
         private readonly RuleBook $rules = new RuleBook(),
+        private readonly GuideIndex $guides = new GuideIndex(),
+        private readonly string $guidesNotice = self::GUIDES_NOTICE,
     ) {
     }
 
@@ -104,6 +110,7 @@ final class StaticPromptBuilder
                 '- Do not repeat in text what a component already shows.',
             ], PromptSection::HowYouWork),
             $this->skillsSection(),
+            $this->guidesSection(),
             $this->section('Tools', [
                 '- Send calls that do not depend on each other\'s output in the same round: the lookups for the two or three things one request names. Every extra round is time the person spends waiting.',
                 '- Before calling a tool, check whether the answer is already in hand, in an earlier result or in the Session context block.',
@@ -156,6 +163,18 @@ final class StaticPromptBuilder
         return "# Skills\n\n"
             ."Each entry below is a flow whose rules are in the skill, not here. When a request matches an entry, on whichever turn it arrives, call `load_skill` in the same round as your first read, however clear the flow looks. One obvious lookup for a thing the person named needs no skill.\n\n"
             .$this->skills->indexBlock();
+    }
+
+    /** The organisation's guides, so the model knows one exists before it searches. */
+    private function guidesSection(): string
+    {
+        $guides = $this->guides->guides();
+        if ([] === $guides) {
+            return '';
+        }
+
+        return "# Guides\n\n".$this->guidesNotice."\n\n"
+            .implode("\n", array_map(static fn (KnowledgeDocument $guide): string => '- '.$guide->title.('' === $guide->when ? '' : ': '.$guide->when), $guides));
     }
 
     /** Placed before the trust and boundary sections, which a rule never overrides. */
