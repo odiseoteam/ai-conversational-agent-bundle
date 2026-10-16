@@ -42,6 +42,9 @@ use Odiseo\AiConversationalAgentBundle\Host\NullConsoleEnvironment;
 use Odiseo\AiConversationalAgentBundle\Host\NullTurnHook;
 use Odiseo\AiConversationalAgentBundle\Host\PrincipalResolverInterface;
 use Odiseo\AiConversationalAgentBundle\Host\TurnHookInterface;
+use Odiseo\AiConversationalAgentBundle\Knowledge\KnowledgeBase;
+use Odiseo\AiConversationalAgentBundle\Knowledge\LexicalSearch;
+use Odiseo\AiConversationalAgentBundle\Knowledge\MarkdownKnowledgeSource;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryCapability;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryRuntime;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryStoreInterface;
@@ -157,6 +160,20 @@ return static function (ContainerConfigurator $container): void {
         service('logger'),
     ])->tag('monolog.logger', $logChannel);
     $services->alias(RuleBook::class, $id.'rule.book');
+
+    // Knowledge: the lexical search over every tagged source (the Markdown files when knowledge_dir
+    // is set), merged with any other KnowledgeSearchInterface the host tags.
+    $services->set($id.'knowledge.markdown_source', MarkdownKnowledgeSource::class)
+        ->args([param($id.'knowledge_dir')])
+        ->tag(OdiseoAiConversationalAgentBundle::KNOWLEDGE_SOURCE_TAG);
+    $services->set($id.'knowledge.lexical_search', LexicalSearch::class)
+        ->args([tagged_iterator(OdiseoAiConversationalAgentBundle::KNOWLEDGE_SOURCE_TAG), 3000, service('logger')])
+        ->tag(OdiseoAiConversationalAgentBundle::KNOWLEDGE_SEARCH_TAG)
+        ->tag('monolog.logger', $logChannel);
+    $services->set($id.'knowledge.base', KnowledgeBase::class)
+        ->args([tagged_iterator(OdiseoAiConversationalAgentBundle::KNOWLEDGE_SEARCH_TAG), service('logger')])
+        ->tag('monolog.logger', $logChannel);
+    $services->alias(KnowledgeBase::class, $id.'knowledge.base');
 
     $services->set($id.'prompt.static_builder', StaticPromptBuilder::class)->args([
         service($id.'config'),

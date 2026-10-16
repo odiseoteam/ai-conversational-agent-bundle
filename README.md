@@ -31,6 +31,8 @@ it knows about commerce.
   model, with a filter that keeps identifiers and credentials out.
 - **Budgets and costs**: Spend limits per session, per client and per day, rate limits on the
   endpoints, and a ledger of what every turn spent.
+- **House rules and knowledge**: The organisation's behaviour rules in the cached prompt, and
+  its policies and guides searched by section, from files or any source it adds.
 - **Persistence on Doctrine**: Conversations, transcripts, memory and spend, with retention and a
   prune command.
 - **Evals**: JSON cases run against the live model, graded by code and by a judge, with trials
@@ -52,6 +54,8 @@ it knows about commerce.
   them.
 - **Rules** — the organisation's own behaviour rules, a "House rules" section of the cached
   prompt; see [Rules](#rules).
+- **Knowledge** — the organisation's policies and guides, searched when the model asks for them;
+  see [Knowledge](#knowledge).
 - **Evals** — JSON cases run through the same turn runner as the chat, graded by code and by a
   judge model.
 
@@ -145,7 +149,8 @@ The classes and ports a host uses are aliases, and a host replaces a port by red
 alias: `ContextProviderInterface`, `PrincipalResolverInterface`, `TurnHookInterface`,
 `ConsoleEnvironmentInterface`, `ConversationInitializerInterface`, `SessionStore`,
 `MemoryStoreInterface` and `SpendLedgerInterface`. Capabilities implement `CapabilityInterface`
-and are collected by the `odiseo_ai_conversational_agent.capability` tag.
+and are collected by the `odiseo_ai_conversational_agent.capability` tag; rule sources, knowledge
+sources and knowledge searches are collected the same way.
 
 ### Rules
 
@@ -180,6 +185,61 @@ odiseo_ai_conversational_agent:
 - Another source (a database, say) implements `Rule\RuleSourceInterface`; autoconfigured services
   are tagged `odiseo_ai_conversational_agent.rule_source` and their rules are added to the
   configured ones. A source is read once per process.
+
+### Knowledge
+
+Knowledge is what the organisation knows and the assistant reads when it needs it: policies,
+guides, short snippets. A vertical's capability exposes it as a tool and calls `KnowledgeBase`:
+
+```php
+$hits = $knowledgeBase->search('can I return an item', 3); // list<KnowledgeHit>, best first
+```
+
+Each `KnowledgeHit` carries its `KnowledgeDocument` (`id`, `title`, `kind`, `when`, `url`), the
+section's heading and the text for the model. It is the organisation's data: fence it like any
+other tool result.
+
+**Files.** `knowledge_dir` (null by default, which leaves them out) holds one Markdown file per
+topic, with optional front matter:
+
+```markdown
+---
+id: returns
+title: Returns and exchanges
+kind: policy          # policy, guide or snippet
+when: Returns, refunds and exchanges.
+url: /returns
+---
+# Returns and exchanges
+
+## Can I return an item?
+
+Yes, within 30 days from delivery.
+```
+
+Without front matter the file name is the id and the first heading the title; `enabled: false`
+leaves the file out. Files are read on every search.
+
+**The lexical search.** It splits each document at its `##` headings and ranks the sections of
+every source together with BM25. Words are compared without case or accents, without a final
+"s" and by their first five letters, so "refunded" finds "refund" and "cafe" finds "café", in any
+language; the title and the headings weigh more. A section comes back whole, or as a
+3,000-character window around its first match when it is longer.
+
+**Sources and searches.** There are two extension points, both autoconfigured:
+
+- `Knowledge\KnowledgeSourceInterface` gives documents (`documents(): iterable`) to the lexical
+  search, tagged `odiseo_ai_conversational_agent.knowledge_source`: a database, a CMS, or a
+  document the system builds from its own data. This is the usual one.
+- `Knowledge\KnowledgeSearchInterface` ranks its own hits (`search($query, $limit)`), tagged
+  `odiseo_ai_conversational_agent.knowledge_search`: a search engine such as Elasticsearch, or a
+  vector store (`symfony/ai-store` and an embeddings model) for an organisation with a lot of
+  content. `KnowledgeBase` merges the searches by position (reciprocal rank fusion), since their
+  scores do not compare; with only the lexical search, its order is kept. To use only your own,
+  remove the `odiseo_ai_conversational_agent.knowledge.lexical_search` service.
+
+A source or a search that fails is left out and logged on the `conversational_agent` channel, so
+a turn never fails over it.
 
 ### Logging
 

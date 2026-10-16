@@ -8,6 +8,13 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- Knowledge: `KnowledgeBase::search()` over the organisation's policies, guides and snippets
+  (`KnowledgeDocument`, `KnowledgeHit`). `knowledge_dir` holds Markdown files with front matter
+  (`id`, `title`, `kind`, `when`, `url`, `enabled`). `LexicalSearch` ranks the sections of every
+  `KnowledgeSourceInterface` together with BM25, without case or accents and by word stem, and
+  returns a section whole. `KnowledgeSearchInterface` adds a search that ranks its own hits (a
+  search engine, a vector store), merged by position. Sources and searches are autoconfigured; one
+  that fails is left out and logged.
 - `PresentationComponent::$chipNote`: what the card already shows and which chips fit beside it.
   It follows the description of a tool that takes the chips in a field, so they stop repeating the card
   (a checkout button already on it, a product already in the carousel).
