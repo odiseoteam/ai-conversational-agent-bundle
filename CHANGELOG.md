@@ -8,6 +8,9 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- `PresentationComponent::$chipNote`: what the card already shows and which chips fit beside it.
+  It follows the description of a tool that takes the chips in a field, so they stop repeating the card
+  (a checkout button already on it, a product already in the carousel).
 - Rules: the organisation's behaviour rules, configured under `rules` (title, category, text,
   enabled) and rendered as a "House rules" section of the cached prompt, before the trust and
   boundary sections. `RuleSourceInterface` adds other sources, tagged
