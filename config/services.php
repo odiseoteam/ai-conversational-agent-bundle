@@ -42,6 +42,7 @@ use Odiseo\AiConversationalAgentBundle\Host\NullConsoleEnvironment;
 use Odiseo\AiConversationalAgentBundle\Host\NullTurnHook;
 use Odiseo\AiConversationalAgentBundle\Host\PrincipalResolverInterface;
 use Odiseo\AiConversationalAgentBundle\Host\TurnHookInterface;
+use Odiseo\AiConversationalAgentBundle\Knowledge\GuideIndex;
 use Odiseo\AiConversationalAgentBundle\Knowledge\KnowledgeBase;
 use Odiseo\AiConversationalAgentBundle\Knowledge\LexicalSearch;
 use Odiseo\AiConversationalAgentBundle\Knowledge\MarkdownKnowledgeSource;
@@ -174,6 +175,12 @@ return static function (ContainerConfigurator $container): void {
         ->args([tagged_iterator(OdiseoAiConversationalAgentBundle::KNOWLEDGE_SEARCH_TAG), service('logger')])
         ->tag('monolog.logger', $logChannel);
     $services->alias(KnowledgeBase::class, $id.'knowledge.base');
+    $services->set($id.'knowledge.guide_index', GuideIndex::class)->args([
+        tagged_iterator(OdiseoAiConversationalAgentBundle::KNOWLEDGE_SOURCE_TAG),
+        param($id.'limits.max_guides'),
+        param($id.'limits.max_guide_when_chars'),
+        service('logger'),
+    ])->tag('monolog.logger', $logChannel);
 
     $services->set($id.'prompt.static_builder', StaticPromptBuilder::class)->args([
         service($id.'config'),
@@ -181,6 +188,8 @@ return static function (ContainerConfigurator $container): void {
         service($id.'skill.registry'),
         service($id.'fence'),
         service($id.'rule.book'),
+        service($id.'knowledge.guide_index'),
+        param($id.'guides_notice'),
     ]);
     $services->set($id.'prompt.context_block_builder', ContextBlockBuilder::class)
         ->args([service($id.'fence')]);

@@ -242,6 +242,14 @@ best one is left out, so a weak match adds no text to the turn.
 A source or a search that fails is left out and logged on the `conversational_agent` channel, so
 a turn never fails over it.
 
+**The guide index.** The documents of `kind: guide` from every source are listed in a "# Guides"
+section of the cached prompt, after the skills: title and `when`, by title, so the model knows a
+guide exists before it searches. `guides_notice` is the line above the list (when to read a guide,
+and with which tool; a vertical sets it to name its own). At most `limits.max_guides` guides (20)
+with a `when` of `limits.max_guide_when_chars` characters (200); one over a cap, or repeating an
+id, is left out and logged. Without guides the section is not there. A guide edit changes the
+cached prompt, so the next request reads it uncached.
+
 ### Logging
 
 The loop and its services log to the `conversational_agent` channel: one `model call` line per

@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- The guide index: the `kind: guide` documents of every knowledge source are listed (title and
+  `when`) in a "# Guides" section of the cached prompt, after the skills, so the model knows a
+  guide exists before it searches. `GuideIndex` orders them by title and caps them
+  (`limits.max_guides`, `limits.max_guide_when_chars`), leaving out and logging the rest;
+  `guides_notice` is the line above the list.
 - Knowledge: `KnowledgeBase::search()` over the organisation's policies, guides and snippets
   (`KnowledgeDocument`, `KnowledgeHit`). `knowledge_dir` holds Markdown files with front matter
   (`id`, `title`, `kind`, `when`, `url`, `enabled`). `LexicalSearch` ranks the sections of every
