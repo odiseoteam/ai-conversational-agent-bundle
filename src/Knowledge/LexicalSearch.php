@@ -12,8 +12,8 @@ use Psr\Log\NullLogger;
  * compare. Words are compared without case or accents, without a final "s" and by their first
  * five letters, so "refunded" finds "refund" and "cafe" finds "café", in any language and without
  * a dictionary. The document's title and the section's headings weigh more. A section comes back
- * whole, or a window around its first match when it is longer than the cap. A source that fails
- * is left out and logged.
+ * whole, or a window around its first match when it is longer than the cap; a hit far below the
+ * best one is left out. A source that fails is left out and logged.
  */
 final class LexicalSearch implements KnowledgeSearchInterface
 {
@@ -31,6 +31,8 @@ final class LexicalSearch implements KnowledgeSearchInterface
     public function __construct(
         private readonly iterable $sources = [],
         private readonly int $maxSectionChars = 3000,
+        /** A hit scoring under this share of the best one is left out, so a weak match adds no text. */
+        private readonly float $minScoreRatio = 0.5,
         private readonly LoggerInterface $logger = new NullLogger(),
     ) {
     }
@@ -81,9 +83,13 @@ final class LexicalSearch implements KnowledgeSearchInterface
             }
         }
         usort($scored, static fn (array $a, array $b): int => $b[0] <=> $a[0]);
+        $floor = ($scored[0][0] ?? 0) * $this->minScoreRatio;
 
         $hits = [];
-        foreach (\array_slice($scored, 0, $limit) as [, $section]) {
+        foreach (\array_slice($scored, 0, $limit) as [$score, $section]) {
+            if ($score < $floor) {
+                break;
+            }
             $hits[] = new KnowledgeHit($section['document'], $this->excerpt($section['content'], $terms), $section['heading']);
         }
 

@@ -167,7 +167,7 @@ return static function (ContainerConfigurator $container): void {
         ->args([param($id.'knowledge_dir')])
         ->tag(OdiseoAiConversationalAgentBundle::KNOWLEDGE_SOURCE_TAG);
     $services->set($id.'knowledge.lexical_search', LexicalSearch::class)
-        ->args([tagged_iterator(OdiseoAiConversationalAgentBundle::KNOWLEDGE_SOURCE_TAG), 3000, service('logger')])
+        ->args([tagged_iterator(OdiseoAiConversationalAgentBundle::KNOWLEDGE_SOURCE_TAG), 3000, 0.5, service('logger')])
         ->tag(OdiseoAiConversationalAgentBundle::KNOWLEDGE_SEARCH_TAG)
         ->tag('monolog.logger', $logChannel);
     $services->set($id.'knowledge.base', KnowledgeBase::class)

@@ -224,7 +224,8 @@ leaves the file out. Files are read on every search.
 every source together with BM25. Words are compared without case or accents, without a final
 "s" and by their first five letters, so "refunded" finds "refund" and "cafe" finds "café", in any
 language; the title and the headings weigh more. A section comes back whole, or as a
-3,000-character window around its first match when it is longer.
+3,000-character window around its first match when it is longer. A hit scoring under half the
+best one is left out, so a weak match adds no text to the turn.
 
 **Sources and searches.** There are two extension points, both autoconfigured:
 

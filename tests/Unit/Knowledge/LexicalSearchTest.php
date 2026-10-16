@@ -57,9 +57,39 @@ final class LexicalSearchTest extends TestCase
         $search = new LexicalSearch([
             $this->source(new KnowledgeDocument('files', 'Refunds', 'A refund takes a week.')),
             $this->source(new KnowledgeDocument('cms', 'Terms', str_repeat('Legal text. ', 30).'No refund after a year.')),
-        ]);
+        ], minScoreRatio: 0.0);
 
         self::assertSame(['files', 'cms'], $this->ids($search->search('refund', 2)));
+    }
+
+    public function testAHitFarBelowTheBestOneIsLeftOut(): void
+    {
+        $search = $this->search([
+            new KnowledgeDocument('refunds', 'Refunds', "## Can I cancel my membership for a refund?\n\nYes, cancel within 14 days for a full refund."),
+            new KnowledgeDocument('guests', 'Guests', 'A guest pays for the day.'),
+        ]);
+
+        self::assertSame(['refunds'], $this->ids($search->search('cancel my membership for a refund, and a guest?', 3)));
+    }
+
+    public function testAHitCloseToTheBestOneIsKept(): void
+    {
+        $search = $this->search([
+            new KnowledgeDocument('refunds', 'Refunds', 'A refund takes a week.'),
+            new KnowledgeDocument('cancellations', 'Cancellations', 'A cancelled membership gets a refund.'),
+        ]);
+
+        self::assertSame(['refunds', 'cancellations'], $this->ids($search->search('refund', 3)));
+    }
+
+    public function testWithoutAFloorEveryMatchIsKept(): void
+    {
+        $search = new LexicalSearch([$this->source(
+            new KnowledgeDocument('refunds', 'Refunds', "## Can I cancel my membership for a refund?\n\nYes, cancel within 14 days for a full refund."),
+            new KnowledgeDocument('guests', 'Guests', 'A guest pays for the day.'),
+        )], minScoreRatio: 0.0);
+
+        self::assertSame(['refunds', 'guests'], $this->ids($search->search('cancel my membership for a refund, and a guest?', 3)));
     }
 
     public function testASectionOfHeadingsOnlyIsLeftOut(): void
