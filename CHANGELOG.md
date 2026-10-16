@@ -12,7 +12,7 @@ All notable changes to this project are documented here. The format is based on
   (`KnowledgeDocument`, `KnowledgeHit`). `knowledge_dir` holds Markdown files with front matter
   (`id`, `title`, `kind`, `when`, `url`, `enabled`). `LexicalSearch` ranks the sections of every
   `KnowledgeSourceInterface` together with BM25, without case or accents and by word stem, and
-  returns a section whole. `KnowledgeSearchInterface` adds a search that ranks its own hits (a
+  returns a section whole; a hit under half the best one's score is left out. `KnowledgeSearchInterface` adds a search that ranks its own hits (a
   search engine, a vector store), merged by position. Sources and searches are autoconfigured; one
   that fails is left out and logged.
 - `PresentationComponent::$chipNote`: what the card already shows and which chips fit beside it.
