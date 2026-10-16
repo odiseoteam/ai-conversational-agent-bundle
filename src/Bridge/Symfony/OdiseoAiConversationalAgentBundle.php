@@ -8,6 +8,8 @@ use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\DoctrineOrmMappi
 use Doctrine\ORM\EntityManagerInterface;
 use Odiseo\AiConversationalAgentBundle\Capability\CapabilityInterface;
 use Odiseo\AiConversationalAgentBundle\Eval\Grader\GraderInterface;
+use Odiseo\AiConversationalAgentBundle\Knowledge\KnowledgeSearchInterface;
+use Odiseo\AiConversationalAgentBundle\Knowledge\KnowledgeSourceInterface;
 use Odiseo\AiConversationalAgentBundle\Rule\RuleCategory;
 use Odiseo\AiConversationalAgentBundle\Rule\RuleSourceInterface;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
@@ -38,6 +40,9 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
     /** An adapter, with the platform it talks to as the tag's `platform` attribute. */
     public const PROVIDER_TAG = 'odiseo_ai_conversational_agent.provider';
     public const RULE_SOURCE_TAG = 'odiseo_ai_conversational_agent.rule_source';
+    /** A source gives documents to the lexical search; a search ranks its own hits. */
+    public const KNOWLEDGE_SOURCE_TAG = 'odiseo_ai_conversational_agent.knowledge_source';
+    public const KNOWLEDGE_SEARCH_TAG = 'odiseo_ai_conversational_agent.knowledge_search';
     /** The Monolog channel of the loop and its services; the handlers are the application's. */
     public const LOG_CHANNEL = 'conversational_agent';
 
@@ -210,6 +215,9 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                 ->end()
                 ->scalarNode('skills_dir')->defaultNull()->end()
                 ->scalarNode('evals_dir')->defaultNull()->end()
+                ->scalarNode('knowledge_dir')->defaultNull()
+                    ->info('Markdown documents for the knowledge base; null leaves the file source out.')
+                ->end()
             ->end()
             // The configured rules break the deploy, not a turn; other sources are checked at runtime.
             ->validate()
@@ -260,6 +268,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
      *     orm: array{enabled: bool, classes: array<string, ?string>},
      *     skills_dir: ?string,
      *     evals_dir: ?string,
+     *     knowledge_dir: ?string,
      * } $config
      */
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
@@ -268,6 +277,8 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
         $builder->registerForAutoconfiguration(CapabilityInterface::class)->addTag(self::CAPABILITY_TAG);
         $builder->registerForAutoconfiguration(GraderInterface::class)->addTag(self::EVAL_GRADER_TAG);
         $builder->registerForAutoconfiguration(RuleSourceInterface::class)->addTag(self::RULE_SOURCE_TAG);
+        $builder->registerForAutoconfiguration(KnowledgeSourceInterface::class)->addTag(self::KNOWLEDGE_SOURCE_TAG);
+        $builder->registerForAutoconfiguration(KnowledgeSearchInterface::class)->addTag(self::KNOWLEDGE_SEARCH_TAG);
 
         foreach (['turn', 'memory', 'judge'] as $role) {
             $builder->setParameter(self::ID.'models.'.$role, $config['models'][$role]['model']);
@@ -293,6 +304,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
         $builder->setParameter(self::ID.'timezone', $config['sessions']['timezone']);
         $builder->setParameter(self::ID.'evals_dir', $config['evals_dir']);
         $builder->setParameter(self::ID.'skills_dir', $config['skills_dir']);
+        $builder->setParameter(self::ID.'knowledge_dir', $config['knowledge_dir']);
 
         $container->import(self::CONFIG_DIR.'/services.php');
         $container->import(self::CONFIG_DIR.'/services/'.($config['orm']['enabled'] ? 'orm' : 'in_memory').'.php');
@@ -303,6 +315,9 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
             $container->import(self::CONFIG_DIR.'/services/openai.php');
         }
 
+        if (null === $config['knowledge_dir']) {
+            $container->services()->remove(self::ID.'knowledge.markdown_source');
+        }
         if (null !== $config['skills_dir']) {
             $container->services()->get(self::ID.'skill.registry')
                 ->factory([SkillRegistry::class, 'fromDirectory'])
