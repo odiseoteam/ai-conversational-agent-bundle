@@ -8,6 +8,7 @@ use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
 use Odiseo\AiConversationalAgentBundle\Execution\ToolExecutor;
 use Odiseo\AiConversationalAgentBundle\Execution\ToolSurface;
 use Odiseo\AiConversationalAgentBundle\Fencing\Sanitizer;
+use Odiseo\AiConversationalAgentBundle\Presentation\ChipComponent;
 use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
 use Odiseo\AiConversationalAgentBundle\Streaming\PartialJson;
 use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
@@ -17,7 +18,8 @@ use Odiseo\AiConversationalAgentBundle\Support\Scalar;
  * One model round while it streams: each tool call's arguments buffered as they arrive, and
  * what the host gets to see before the round is over.
  *
- * Three things come out of the buffer, in this order, on every chunk:
+ * Three things come out of the buffer, in this order, on every chunk (after the reply, when
+ * the chips call carries it, as text while it is written):
  *  - the call's status line, once it is complete (a `progress` event);
  *  - a `ui_partial` frame when the call is a presentation component that renders partially
  *    and something visible changed since the last frame;
@@ -35,6 +37,9 @@ final class StreamedRound
 
     /** @var array<string, ToolOutcome> */
     private array $settled = [];
+
+    /** @var array<string, string> the reply already shown, by call */
+    private array $replies = [];
 
     public function __construct(
         private readonly ToolExecutor $executor,
@@ -59,6 +64,10 @@ final class StreamedRound
             return;
         }
         $call['buffer'] .= $partialJson;
+
+        if ($this->context->scope->replyInChips && ChipComponent::TOOL === $call['tool']) {
+            yield from $this->reply($id, PartialJson::stringSoFar($call['buffer'], ChipComponent::REPLY_FIELD) ?? '');
+        }
 
         if (!$call['statusShown']) {
             $decoded = PartialJson::decode($call['buffer']);
@@ -98,6 +107,10 @@ final class StreamedRound
      */
     public function run(string $id, string $tool, array $input): \Generator
     {
+        if ($this->context->scope->replyInChips && ChipComponent::TOOL === $tool) {
+            yield from $this->reply($id, \is_string($input[ChipComponent::REPLY_FIELD] ?? null) ? $input[ChipComponent::REPLY_FIELD] : '');
+        }
+
         yield $this->executor->toolCallEvent($tool, $id, $input);
 
         $outcome = $this->executor->execute($tool, $input, $this->context);
@@ -115,6 +128,26 @@ final class StreamedRound
             null !== $outcome->blocked ? 'blocked' : ($outcome->isError ? 'error' : 'ok'),
             $outcome->blocked,
         );
+    }
+
+    /**
+     * The part of the reply not shown yet, as text. It counts as the turn's text, so the chips
+     * that carry it are not held for a reply already written.
+     *
+     * @return \Generator<int, AgentEvent>
+     */
+    private function reply(string $id, string $reply): \Generator
+    {
+        $shown = $this->replies[$id] ?? '';
+        if (\strlen($reply) <= \strlen($shown) || !str_starts_with($reply, $shown)) {
+            return;
+        }
+        $this->replies[$id] = $reply;
+        if ('' !== trim($reply)) {
+            $this->context->scope->markText();
+        }
+
+        yield AgentEvent::textDelta(substr($reply, \strlen($shown)));
     }
 
     public function outcome(string $id): ?ToolOutcome

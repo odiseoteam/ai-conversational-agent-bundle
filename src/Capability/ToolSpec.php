@@ -17,6 +17,8 @@ final readonly class ToolSpec
         public string $description,
         public array $inputSchema,
         public bool $wantsStatusLine = true,
+        /** Its arguments are sent as the model writes them, unchecked, for what is shown while it streams. */
+        public bool $streamsInput = false,
     ) {
     }
 }

@@ -18,6 +18,7 @@ use Odiseo\AiConversationalAgentBundle\Provider\Stream\TextChunk;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\ToolCallStarted;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\ToolInputChunk;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\TurnFinished;
+use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Dig;
 use PHPUnit\Framework\TestCase;
 use Symfony\AI\Platform\Bridge\Anthropic\Claude;
 use Symfony\AI\Platform\Bridge\Anthropic\Factory;
@@ -199,6 +200,22 @@ final class AnthropicProviderTest extends TestCase
         ));
 
         self::assertSame(['type' => 'between_tools'], $this->sent[0]['thinking'] ?? null);
+    }
+
+    public function testAToolShownWhileItStreamsAsksForItsArgumentsAsTheyAreWritten(): void
+    {
+        $this->events($this->provider(self::sse(self::start(3), self::stop('end_turn'))), new TurnRequest(
+            model: 'claude-sonnet-5-5',
+            system: [new SystemBlock('Rules.')],
+            messages: [['role' => 'user', 'content' => [['type' => 'text', 'text' => 'Hi']]]],
+            tools: [
+                new ToolSpec('present_suggestions', 'Chips.', ['type' => 'object'], streamsInput: true),
+                new ToolSpec('find_records', 'Find.', ['type' => 'object']),
+            ],
+        ));
+
+        self::assertTrue(Dig::value($this->sent[0], 'tools', 0, 'eager_input_streaming'));
+        self::assertArrayNotHasKey('eager_input_streaming', Dig::array($this->sent[0], 'tools', 1));
     }
 
     private function provider(string $body): AnthropicProvider

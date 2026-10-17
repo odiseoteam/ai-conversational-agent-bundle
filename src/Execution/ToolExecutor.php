@@ -211,7 +211,7 @@ final class ToolExecutor
 
         // Chips alone would close the turn with nothing answered.
         if ($isChips && !$context->scope->textWritten() && 0 === $context->scope->componentsPresented()) {
-            return ToolOutcome::held('chips_alone', $this->wording->chipsAloneText);
+            return ToolOutcome::held('chips_alone', $context->scope->replyInChips ? $this->wording->chipsAloneReplyText : $this->wording->chipsAloneText);
         }
 
         $chips = [];

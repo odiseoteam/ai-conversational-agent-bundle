@@ -36,6 +36,9 @@ final class AnthropicProvider extends PlatformProvider
             toolInputDeltas: true,
             // The Claude 5 models reject a temperature.
             temperature: 1 !== preg_match('/^claude-(fable|opus|sonnet|haiku)-5/', $model),
+            // These return a note longer than a sentence or two written before a tool call as a
+            // progress update inside a thinking block, never as text.
+            textBeforeToolCalls: 1 !== preg_match('/^claude-(fable-5|mythos-5|opus-5-5|sonnet-5-5)/', $model),
             // These check that the history before a replayed thinking block was not edited.
             editableHistory: 1 !== preg_match('/^claude-(fable-5-1|opus-5-5|sonnet-5-5|haiku-5-5)/', $model),
         );
@@ -136,6 +139,8 @@ final class AnthropicProvider extends PlatformProvider
                 'name' => $tool->name,
                 'description' => $tool->description,
                 'input_schema' => self::schema($tool->inputSchema),
+                // Without it the API buffers the arguments and they arrive in one piece.
+                ...($tool->streamsInput ? ['eager_input_streaming' => true] : []),
             ],
             $tools,
         );

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Agent;
 
+use Odiseo\AiConversationalAgentBundle\Presentation\ChipComponent;
 use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
 use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
@@ -161,6 +162,8 @@ final class Transcript
             foreach (\is_array($message['content'] ?? null) ? $message['content'] : [] as $block) {
                 if (\is_array($block) && 'text' === ($block['type'] ?? null)) {
                     $lines[] = $role.': '.Scalar::string($block['text'] ?? null);
+                } elseif ('' !== $reply = ChipComponent::replyIn($block)) {
+                    $lines[] = $role.': '.$reply;
                 }
             }
         }

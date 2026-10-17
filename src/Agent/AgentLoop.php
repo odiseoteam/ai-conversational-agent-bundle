@@ -101,9 +101,9 @@ final class AgentLoop
         if (!$can->promptCaching) {
             $system = array_map(static fn (SystemBlock $block): SystemBlock => new SystemBlock($block->text), $system);
         }
-        $tools = $this->toolSurface->tools();
+        $tools = $this->toolSurface->toolsFor($can);
 
-        $scope = new TurnScope();
+        $scope = new TurnScope(replyInChips: !$can->textBeforeToolCalls);
         $toolContext = new ToolContext(
             session: $session,
             state: $state,

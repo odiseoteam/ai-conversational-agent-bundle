@@ -36,6 +36,7 @@ final class ChunkedToolCallProvider implements ModelProviderInterface
         private readonly array $calls,
         private readonly string $trailingText = '',
         private readonly string $closing = 'Done.',
+        private readonly ProviderCapabilities $can = new ProviderCapabilities(forcedToolChoice: true, toolInputDeltas: true),
     ) {
     }
 
@@ -50,7 +51,7 @@ final class ChunkedToolCallProvider implements ModelProviderInterface
 
     public function capabilities(string $model): ProviderCapabilities
     {
-        return new ProviderCapabilities(forcedToolChoice: true, toolInputDeltas: true);
+        return $this->can;
     }
 
     public function stream(TurnRequest $request): iterable

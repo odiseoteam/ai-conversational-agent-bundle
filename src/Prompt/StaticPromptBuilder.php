@@ -52,16 +52,24 @@ final class StaticPromptBuilder
 
     /**
      * The prompt for one model: a model that writes text or calls tools, never both, is told
-     * it may do both, so the sentence a rule asks for is not dropped.
+     * it may do both, so the sentence a rule asks for is not dropped; one that hides text
+     * written before a call is told where the reply goes instead.
      */
     public function buildFor(ProviderCapabilities $can): string
     {
-        if ($can->textBesideToolCalls) {
-            return $this->build();
+        $text = $this->build();
+        if (!$can->textBesideToolCalls) {
+            $text .= "\n\n# Text and tool calls\n\n"
+                .'- One response can carry text and tool calls together. Write the sentence a rule above asks for (an answer, a gap, a clarifying question) as text in the same response as its tool calls, before them, not in a response of its own. A turn that ends with nothing the person can read, or with only chips, is wrong.';
+        }
+        // Such a model hides a longer note written before a call, so a turn with no component
+        // carries its reply inside the chips call.
+        if (!$can->textBeforeToolCalls) {
+            $text .= "\n\n# Replies with chips\n\n"
+                .\sprintf('- Text you write before a tool call is not shown to the person. On a turn with no component, write the whole reply in the `%s` field of %s instead of as text; it is shown before the chips, so no text goes before or after the call.', ChipComponent::REPLY_FIELD, ChipComponent::TOOL);
         }
 
-        return $this->build()."\n\n# Text and tool calls\n\n"
-            .'- One response can carry text and tool calls together. Write the sentence a rule above asks for (an answer, a gap, a clarifying question) as text in the same response as its tool calls, before them, not in a response of its own. A turn that ends with nothing the person can read, or with only chips, is wrong.';
+        return $text;
     }
 
     /**

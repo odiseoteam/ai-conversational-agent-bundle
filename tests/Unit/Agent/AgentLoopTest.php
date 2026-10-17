@@ -290,6 +290,81 @@ final class AgentLoopTest extends TestCase
         self::assertCount(2, $provider->requests());
     }
 
+    public function testAReplyCarriedInTheChipsCallStreamsAsTextAndEndsTheTurn(): void
+    {
+        $provider = new ChunkedToolCallProvider(
+            [[ChipComponent::TOOL, 'tu-1', ['{"reply": "The 3 m', ' one is the tallest.\\', 'n", "suggestions": ["See it"]}'], ['reply' => "The 3 m one is the tallest.\n", 'suggestions' => ['See it']]]],
+            can: new ProviderCapabilities(toolInputDeltas: true, textBeforeToolCalls: false),
+        );
+        $builder = new AgentBuilder($provider, extra: [new DirectoryCapability()]);
+
+        $messages = [Transcript::userMessage('nothing taller?')];
+        $events = $this->collect($builder, $messages);
+
+        self::assertSame(['The 3 m', ' one is the tallest.', "\n"], array_map(static fn (AgentEvent $e): mixed => $e->data['text'], $this->ofType($events, EventType::TextDelta)), 'shown while it is written');
+        self::assertSame('ok', $this->ofType($events, EventType::ToolResult)[0]->data['status'], 'the reply counts as text, so the chips are not held');
+        self::assertCount(1, $this->ofType($events, EventType::Ui));
+        self::assertSame('end_turn', $this->last($events)->data['stop_reason']);
+        self::assertSame('assistant: The 3 m one is the tallest.', Transcript::text(\array_slice($messages, 1, 1)));
+    }
+
+    public function testChipsWithoutTheReplyAreHeldAndAskedForIt(): void
+    {
+        $provider = new FakeProvider(
+            [
+                FakeProvider::toolCall(ChipComponent::TOOL, ['suggestions' => ['See it']], 'tu-1'),
+                FakeProvider::toolCall(ChipComponent::TOOL, ['reply' => 'The 3 m one is the tallest.', 'suggestions' => ['See it']], 'tu-2'),
+            ],
+            new ProviderCapabilities(textBeforeToolCalls: false),
+        );
+        $builder = new AgentBuilder($provider, extra: [new DirectoryCapability()]);
+
+        $messages = [Transcript::userMessage('nothing taller?')];
+        $events = $this->collect($builder, $messages);
+
+        self::assertStringContainsString('the whole reply in `reply`', Dig::string($messages, 2, 'content', 0, 'content'));
+        self::assertSame('The 3 m one is the tallest.', $this->text($events));
+        self::assertCount(1, $this->ofType($events, EventType::Ui));
+    }
+
+    public function testAReplyInTheChipsCallIsShownWhenTheArgumentsArriveWhole(): void
+    {
+        $provider = new FakeProvider(
+            [FakeProvider::toolCall(ChipComponent::TOOL, ['reply' => 'The 3 m one is the tallest.', 'suggestions' => ['See it']])],
+            new ProviderCapabilities(textBeforeToolCalls: false),
+        );
+        $builder = new AgentBuilder($provider, extra: [new DirectoryCapability()]);
+
+        $messages = [Transcript::userMessage('nothing taller?')];
+        $events = $this->collect($builder, $messages);
+
+        self::assertSame('The 3 m one is the tallest.', $this->text($events));
+        self::assertCount(1, $this->ofType($events, EventType::Ui));
+        self::assertCount(1, $provider->requests());
+    }
+
+    public function testOnlyAModelThatHidesTextBeforeACallGetsTheReplyField(): void
+    {
+        $properties = function (ProviderCapabilities $can): array {
+            $provider = new FakeProvider([FakeProvider::text('Hi.')], $can);
+            $messages = [Transcript::userMessage('hi')];
+            $this->collect(new AgentBuilder($provider, extra: [new DirectoryCapability()]), $messages);
+            $chips = array_values(array_filter($provider->lastRequest()->tools ?? [], static fn ($tool): bool => ChipComponent::TOOL === $tool->name))[0];
+
+            return [array_keys(Dig::array($chips->inputSchema, 'properties')), (string) $provider->lastRequest()?->system[0]->text, $chips->streamsInput];
+        };
+
+        [$hiding, $hidingPrompt, $hidingStreams] = $properties(new ProviderCapabilities(textBeforeToolCalls: false));
+        self::assertSame([ChipComponent::REPLY_FIELD, 'suggestions'], $hiding, 'the reply first, so it streams before the chips');
+        self::assertStringContainsString('# Replies with chips', $hidingPrompt);
+        self::assertTrue($hidingStreams, 'the reply is shown while it is written');
+
+        [$writing, $writingPrompt, $writingStreams] = $properties(new ProviderCapabilities());
+        self::assertSame(['suggestions'], $writing);
+        self::assertStringNotContainsString('# Replies with chips', $writingPrompt);
+        self::assertFalse($writingStreams);
+    }
+
     public function testChipsAfterTheReplyEndTheTurn(): void
     {
         $provider = new FakeProvider([

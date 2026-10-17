@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model;
 
+use Odiseo\AiConversationalAgentBundle\Presentation\ChipComponent;
 use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /**
@@ -92,7 +93,8 @@ abstract class Message implements MessageInterface
     }
 
     /**
-     * The text blocks of an API message joined, or null when it carries none (a tool call, a tool result).
+     * The text blocks of an API message joined, with a reply carried in the chips call, or null
+     * when it carries none (a tool call, a tool result).
      *
      * @param array<string, mixed> $payload
      */
@@ -107,6 +109,8 @@ abstract class Message implements MessageInterface
         foreach (\is_array($content) ? $content : [] as $block) {
             if (\is_array($block) && 'text' === ($block['type'] ?? null) && '' !== trim(Scalar::string($block['text'] ?? null))) {
                 $parts[] = trim(Scalar::string($block['text']));
+            } elseif ('' !== $reply = ChipComponent::replyIn($block)) {
+                $parts[] = $reply;
             }
         }
 
