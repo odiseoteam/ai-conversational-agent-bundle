@@ -13,6 +13,12 @@ final class TurnScope
 
     private bool $textWritten = false;
 
+    public function __construct(
+        /** The chips call carries the turn's reply (ChipComponent::REPLY_FIELD). */
+        public readonly bool $replyInChips = false,
+    ) {
+    }
+
     public function componentsPresented(): int
     {
         return $this->componentsPresented;

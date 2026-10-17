@@ -11,6 +11,7 @@ use Odiseo\AiConversationalAgentBundle\Fencing\Sanitizer;
 use Odiseo\AiConversationalAgentBundle\Presentation\ChipComponent;
 use Odiseo\AiConversationalAgentBundle\Presentation\ChipMode;
 use Odiseo\AiConversationalAgentBundle\Presentation\PresentationComponent;
+use Odiseo\AiConversationalAgentBundle\Provider\ProviderCapabilities;
 use Odiseo\AiConversationalAgentBundle\Support\Scalar;
 
 /**
@@ -24,6 +25,9 @@ final class ToolSurface
 
     /** @var list<ToolSpec>|null */
     private ?array $tools = null;
+
+    /** @var list<ToolSpec>|null */
+    private ?array $withReply = null;
 
     public function __construct(
         private readonly CapabilityRegistry $capabilities,
@@ -48,6 +52,44 @@ final class ToolSurface
                 default => $tool,
             },
             $this->capabilities->tools(),
+        );
+    }
+
+    /**
+     * The list for one model. A model that hides text written before a tool call gets the
+     * reply as the chips tool's first argument, so the turn's answer is written where it shows.
+     *
+     * @return list<ToolSpec>
+     */
+    public function toolsFor(ProviderCapabilities $can): array
+    {
+        if ($can->textBeforeToolCalls) {
+            return $this->tools();
+        }
+
+        return $this->withReply ??= array_map(
+            fn (ToolSpec $tool): ToolSpec => ChipComponent::TOOL === $tool->name ? $this->withReply($tool) : $tool,
+            $this->tools(),
+        );
+    }
+
+    private function withReply(ToolSpec $tool): ToolSpec
+    {
+        $schema = $tool->inputSchema;
+        $schema['properties'] = [
+            ChipComponent::REPLY_FIELD => [
+                'type' => 'string',
+                'description' => 'The turn\'s whole reply when the turn has no component, shown before the chips. Text written outside this call is not shown.',
+            ],
+            ...Scalar::keyed($schema['properties'] ?? null),
+        ];
+
+        return new ToolSpec(
+            $tool->name,
+            $tool->description.' On a turn with no component, write the reply in `'.ChipComponent::REPLY_FIELD.'`: text written before this call is not shown.',
+            $schema,
+            $tool->wantsStatusLine,
+            streamsInput: true,
         );
     }
 
@@ -81,7 +123,7 @@ final class ToolSurface
 
         $description = '' === $component->chipNote ? $tool->description : $tool->description.' '.$component->chipNote;
 
-        return new ToolSpec($tool->name, $description, $schema, $tool->wantsStatusLine);
+        return new ToolSpec($tool->name, $description, $schema, $tool->wantsStatusLine, $tool->streamsInput);
     }
 
     /**
@@ -104,6 +146,6 @@ final class ToolSurface
             ...Scalar::keyed($schema['properties'] ?? null),
         ];
 
-        return new ToolSpec($tool->name, $tool->description, $schema, $tool->wantsStatusLine);
+        return new ToolSpec($tool->name, $tool->description, $schema, $tool->wantsStatusLine, $tool->streamsInput);
     }
 }

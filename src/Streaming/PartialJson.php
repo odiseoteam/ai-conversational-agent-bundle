@@ -62,6 +62,37 @@ final class PartialJson
     }
 
     /**
+     * The value of a string argument as far as it has been written, decoded, or null before it
+     * starts. Unlike decode() it returns a string still open, for text shown while it streams;
+     * an escape cut in half waits for the next chunk.
+     */
+    public static function stringSoFar(string $buffer, string $key): ?string
+    {
+        if (1 !== preg_match('/(?<!\\\\)"'.preg_quote($key, '/').'"\s*:\s*"/', $buffer, $match, \PREG_OFFSET_CAPTURE)) {
+            return null;
+        }
+
+        $start = $match[0][1] + \strlen($match[0][0]);
+        $length = \strlen($buffer);
+        $end = $start;
+        while ($end < $length && '"' !== $buffer[$end]) {
+            if ('\\' === $buffer[$end]) {
+                $step = 'u' === ($buffer[$end + 1] ?? '') ? 6 : 2;
+                if ($end + $step > $length) {
+                    break;
+                }
+                $end += $step;
+                continue;
+            }
+            ++$end;
+        }
+
+        $decoded = json_decode('"'.substr($buffer, $start, $end - $start).'"');
+
+        return \is_string($decoded) ? $decoded : null;
+    }
+
+    /**
      * The brackets that would close $source if it ended right there, whether it ends inside an
      * open string, and where that string started. Byte-indexed rather than mb_-aware: every
      * structural character JSON cares about (quote, backslash, brace, bracket) is single-byte

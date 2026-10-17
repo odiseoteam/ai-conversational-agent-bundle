@@ -21,6 +21,8 @@ final readonly class ExecutorWording
         /** Formatted with {name} and {problems}. */
         public string $invalidInputText = '{name} was not run: {problems}. Correct the arguments and call it again.',
         public string $chipsAloneText = 'The suggestions were not shown: this turn has no reply yet. Write the reply first, then send the suggestions with it.',
+        /** The same, for a model whose reply goes in the chips call. */
+        public string $chipsAloneReplyText = 'The suggestions were not shown: this turn has no reply yet, and text written before a call is not shown. Call it again with the whole reply in `reply`.',
     ) {
     }
 }

@@ -316,6 +316,11 @@ odiseo_ai_conversational_agent:
         claude-sonnet-6: { forced_tool_choice: false }
 ```
 
+Some models return a longer note written before a tool call hidden inside a thinking block
+(`text_before_tool_calls: false`; Claude Sonnet 5.5, Opus 5.5 and Fable 5 by default). Since a
+turn without a card ends with the chips, those models write the reply in the chips tool's
+`reply` field, and it is shown as text while it streams.
+
 `doctrine:migrations:diff` then produces the schema: the mappings ship here, the migration
 belongs to the application that runs them. Without `doctrine/orm` (or with `orm.enabled: false`)
 the stores are in memory and nothing outlives the process.

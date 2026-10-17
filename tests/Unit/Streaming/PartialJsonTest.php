@@ -79,4 +79,23 @@ final class PartialJsonTest extends TestCase
         self::assertSame('Presentando', $decoded['status'] ?? null);
         self::assertSame(['Uno'], $decoded['suggestions'] ?? null);
     }
+
+    public function testAStringStillBeingWrittenIsReadAsFarAsItGoes(): void
+    {
+        self::assertNull(PartialJson::stringSoFar('{"reply', 'reply'));
+        self::assertSame('', PartialJson::stringSoFar('{"reply": "', 'reply'));
+        self::assertSame('The café opens at 9', PartialJson::stringSoFar('{"reply": "The caf\\u00e9 opens at 9', 'reply'));
+        self::assertSame("Line one\n", PartialJson::stringSoFar('{"reply": "Line one\\n", "suggestions": ["A"]}', 'reply'));
+    }
+
+    public function testAnEscapeCutInHalfWaitsForTheNextChunk(): void
+    {
+        self::assertSame('Say ', PartialJson::stringSoFar('{"reply": "Say \\', 'reply'));
+        self::assertSame('The caf', PartialJson::stringSoFar('{"reply": "The caf\\u00', 'reply'));
+    }
+
+    public function testAKeyQuotedInsideAnotherStringIsNotTakenForTheField(): void
+    {
+        self::assertNull(PartialJson::stringSoFar('{"suggestions": ["say \\"reply\\": \\"hi"', 'reply'));
+    }
 }

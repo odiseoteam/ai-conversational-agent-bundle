@@ -15,4 +15,18 @@ final class ChipComponent
 
     /** The argument a ChipMode::Field component takes its chips in. */
     public const FIELD = 'suggestions';
+
+    /** The chips tool's argument for the turn's reply, on a model that hides text written before a call. */
+    public const REPLY_FIELD = 'reply';
+
+    /** The reply a block carries in the chips tool, or '' when it is not such a call. */
+    public static function replyIn(mixed $block): string
+    {
+        if (!\is_array($block) || 'tool_use' !== ($block['type'] ?? null) || self::TOOL !== ($block['name'] ?? null)) {
+            return '';
+        }
+        $reply = \is_array($block['input'] ?? null) ? ($block['input'][self::REPLY_FIELD] ?? null) : null;
+
+        return \is_string($reply) ? trim($reply) : '';
+    }
 }

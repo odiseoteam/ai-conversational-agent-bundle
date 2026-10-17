@@ -8,6 +8,18 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- `text_before_tool_calls` capability (`ProviderCapabilities::$textBeforeToolCalls`, true by
+  default, false for Claude Sonnet 5.5, Opus 5.5 and Fable 5): these models return a note longer
+  than a sentence or two written before a tool call as a progress update inside a thinking
+  block, never as text, so a reply written before the chips was never shown. For such a model
+  the chips tool takes the reply first, in `reply` (`ChipComponent::REPLY_FIELD`), the prompt
+  gets a "# Replies with chips" section, and the reply is shown as text while it is written
+  (`PartialJson::stringSoFar()`); it counts as the turn's text for the `chips_alone` hold, whose
+  note for these models is `ExecutorWording::$chipsAloneReplyText`, and it is kept in the
+  message's text and in what the memory reads. Other models see no change.
+- `ToolSpec::$streamsInput`: the Anthropic adapter asks for the tool's arguments as they are
+  written (`eager_input_streaming`) instead of buffered. The chips tool sets it when it carries
+  the reply.
 - The guide index goes inside the fence, sanitized, since its titles and "when" lines are content:
   a guide written in an admin or by another system cannot reach the prompt as an instruction.
 - `PromptSection::Guidance`: a section of the cached prompt, right before the house rules, where
@@ -88,6 +100,12 @@ All notable changes to this project are documented here. The format is based on
 - `TurnRunner::run()` only runs the turn; `memoryOf()` and `remember()` extract. A failed
   extraction is raised by `AgentLoop::extractMemory()` instead of being swallowed in
   `MemoryRuntime`, so a transport can retry it.
+
+### Fixed
+
+- `prices` and `capabilities` keep a model's name as written: Symfony turned the dashes of
+  `claude-sonnet-5-5` into underscores, so a price or a capability configured for a model with
+  dashes was never applied.
 
 ## [0.2.0] - 2026-10-03
 

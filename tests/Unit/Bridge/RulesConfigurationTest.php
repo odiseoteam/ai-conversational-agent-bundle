@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Tests\Unit\Bridge;
 
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\OdiseoAiConversationalAgentBundle;
+use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Dig;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
@@ -12,7 +13,7 @@ use Symfony\Component\Config\Definition\Processor;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\ConfigurationExtensionInterface;
 
-/** Configured rules that break a cap fail when the container is built, never in a turn. */
+/** Configured rules that break a cap fail when the container is built, never in a turn; model names are kept as written. */
 final class RulesConfigurationTest extends TestCase
 {
     public function testIdsAreKeptAsWrittenAndTheCategoryDefaultsToOther(): void
@@ -20,6 +21,17 @@ final class RulesConfigurationTest extends TestCase
         $config = $this->process(['rules' => ['no-codes' => ['title' => 'No codes', 'text' => 'No discount codes.']]]);
 
         self::assertSame(['no-codes' => ['title' => 'No codes', 'text' => 'No discount codes.', 'category' => 'other', 'enabled' => true]], $config['rules']);
+    }
+
+    public function testModelNamesAreKeptAsWrittenForPricesAndCapabilities(): void
+    {
+        $config = $this->process([
+            'prices' => ['claude-sonnet-5-5' => ['input' => 3.0, 'output' => 15.0, 'cache_write' => 3.75, 'cache_read' => 0.3]],
+            'capabilities' => ['claude-sonnet-5-5' => ['text_beside_tool_calls' => false]],
+        ]);
+
+        self::assertArrayHasKey('claude-sonnet-5-5', Dig::array($config, 'prices'));
+        self::assertSame(['text_beside_tool_calls' => false], Dig::value($config, 'capabilities', 'claude-sonnet-5-5'));
     }
 
     public function testARuleOverTheLengthCapFails(): void
