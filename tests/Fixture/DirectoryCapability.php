@@ -32,6 +32,7 @@ final class DirectoryCapability implements CapabilityInterface, DomainErrorMappe
         private readonly array $records = ['R-1' => 'First', 'R-2' => 'Second'],
         private readonly ChipMode $chips = ChipMode::Tool,
         private readonly string $chipNote = '',
+        private readonly string $guidance = '',
     ) {
     }
 
@@ -71,7 +72,12 @@ final class DirectoryCapability implements CapabilityInterface, DomainErrorMappe
 
     public function promptFragments(): array
     {
-        return [new PromptFragment(PromptSection::Tools, '- Search before answering.', priority: 5)];
+        $fragments = [new PromptFragment(PromptSection::Tools, '- Search before answering.', priority: 5)];
+        if ('' !== $this->guidance) {
+            $fragments[] = new PromptFragment(PromptSection::Guidance, $this->guidance);
+        }
+
+        return $fragments;
     }
 
     public function groundingRules(): array

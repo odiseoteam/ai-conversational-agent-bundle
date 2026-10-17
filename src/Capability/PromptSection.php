@@ -9,6 +9,8 @@ enum PromptSection: string
     case HowYouWork = 'how_you_work';
     case Tools = 'tools';
     case Presentation = 'presentation';
+    /** How the vertical wants requests handled, beside the organisation's rules. */
+    case Guidance = 'guidance';
     case Boundaries = 'boundaries';
 
     /** Render order of the sections in the static prompt. */
@@ -18,7 +20,8 @@ enum PromptSection: string
             self::HowYouWork => 0,
             self::Tools => 1,
             self::Presentation => 2,
-            self::Boundaries => 3,
+            self::Guidance => 3,
+            self::Boundaries => 4,
         };
     }
 }
