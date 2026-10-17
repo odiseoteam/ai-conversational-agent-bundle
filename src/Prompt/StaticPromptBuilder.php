@@ -20,7 +20,8 @@ use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
 
 /**
  * The cached half of the system prompt: identity, the rules that apply on most turns, the
- * organisation's own rules, the trust rules, and the skill and guide indexes. Rules for one tool live in that tool's description; the
+ * vertical's guidance, the organisation's own rules, the trust rules, and the skill and guide
+ * indexes. Rules for one tool live in that tool's description; the
  * rules for one flow live in its skill.
  *
  * Everything here depends on deployment configuration and the registered capabilities only, so
@@ -120,6 +121,7 @@ final class StaticPromptBuilder
                 \sprintf('- At most %d primary components in a turn, and never two showing the same thing. In your text, name a record rather than its position; positions shift as components reflow. When a call is rejected, fix the payload and call it again; typing the content out is not the fallback.', $config->limits->maxComponentsPerTurn),
                 '- Identify records by their id and let the interface fill in the details, so the person sees canonical values.'.$chipRule,
             ], PromptSection::Presentation),
+            $this->guidanceSection(),
             $this->rulesSection(),
             $this->trustSection(),
             $this->section('Boundaries', [
@@ -165,7 +167,18 @@ final class StaticPromptBuilder
             .$this->skills->indexBlock();
     }
 
-    /** The organisation's guides, so the model knows one exists before it searches. */
+    /** What the capabilities add on how to handle requests, right before the house rules. */
+    private function guidanceSection(): string
+    {
+        $lines = array_map(static fn (PromptFragment $fragment): string => $fragment->text, $this->fragmentsFor(PromptSection::Guidance));
+
+        return [] === $lines ? '' : "# Guidance\n\n".implode("\n", $lines);
+    }
+
+    /**
+     * The organisation's guides, so the model knows one exists before it searches. Titles and
+     * "when" lines are content, not instructions, so they go inside the fence.
+     */
     private function guidesSection(): string
     {
         $guides = $this->guides->guides();
@@ -173,8 +186,11 @@ final class StaticPromptBuilder
             return '';
         }
 
+        $entry = fn (KnowledgeDocument $guide): string => '- '.$this->fence->sanitizeText($guide->title, 200)
+            .('' === $guide->when ? '' : ': '.$this->fence->sanitizeText($guide->when));
+
         return "# Guides\n\n".$this->guidesNotice."\n\n"
-            .implode("\n", array_map(static fn (KnowledgeDocument $guide): string => '- '.$guide->title.('' === $guide->when ? '' : ': '.$guide->when), $guides));
+            .$this->fence->open()."\n".implode("\n", array_map($entry, $guides))."\n".$this->fence->close();
     }
 
     /** Placed before the trust and boundary sections, which a rule never overrides. */

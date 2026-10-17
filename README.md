@@ -42,7 +42,9 @@ it knows about commerce.
 
 - **Capability** — a unit of the vertical: tools with JSON schemas, prompt fragments, grounding
   rules and presentation components. Capabilities are autoconfigured
-  (`odiseo_ai_conversational_agent.capability`) and assembled by the `CapabilityRegistry`.
+  (`odiseo_ai_conversational_agent.capability`) and assembled by the `CapabilityRegistry`. A
+  prompt fragment goes to a section of the cached prompt: How you work, Tools, Presentation,
+  Guidance (how the vertical wants requests handled, right before the house rules) or Boundaries.
 - **Turn loop** (`AgentLoop`) — streams model rounds and tool calls as `AgentEvent`s; a turn
   ends on text, on a budget limit or on the tool-iteration cap.
 - **Gates** — fencing of external text (`Fence`), grounding rules that force a tool when the
@@ -244,7 +246,8 @@ a turn never fails over it.
 
 **The guide index.** The documents of `kind: guide` from every source are listed in a "# Guides"
 section of the cached prompt, after the skills: title and `when`, by title, so the model knows a
-guide exists before it searches. `guides_notice` is the line above the list (when to read a guide,
+guide exists before it searches. They are content, so the list goes inside the fence, sanitized
+like any tool result. `guides_notice` is the line above the list (when to read a guide,
 and with which tool; a vertical sets it to name its own). At most `limits.max_guides` guides (20)
 with a `when` of `limits.max_guide_when_chars` characters (200); one over a cap, or repeating an
 id, is left out and logged. Without guides the section is not there. A guide edit changes the

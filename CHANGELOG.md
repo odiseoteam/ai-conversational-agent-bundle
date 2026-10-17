@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- The guide index goes inside the fence, sanitized, since its titles and "when" lines are content:
+  a guide written in an admin or by another system cannot reach the prompt as an instruction.
+- `PromptSection::Guidance`: a section of the cached prompt, right before the house rules, where
+  a capability says how the vertical wants requests handled (a vertical's way of guiding a
+  choice, say). It is only there when a capability adds to it.
 - The guide index: the `kind: guide` documents of every knowledge source are listed (title and
   `when`) in a "# Guides" section of the cached prompt, after the skills, so the model knows a
   guide exists before it searches. `GuideIndex` orders them by title and caps them
