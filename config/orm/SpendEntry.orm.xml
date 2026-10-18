@@ -9,6 +9,7 @@
             <index name="idx_agent_spend_session" columns="session_id" />
             <index name="idx_agent_spend_day" columns="spent_on" />
             <index name="idx_agent_spend_client" columns="client_key,spent_on" />
+            <index name="idx_agent_spend_scope" columns="scope,spent_on" />
         </indexes>
 
         <id name="id" column="id" type="integer">
@@ -20,6 +21,7 @@
         <field name="spentOn" column="spent_on" type="date_immutable" />
         <field name="usd" column="usd" type="decimal" precision="12" scale="6" />
         <field name="model" column="model" type="string" length="64" nullable="true" />
+        <field name="scope" column="scope" type="string" length="64" nullable="true" />
         <field name="inputTokens" column="input_tokens" type="integer" />
         <field name="outputTokens" column="output_tokens" type="integer" />
         <field name="cacheCreationTokens" column="cache_creation_tokens" type="integer" />

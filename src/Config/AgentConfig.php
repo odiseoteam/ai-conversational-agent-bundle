@@ -13,7 +13,7 @@ use Odiseo\AiConversationalAgentBundle\Capability\Limits;
  * within a deployment: changing one at runtime re-reads the whole cached prefix on every
  * call. The rest steer the runtime only and never change prompt bytes.
  */
-final readonly class AgentConfig
+final readonly class AgentConfig implements AgentConfigProviderInterface
 {
     /** Effort for the turn model; null disables thinking (Haiku has no effort control). */
     public ?ThinkingEffort $thinkingEffort;
@@ -34,10 +34,13 @@ final readonly class AgentConfig
         public string $scope = 'the organisation and what it offers',
         public string $replyLanguage = 'the language of the visitor\'s most recent message',
 
-        // -- Models. The turn loop runs on $model and post-turn extraction on $memoryModel.
+        // -- Models. The turn loop runs on $model and post-turn extraction on $memoryModel; each
+        // platform names the adapter that serves it.
         public string $model = 'claude-haiku-5-5',
         public string $memoryModel = 'claude-haiku-5-5',
         ThinkingEffort|string|null $thinkingEffort = ThinkingEffort::Low,
+        public string $platform = 'anthropic',
+        public string $memoryPlatform = 'anthropic',
 
         // -- Budgets. The iteration cap is a runaway guard: a multi-part request has to finish
         // well inside it, because once the cap forces a tool-less round the model tends to
@@ -53,6 +56,9 @@ final readonly class AgentConfig
         public float $sessionBudgetUsd = 0.50,
         public ?float $clientBudgetUsd = null,
         public float $dailyBudgetUsd = 20.0,
+        // The day cap of the spend scope the host names (one storefront of several, say), on top
+        // of the deployment's; null turns it off.
+        public ?float $scopeDailyBudgetUsd = null,
 
         // -- Latency switches, each independent so a problem can be bisected. Eager dispatch
         // starts a tool call while the round is still being written; the rolling cache turns
@@ -82,6 +88,11 @@ final readonly class AgentConfig
         public int $compactHistoryAboveTokens = 100_000,
     ) {
         $this->thinkingEffort = \is_string($thinkingEffort) ? self::effort($thinkingEffort) : $thinkingEffort;
+    }
+
+    public function agentConfig(): self
+    {
+        return $this;
     }
 
     private static function effort(string $value): ?ThinkingEffort

@@ -7,6 +7,7 @@ namespace Odiseo\AiConversationalAgentBundle\Bridge\Symfony;
 use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\DoctrineOrmMappingsPass;
 use Doctrine\ORM\EntityManagerInterface;
 use Odiseo\AiConversationalAgentBundle\Capability\CapabilityInterface;
+use Odiseo\AiConversationalAgentBundle\Content\VersionStoreInterface;
 use Odiseo\AiConversationalAgentBundle\Eval\Grader\GraderInterface;
 use Odiseo\AiConversationalAgentBundle\Knowledge\KnowledgeSearchInterface;
 use Odiseo\AiConversationalAgentBundle\Knowledge\KnowledgeSourceInterface;
@@ -68,6 +69,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                 $this->getPath().'/config/orm' => 'Odiseo\\AiConversationalAgentBundle\\Bridge\\Doctrine\\Model',
             ]));
         }
+        $container->addCompilerPass(new KeyedPlatformPass());
     }
 
     /**
@@ -203,7 +205,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                     ->scalarNode('timezone')->defaultNull()->end()
                 ->end()->end()
                 ->arrayNode('orm')->addDefaultsIfNotSet()
-                    ->info('The stores over Doctrine ORM. The host names four entities that implement the model interfaces in Bridge\\Doctrine\\Model, usually by extending the mapped superclasses beside them; off, the stores are in memory and nothing outlives the process.')
+                    ->info('The stores over Doctrine ORM. The host names four entities that implement the model interfaces in Bridge\\Doctrine\\Model, usually by extending the mapped superclasses beside them, and optionally a fifth for the versions people edit at runtime; off, the stores are in memory and nothing outlives the process.')
                     ->children()
                         ->booleanNode('enabled')->defaultValue(interface_exists(EntityManagerInterface::class))->end()
                         ->arrayNode('classes')->addDefaultsIfNotSet()->children()
@@ -211,10 +213,11 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                             ->scalarNode('message')->defaultNull()->end()
                             ->scalarNode('memory_fact')->defaultNull()->end()
                             ->scalarNode('spend_entry')->defaultNull()->end()
+                            ->scalarNode('content_version')->defaultNull()->info('Rules and documents edited at runtime; null keeps them in memory, so only the configured ones apply.')->end()
                         ->end()->end()
                     ->end()
                     ->validate()
-                        ->ifTrue(static fn (array $orm): bool => true === $orm['enabled'] && \is_array($orm['classes']) && \in_array(null, $orm['classes'], true))
+                        ->ifTrue(static fn (array $orm): bool => true === $orm['enabled'] && \is_array($orm['classes']) && \in_array(null, array_diff_key($orm['classes'], ['content_version' => true]), true))
                         ->thenInvalid('orm.classes needs the four entity classes (conversation, message, memory_fact, spend_entry) that implement the core\'s model interfaces, or orm.enabled: false.')
                     ->end()
                 ->end()
@@ -327,6 +330,11 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
 
         if (null === $config['knowledge_dir']) {
             $container->services()->remove(self::ID.'knowledge.markdown_source');
+        }
+        if ($config['orm']['enabled'] && null !== $config['orm']['classes']['content_version']) {
+            $container->services()->alias(VersionStoreInterface::class, self::ID.'store.version.orm');
+        } else {
+            $container->services()->remove(self::ID.'store.version.orm');
         }
         if (null !== $config['skills_dir']) {
             $container->services()->get(self::ID.'skill.registry')

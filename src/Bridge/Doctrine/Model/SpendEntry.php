@@ -18,6 +18,8 @@ abstract class SpendEntry implements SpendEntryInterface
     protected \DateTimeImmutable $spentOn;
     protected string $usd = '0';
     protected ?string $model = null;
+
+    protected ?string $scope = null;
     protected int $inputTokens = 0;
     protected int $outputTokens = 0;
     protected int $cacheCreationTokens = 0;
@@ -85,6 +87,16 @@ abstract class SpendEntry implements SpendEntryInterface
     public function setModel(?string $model): void
     {
         $this->model = $model;
+    }
+
+    public function getScope(): ?string
+    {
+        return $this->scope;
+    }
+
+    public function setScope(?string $scope): void
+    {
+        $this->scope = $scope;
     }
 
     public function getInputTokens(): int

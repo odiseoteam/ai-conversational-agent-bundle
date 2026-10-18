@@ -24,7 +24,7 @@ final class OrmSpendLedger implements SpendLedgerInterface
     ) {
     }
 
-    public function record(string $sessionId, \DateTimeImmutable $at, float $usd, ?string $clientKey = null, ?string $model = null, ?Usage $usage = null): void
+    public function record(string $sessionId, \DateTimeImmutable $at, float $usd, ?string $clientKey = null, ?string $model = null, ?Usage $usage = null, ?string $scope = null): void
     {
         if ($usd <= 0.0) {
             return;
@@ -36,6 +36,7 @@ final class OrmSpendLedger implements SpendLedgerInterface
         $entry->setSpentOn($at);
         $entry->setUsd($usd);
         $entry->setModel($model);
+        $entry->setScope($scope);
         if (null !== $usage) {
             $entry->setTokens($usage->inputTokens, $usage->outputTokens, $usage->cacheCreationTokens, $usage->cacheReadTokens);
         }
@@ -79,6 +80,11 @@ final class OrmSpendLedger implements SpendLedgerInterface
     public function daySpend(\DateTimeImmutable $day): float
     {
         return $this->sum('e.spentOn = :day', ['day' => $day->format('Y-m-d')]);
+    }
+
+    public function scopeSpend(string $scope, \DateTimeImmutable $day): float
+    {
+        return $this->sum('e.scope = :scope AND e.spentOn = :day', ['scope' => $scope, 'day' => $day->format('Y-m-d')]);
     }
 
     /**

@@ -69,4 +69,22 @@ final class SpendLedgerTest extends TestCase
         self::assertEqualsWithDelta(0.0, $ledger->sessionSpend('old'), 1e-9);
         self::assertEqualsWithDelta(0.03, $ledger->sessionSpend('new'), 1e-9);
     }
+
+    /** @param \Closure(): SpendLedgerInterface $make */
+    #[DataProvider('ledgers')]
+    public function testAScopeSumsItsOwnDay(\Closure $make): void
+    {
+        $ledger = $make();
+        $monday = new \DateTimeImmutable('2026-09-21 10:00');
+
+        $ledger->record('s1', $monday, 0.01, scope: 'WEB');
+        $ledger->record('s2', $monday, 0.02, scope: 'WEB');
+        $ledger->record('s3', $monday, 0.04, scope: 'OUTLET');
+        $ledger->record('s4', $monday, 0.08);
+
+        self::assertEqualsWithDelta(0.03, $ledger->scopeSpend('WEB', $monday), 1e-9);
+        self::assertEqualsWithDelta(0.04, $ledger->scopeSpend('OUTLET', $monday), 1e-9);
+        self::assertEqualsWithDelta(0.0, $ledger->scopeSpend('WEB', new \DateTimeImmutable('2026-09-22')), 1e-9);
+        self::assertEqualsWithDelta(0.15, $ledger->daySpend($monday), 1e-9);
+    }
 }

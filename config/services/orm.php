@@ -7,10 +7,12 @@ use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\NullConversationInitializ
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmMemoryStore;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmSessionStore;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmSpendLedger;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmVersionStore;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\TransactionalEvalIsolation;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Command\PruneCommand;
 use Odiseo\AiConversationalAgentBundle\Budget\SpendLedgerInterface;
 use Odiseo\AiConversationalAgentBundle\Eval\EvalIsolationInterface;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryRetentionInterface;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryStoreInterface;
 use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -45,6 +47,10 @@ return static function (ContainerConfigurator $container): void {
         ->args([service('doctrine.orm.entity_manager'), param($id.'orm.classes.spend_entry')]);
     $services->alias(SpendLedgerInterface::class, $id.'store.spend.orm');
 
+    // Aliased as the VersionStoreInterface by the extension when a content_version class is set.
+    $services->set($id.'store.version.orm', OrmVersionStore::class)
+        ->args([service('doctrine.orm.entity_manager'), param($id.'orm.classes.content_version')]);
+
     $services->set($id.'eval.isolation.transactional', TransactionalEvalIsolation::class)
         ->args([service('doctrine.orm.entity_manager'), service('doctrine')]);
     $services->alias(EvalIsolationInterface::class, $id.'eval.isolation.transactional');
@@ -56,6 +62,7 @@ return static function (ContainerConfigurator $container): void {
             service($id.'store.memory.orm'),
             param($id.'conversations.retention_days'),
             param($id.'memory.retention_days'),
+            service(MemoryRetentionInterface::class),
         ])
         ->tag('console.command');
 };

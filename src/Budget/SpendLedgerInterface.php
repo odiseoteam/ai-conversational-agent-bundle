@@ -13,12 +13,17 @@ use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
  */
 interface SpendLedgerInterface
 {
-    /** $model and $usage are the detail behind $usd; a ledger may keep them, the caps only sum $usd. */
-    public function record(string $sessionId, \DateTimeImmutable $at, float $usd, ?string $clientKey = null, ?string $model = null, ?Usage $usage = null): void;
+    /**
+     * $model and $usage are the detail behind $usd; a ledger may keep them, the caps only sum $usd.
+     * $scope is the part of the deployment the call belongs to, for that part's own day cap.
+     */
+    public function record(string $sessionId, \DateTimeImmutable $at, float $usd, ?string $clientKey = null, ?string $model = null, ?Usage $usage = null, ?string $scope = null): void;
 
     public function sessionSpend(string $sessionId): float;
 
     public function clientSpend(string $clientKey, \DateTimeImmutable $day): float;
 
     public function daySpend(\DateTimeImmutable $day): float;
+
+    public function scopeSpend(string $scope, \DateTimeImmutable $day): float;
 }

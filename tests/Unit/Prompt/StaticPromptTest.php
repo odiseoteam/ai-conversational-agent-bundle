@@ -6,6 +6,8 @@ namespace Odiseo\AiConversationalAgentBundle\Tests\Unit\Prompt;
 
 use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
 use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
+use Odiseo\AiConversationalAgentBundle\Config\AgentConfigProviderInterface;
+use Odiseo\AiConversationalAgentBundle\Content\InMemoryVersionStore;
 use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
 use Odiseo\AiConversationalAgentBundle\Knowledge\GuideIndex;
 use Odiseo\AiConversationalAgentBundle\Knowledge\KnowledgeDocument;
@@ -16,6 +18,7 @@ use Odiseo\AiConversationalAgentBundle\Prompt\StaticPromptBuilder;
 use Odiseo\AiConversationalAgentBundle\Provider\ProviderCapabilities;
 use Odiseo\AiConversationalAgentBundle\Rule\ConfiguredRuleSource;
 use Odiseo\AiConversationalAgentBundle\Rule\RuleBook;
+use Odiseo\AiConversationalAgentBundle\Rule\VersionedRuleSource;
 use Odiseo\AiConversationalAgentBundle\Skill\Skill;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\DirectoryCapability;
@@ -167,6 +170,62 @@ final class StaticPromptTest extends TestCase
 
         self::assertNotSame($baseline, $renamed);
         self::assertSame(str_replace('Odiseo', 'Acme', $baseline), $renamed);
+    }
+
+    public function testTheSettingsInForceAreReadOnEachBuild(): void
+    {
+        $settings = new class($this->config()) implements AgentConfigProviderInterface {
+            public function __construct(public AgentConfig $config)
+            {
+            }
+
+            public function agentConfig(): AgentConfig
+            {
+                return $this->config;
+            }
+        };
+        $builder = new StaticPromptBuilder(
+            $settings,
+            new CapabilityRegistry([new DirectoryCapability()]),
+            new SkillRegistry([]),
+            new Fence('site_content', 'Quoted.'),
+        );
+
+        $before = $builder->build();
+        $settings->config = $settings->config->with(['brandName' => 'Acme Outlet']);
+
+        self::assertStringNotContainsString('Acme Outlet', $before);
+        self::assertStringContainsString('Acme Outlet', $builder->build());
+    }
+
+    public function testSettingsThatAreNotPromptBytesLeaveItAlone(): void
+    {
+        $config = $this->config();
+        $changed = $config->with([
+            'model' => 'gpt-5.6-luna',
+            'platform' => 'openai',
+            'memoryModel' => 'claude-sonnet-5',
+            'thinkingEffort' => 'high',
+            'sessionBudgetUsd' => 0.1,
+            'dailyBudgetUsd' => 1.0,
+            'scopeDailyBudgetUsd' => 0.5,
+        ]);
+
+        self::assertSame($this->builder(config: $config)->build(), $this->builder(config: $changed)->build());
+    }
+
+    public function testAPublishedRuleShowsUpOnTheNextBuild(): void
+    {
+        $store = new InMemoryVersionStore();
+        $rules = new RuleBook([new VersionedRuleSource(new ConfiguredRuleSource([]), $store)], revisions: $store);
+        $builder = $this->builder(rules: $rules);
+
+        self::assertStringNotContainsString('# House rules', $builder->build());
+
+        $store->publish('rule', 'short', ['title' => 'Short', 'category' => 'style', 'text' => 'Answer in one sentence.', 'enabled' => true]);
+
+        self::assertStringContainsString("# House rules\n", $builder->build());
+        self::assertStringContainsString('- Answer in one sentence.', $builder->build());
     }
 
     /** @param list<\Odiseo\AiConversationalAgentBundle\Capability\CapabilityInterface>|null $capabilities */

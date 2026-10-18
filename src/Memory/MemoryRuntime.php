@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Memory;
 
 use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
-use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
+use Odiseo\AiConversationalAgentBundle\Config\AgentConfigProviderInterface;
 use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
 use Odiseo\AiConversationalAgentBundle\Provider\ModelProviderInterface;
 use Odiseo\AiConversationalAgentBundle\Provider\Request\SystemBlock;
@@ -29,7 +29,7 @@ final class MemoryRuntime
 
     public function __construct(
         private readonly MemoryStoreInterface $store,
-        private readonly AgentConfig $config,
+        private readonly AgentConfigProviderInterface $config,
         private readonly Fence $fence,
         private readonly string $extractionPrompt,
         private readonly MemoryWriteFilter $writeFilter = new MemoryWriteFilter(),
@@ -49,7 +49,7 @@ final class MemoryRuntime
      */
     public function tierOne(string $subject): array
     {
-        if (!$this->config->enableMemory) {
+        if (!$this->config->agentConfig()->enableMemory) {
             return [];
         }
 
@@ -58,13 +58,13 @@ final class MemoryRuntime
         $constraints = array_values(array_filter($facts, static fn (MemoryFact $f): bool => MemoryCategory::Constraint === $f->category));
         $rest = array_values(array_filter($facts, static fn (MemoryFact $f): bool => MemoryCategory::Constraint !== $f->category));
 
-        return \array_slice([...$constraints, ...$rest], 0, $this->config->memoryTierOneCap);
+        return \array_slice([...$constraints, ...$rest], 0, $this->config->agentConfig()->memoryTierOneCap);
     }
 
     /** @param array<string, mixed> $input */
     public function save(string $subject, string $sessionTag, array $input): ToolOutcome
     {
-        if (!$this->config->enableMemory) {
+        if (!$this->config->agentConfig()->enableMemory) {
             return ToolOutcome::error('Memory is off in this deployment; do not offer to remember anything.');
         }
 
@@ -96,7 +96,7 @@ final class MemoryRuntime
     /** @param array<string, mixed> $input */
     public function recall(string $subject, array $input): ToolOutcome
     {
-        if (!$this->config->enableMemory) {
+        if (!$this->config->agentConfig()->enableMemory) {
             return ToolOutcome::error('Memory is off in this deployment.');
         }
 
@@ -107,7 +107,7 @@ final class MemoryRuntime
 
         return new ToolOutcome($this->fence->fencePayload(
             ['saved_memory' => [] === $payload ? 'none' : $payload],
-            $this->config->limits->maxFencedChars,
+            $this->config->agentConfig()->limits->maxFencedChars,
         ));
     }
 
@@ -129,13 +129,13 @@ final class MemoryRuntime
      */
     public function extract(ModelProviderInterface $provider, string $subject, string $sessionTag, string $transcript, ?\Closure $onResponse = null): array
     {
-        if (!$this->config->enableMemory || '' === trim($transcript)) {
+        if (!$this->config->agentConfig()->enableMemory || '' === trim($transcript)) {
             return [];
         }
 
         $existing = $this->live($this->store->all($subject));
         $response = $provider->complete(new TurnRequest(
-            model: $this->config->memoryModel,
+            model: $this->config->agentConfig()->memoryModel,
             system: [new SystemBlock($this->extractionPrompt)],
             messages: [[
                 'role' => 'user',
@@ -144,7 +144,7 @@ final class MemoryRuntime
             tools: [self::recordFactTool()],
             maxTokens: 600,
             thinkingEffort: null,
-            timeoutSeconds: $this->config->requestTimeoutSeconds,
+            timeoutSeconds: $this->config->agentConfig()->requestTimeoutSeconds,
             cacheTools: false,
         ));
         if (null !== $onResponse) {
@@ -247,7 +247,7 @@ final class MemoryRuntime
      */
     private function live(array $facts): array
     {
-        $days = $this->config->memoryRetentionDays;
+        $days = $this->config->agentConfig()->memoryRetentionDays;
         if (null === $days) {
             return $facts;
         }

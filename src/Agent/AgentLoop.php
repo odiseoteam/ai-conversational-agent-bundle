@@ -7,7 +7,7 @@ namespace Odiseo\AiConversationalAgentBundle\Agent;
 use Odiseo\AiConversationalAgentBundle\Budget\BudgetPolicy;
 use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
-use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
+use Odiseo\AiConversationalAgentBundle\Config\AgentConfigProviderInterface;
 use Odiseo\AiConversationalAgentBundle\Execution\ToolExecutor;
 use Odiseo\AiConversationalAgentBundle\Execution\ToolSurface;
 use Odiseo\AiConversationalAgentBundle\Execution\TurnScope;
@@ -31,6 +31,7 @@ use Odiseo\AiConversationalAgentBundle\Provider\Stream\TextChunk;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\ToolCallStarted;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\ToolInputChunk;
 use Odiseo\AiConversationalAgentBundle\Provider\Stream\TurnFinished;
+use Odiseo\AiConversationalAgentBundle\Session\CurrentSession;
 use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
 use Odiseo\AiConversationalAgentBundle\Session\TurnState;
 use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
@@ -56,7 +57,7 @@ use Psr\Log\NullLogger;
 final class AgentLoop
 {
     public function __construct(
-        private readonly AgentConfig $config,
+        private readonly AgentConfigProviderInterface $config,
         private readonly ModelProviderInterface $provider,
         private readonly CapabilityRegistry $capabilities,
         private readonly ToolExecutor $executor,
@@ -70,6 +71,7 @@ final class AgentLoop
         private readonly LoggerInterface $logger = new NullLogger(),
         /** Runs the memory extraction; the turn's provider when null. */
         private readonly ?ModelProviderInterface $memoryProvider = null,
+        private readonly CurrentSession $current = new CurrentSession(),
     ) {
     }
 
@@ -84,6 +86,9 @@ final class AgentLoop
     public function streamTurn(array &$messages, SessionContext $session, TurnState $state): \Generator
     {
         $startedAt = microtime(true);
+        $this->current->enter($session->sessionId);
+        // The settings in force for the whole turn, read once.
+        $config = $this->config->agentConfig();
         $now = $session->localNow();
         $clock = $now ?? new \DateTimeImmutable();
 
@@ -92,11 +97,11 @@ final class AgentLoop
             $this->context->contextPayload($session, $state),
             $facts,
             $now,
-            $this->config->maxContextChars,
+            $config->maxContextChars,
         );
         // What the model can do decides what is asked of it: no markers without caching, no
         // thinking without it, no eager dispatch without the deltas it reads.
-        $can = $this->provider->capabilities($this->config->model);
+        $can = $this->provider->capabilities($config->model);
         $system = PromptAssembler::systemBlocks($this->staticPrompt->buildFor($can), $context);
         if (!$can->promptCaching) {
             $system = array_map(static fn (SystemBlock $block): SystemBlock => new SystemBlock($block->text), $system);
@@ -108,7 +113,7 @@ final class AgentLoop
             session: $session,
             state: $state,
             fence: $this->fence,
-            limits: $this->config->limits,
+            limits: $config->limits,
             scope: $scope,
         );
 
@@ -131,7 +136,7 @@ final class AgentLoop
         $settled = [];
 
         try {
-            for ($round = 0; $round <= $this->config->maxToolIterations; ++$round) {
+            for ($round = 0; $round <= $config->maxToolIterations; ++$round) {
                 $exceeded = $this->budget->exceeded($session->sessionId, $clock);
                 if (null !== $exceeded) {
                     $this->logger->warning('turn stopped on the {scope} budget', [
@@ -143,7 +148,7 @@ final class AgentLoop
                     break;
                 }
 
-                $forceText = $round === $this->config->maxToolIterations;
+                $forceText = $round === $config->maxToolIterations;
                 $toolChoice = match (true) {
                     $forceText => ToolChoice::none(),
                     0 === $round && null !== $forced && $canForce => ToolChoice::forced($forced->rule->tool),
@@ -151,20 +156,20 @@ final class AgentLoop
                 };
 
                 $request = new TurnRequest(
-                    model: $this->config->model,
+                    model: $config->model,
                     system: $system,
                     // The marker is skipped on a non-automatic round: the tool choice keys the
                     // cached span, so an entry written under a forced round is unreadable by
                     // the automatic rounds that follow.
                     messages: PromptAssembler::requestMessages(
                         $messages,
-                        $can->promptCaching && $this->config->rollingConversationCache && $toolChoice->isAuto(),
+                        $can->promptCaching && $config->rollingConversationCache && $toolChoice->isAuto(),
                     ),
                     tools: $tools,
                     toolChoice: $toolChoice,
-                    maxTokens: $this->config->maxTokens,
-                    thinkingEffort: $can->thinking ? $this->config->thinkingEffort : null,
-                    timeoutSeconds: $this->config->requestTimeoutSeconds,
+                    maxTokens: $config->maxTokens,
+                    thinkingEffort: $can->thinking ? $config->thinkingEffort : null,
+                    timeoutSeconds: $config->requestTimeoutSeconds,
                     cacheTools: $can->promptCaching,
                     cacheKey: $session->sessionTag(),
                 );
@@ -175,7 +180,7 @@ final class AgentLoop
                 // dispatch the call itself — is StreamedRound's; the join below picks up the
                 // rest. Waiting for the whole round instead means the local reads this
                 // deployment's tools do resolve before a person ever sees a line.
-                $streamed = new StreamedRound($this->executor, $toolContext, $this->config->eagerToolDispatch && $can->toolInputDeltas && !$forceText);
+                $streamed = new StreamedRound($this->executor, $toolContext, $config->eagerToolDispatch && $can->toolInputDeltas && !$forceText);
                 foreach ($this->provider->stream($request) as $event) {
                     if ($event instanceof TextChunk) {
                         if ('' !== trim($event->text)) {
@@ -209,8 +214,8 @@ final class AgentLoop
                 $usage = $usage->plus($response->usage);
                 ++$rounds;
                 $lastPromptTokens = $response->usage->promptTokens();
-                $this->budget->charge($session->sessionId, $this->config->model, $response->usage, $clock);
-                $this->log($session, $round, $response);
+                $this->budget->charge($session->sessionId, $config->model, $response->usage, $clock);
+                $this->log($session, $round, $response, $config->model);
 
                 $stopReason = $response->stopReason?->value;
                 if (StopReason::MaxTokens === $response->stopReason) {
@@ -225,7 +230,7 @@ final class AgentLoop
                 }
 
                 $blocks = [];
-                $closesTurn = $this->config->closeOnPresentation;
+                $closesTurn = $config->closeOnPresentation;
                 $chipsSettled = false;
 
                 // The calls eager dispatch did not reach (dispatch off, or a buffer that never
@@ -236,7 +241,7 @@ final class AgentLoop
                     $response->toolUses,
                     static fn ($call): bool => null === $streamed->outcome($call->id),
                 ));
-                if (!$this->config->eagerToolDispatch) {
+                if (!$config->eagerToolDispatch) {
                     foreach ($pending as $call) {
                         yield $this->executor->toolCallEvent($call->name, $call->id, $call->input);
                     }
@@ -244,7 +249,7 @@ final class AgentLoop
                 foreach ($pending as $call) {
                     foreach ($streamed->run($call->id, $call->name, $call->input) as $produced) {
                         // Already announced above when dispatch is off.
-                        if (!$this->config->eagerToolDispatch && EventType::ToolCall === $produced->type) {
+                        if (!$config->eagerToolDispatch && EventType::ToolCall === $produced->type) {
                             continue;
                         }
                         yield $produced;
@@ -274,8 +279,8 @@ final class AgentLoop
         }
 
         // Clearing old results under replayed thinking is a 400 on the models that check it.
-        $cleared = $can->editableHistory || !$can->thinking || null === $this->config->thinkingEffort
-            ? Transcript::compact($messages, $lastPromptTokens, $this->config->compactHistoryAboveTokens)
+        $cleared = $can->editableHistory || !$can->thinking || null === $config->thinkingEffort
+            ? Transcript::compact($messages, $lastPromptTokens, $config->compactHistoryAboveTokens)
             : 0;
 
         yield AgentEvent::turnComplete(
@@ -317,15 +322,17 @@ final class AgentLoop
     public function extractMemory(ExtractMemory $turn): array
     {
         $session = new SessionContext($turn->sessionId, $turn->principalId);
+        $this->current->enter($turn->sessionId);
+        $model = $this->config->agentConfig()->memoryModel;
 
         return $this->memory->extract(
             $this->memoryProvider ?? $this->provider,
             $turn->principalId,
             $session->sessionTag(),
             $turn->exchange,
-            function (ProviderResponse $response) use ($session): void {
-                $this->budget->charge($session->sessionId, $this->config->memoryModel, $response->usage, new \DateTimeImmutable());
-                $this->log($session, 'memory', $response, $this->config->memoryModel);
+            function (ProviderResponse $response) use ($session, $model): void {
+                $this->budget->charge($session->sessionId, $model, $response->usage, new \DateTimeImmutable());
+                $this->log($session, 'memory', $response, $model);
             },
         );
     }
@@ -363,12 +370,12 @@ final class AgentLoop
         ];
     }
 
-    private function log(SessionContext $session, int|string $round, ProviderResponse $response, ?string $model = null): void
+    private function log(SessionContext $session, int|string $round, ProviderResponse $response, string $model): void
     {
         $this->logger->info('model call', [
             'session' => $session->sessionTag(),
             'round' => $round,
-            'model' => $model ?? $this->config->model,
+            'model' => $model,
             'stop_reason' => $response->stopReason?->value,
             'usage' => $response->usage->toArray(),
             'tool_calls' => array_map(static fn ($call): string => $call->name, $response->toolUses),

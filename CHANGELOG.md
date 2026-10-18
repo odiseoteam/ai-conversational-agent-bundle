@@ -8,6 +8,31 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- Runtime settings: `Config\ConfigOverridesInterface` (no changes by default) lays a host's saved
+  settings over the configuration for the current request, through `RuntimeAgentConfig`, the
+  `Config\AgentConfigProviderInterface` that `AgentLoop`, `BudgetPolicy`, `MemoryRuntime` and
+  `StaticPromptBuilder` now read. `AgentConfig` is its own provider, so code that builds these
+  services with a config keeps working.
+- `AgentConfig::$platform` and `$memoryPlatform`: the turn's and the memory's providers are
+  `Bridge\Symfony\RoutedProvider`, which picks the adapter from the platform in force on each
+  call. The judge's is picked when its service is built, as before.
+- `Provider\ApiKeyResolverInterface`: a runtime key per platform. Each adapter calls through a
+  `Provider\Platform\KeyedPlatform`, which `KeyedPlatformPass` lets rebuild the configured
+  platform (same factory, HTTP client, catalog and cache settings) with that key.
+- `Budget\SpendScopeResolverInterface` and `AgentConfig::$scopeDailyBudgetUsd`: a call is
+  recorded under a scope (`SpendEntry::$scope`, new column and index) and a scope can have its own
+  day cap. `SpendLedgerInterface` gains `scopeSpend()` and a `$scope` argument on `record()`.
+- Versions of what people edit: `Content\VersionStoreInterface`, in memory or over Doctrine
+  (`orm.classes.content_version`, optional, extending `Bridge\Doctrine\Model\ContentVersion`),
+  with drafts, publications and "back to the default". `Rule\VersionedRuleSource` and
+  `Knowledge\VersionedKnowledgeSource` lay the published rules and documents over the configured
+  ones; `RuleBook`, `GuideIndex` and the cached prompt are built again when the store's revision
+  changes.
+- `Session\CurrentSession`: the session a turn or a memory extraction runs for, for a host's
+  settings where there is no request.
+- `ProviderRegistry::platforms()`: the platforms with an adapter installed.
+- `Memory\MemoryRetentionInterface`: the memory retention a host sets at runtime over
+  `memory.retention_days`; `agent:prune` uses it.
 - `text_before_tool_calls` capability (`ProviderCapabilities::$textBeforeToolCalls`, true by
   default, false for Claude Sonnet 5.5, Opus 5.5 and Fable 5): these models return a note longer
   than a sentence or two written before a tool call as a progress update inside a thinking
@@ -77,6 +102,13 @@ All notable changes to this project are documented here. The format is based on
 
 ### Changed
 
+- `StaticPromptBuilder` keeps its text per identity, capability fragments, rules and guides,
+  instead of once per process.
+- No exclamation marks or emoji only on turns that add, stage or confirm, as in the reference;
+  elsewhere the voice decides. It applied to every turn.
+- The configured rules and the Markdown files are no longer tagged themselves: the versioned
+  sources wrap them (`odiseo_ai_conversational_agent.rule.versioned_source`,
+  `odiseo_ai_conversational_agent.knowledge.versioned_source`).
 - Every port interface ends in `Interface`, like the model interfaces already did:
   `CapabilityInterface`, `ContextProviderInterface`, `ConversationInitializerInterface`,
   `ClientKeyResolverInterface`, `SpendLedgerInterface`, `EvalEnvironmentInterface`,

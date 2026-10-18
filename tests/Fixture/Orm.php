@@ -18,6 +18,8 @@ use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\NullConversationInitializ
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmMemoryStore;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmSessionStore;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmSpendLedger;
+use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store\OrmVersionStore;
+use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Entity\TestContentVersion;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Entity\TestConversation;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Entity\TestMemoryFact;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Entity\TestMessage;
@@ -96,5 +98,10 @@ final class Orm
     public static function spendLedger(?EntityManagerInterface $em = null): OrmSpendLedger
     {
         return new OrmSpendLedger($em ?? self::entityManager(), TestSpendEntry::class);
+    }
+
+    public static function versionStore(?EntityManagerInterface $em = null): OrmVersionStore
+    {
+        return new OrmVersionStore($em ?? self::entityManager(), TestContentVersion::class);
     }
 }
