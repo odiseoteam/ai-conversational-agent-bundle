@@ -90,8 +90,8 @@ final class OrmSpendLedger implements SpendLedgerInterface
     /**
      * The sum is selected bare and defaulted in PHP on purpose: hosts may install a DQL walker
      * that appends ORDER BY on the identifier and skips it only when the first select expression
-     * is an aggregate (Sylius ships one). Wrapping it in COALESCE hides the aggregate, and the
-     * appended ORDER BY makes PostgreSQL reject the query.
+     * is an aggregate. Wrapping it in COALESCE hides the aggregate, and the appended ORDER BY
+     * makes PostgreSQL reject the query.
      *
      * @param array<string, mixed> $parameters
      */
