@@ -210,7 +210,7 @@ through three ports and a version store. Nothing changes until the host implemen
   platform; the adapter then calls through a platform built like the configured one with that
   key (`KeyedPlatform`). Null keeps the configured key.
 - **Spend scope**: `Budget\SpendScopeResolverInterface::scope()` names the part of the deployment
-  a call belongs to (one storefront of several). The ledger records it, and
+  a call belongs to (one site of several). The ledger records it, and
   `scopeDailyBudgetUsd` caps that scope's day on top of the deployment's day cap.
 - **The session in progress**: `Session\CurrentSession` holds the session a turn or a memory
   extraction runs for, so a host's settings can follow it where there is no request (a queue

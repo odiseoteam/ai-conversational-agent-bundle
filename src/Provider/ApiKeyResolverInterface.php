@@ -6,7 +6,7 @@ namespace Odiseo\AiConversationalAgentBundle\Provider;
 
 /**
  * An API key for a platform other than the deployment's, at runtime: one an administrator
- * saved for a storefront, for example.
+ * saved for a site, for example.
  */
 interface ApiKeyResolverInterface
 {

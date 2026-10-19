@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Memory;
 
 /**
- * The memory retention a host sets at runtime (one per storefront, say) over the configured one.
- * A fact belongs to a person, not to a storefront, so the host answers one retention for them all.
+ * The memory retention a host sets at runtime (one per site, say) over the configured one.
+ * A fact belongs to a person, not to a site, so the host answers one retention for them all.
  */
 interface MemoryRetentionInterface
 {

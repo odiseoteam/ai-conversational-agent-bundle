@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Budget;
 
 /**
- * The part of the deployment the current turn's spend belongs to (one storefront of several,
- * say), so that part can have its own day cap. Read with the session the turn runs in.
+ * The part of the deployment the current turn's spend belongs to (one site of several, say), so
+ * that part can have its own day cap. Read with the session the turn runs in.
  */
 interface SpendScopeResolverInterface
 {

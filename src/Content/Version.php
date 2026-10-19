@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Content;
 
 /**
- * One saved state of an item the host lets people edit: a rule, a document, a storefront's
- * voice. $data is the item as it was saved; null means "back to the default", the configured
- * item, from this version on. A draft has number 0; a published version, its place in the
- * item's history.
+ * One saved state of an item the host lets people edit: a rule or a document. $data is the item
+ * as it was saved; null means "back to the default", the configured item, from this version on.
+ * A draft has number 0; a published version, its place in the item's history.
  */
 final readonly class Version
 {

@@ -160,7 +160,7 @@ final class StaticPromptBuilder
         return implode("\n\n", array_filter($sections));
     }
 
-    /** The registered capabilities' areas, joined as the reference does ("a and b", "a, b, and c"). */
+    /** The registered capabilities' areas, joined as "a and b" or "a, b, and c". */
     private function scope(): string
     {
         $areas = $this->capabilities->scopeAreas();

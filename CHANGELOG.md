@@ -9,9 +9,8 @@ All notable changes to this project are documented here. The format is based on
 ### Added
 
 - `Capability\ScopedCapabilityInterface` and `ScopeArea`: a capability names an area of what the
-  assistant does, and the prompt's "Stay within …" line lists the registered ones by priority, as
-  the reference builds it from what is switched on ("a and b", "a, b, and c"). Without any, it
-  says `StaticPromptBuilder::DEFAULT_SCOPE`.
+  assistant does, and the prompt's "Stay within …" line lists the registered ones by priority
+  ("a and b", "a, b, and c"). Without any, it says `StaticPromptBuilder::DEFAULT_SCOPE`.
 
 - Runtime settings: `Config\ConfigOverridesInterface` (no changes by default) lays a host's saved
   settings over the configuration for the current request, through `RuntimeAgentConfig`, the
@@ -111,8 +110,8 @@ All notable changes to this project are documented here. The format is based on
   from the capabilities (`ScopedCapabilityInterface`). Remove the key from the configuration.
 - `StaticPromptBuilder` keeps its text per identity, capability fragments, rules and guides,
   instead of once per process.
-- No exclamation marks or emoji only on turns that add, stage or confirm, as in the reference;
-  elsewhere the voice decides. It applied to every turn.
+- No exclamation marks or emoji only on turns that add, stage or confirm; elsewhere the voice
+  decides. It applied to every turn.
 - The configured rules and the Markdown files are no longer tagged themselves: the versioned
   sources wrap them (`odiseo_ai_conversational_agent.rule.versioned_source`,
   `odiseo_ai_conversational_agent.knowledge.versioned_source`).

@@ -54,7 +54,7 @@ final readonly class AgentConfig implements AgentConfigProviderInterface
         public float $sessionBudgetUsd = 0.50,
         public ?float $clientBudgetUsd = null,
         public float $dailyBudgetUsd = 20.0,
-        // The day cap of the spend scope the host names (one storefront of several, say), on top
+        // The day cap of the spend scope the host names (one site of several, say), on top
         // of the deployment's; null turns it off.
         public ?float $scopeDailyBudgetUsd = null,
 
