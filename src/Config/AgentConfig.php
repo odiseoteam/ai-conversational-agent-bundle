@@ -19,7 +19,6 @@ final readonly class AgentConfig implements AgentConfigProviderInterface
     public ?ThinkingEffort $thinkingEffort;
 
     /**
-     * @param string                     $scope          (prompt) what this agent is for, in one clause
      * @param string                     $replyLanguage  (prompt) the language the agent answers in, worded in English
      *                                                   because it completes an English sentence
      * @param ThinkingEffort|string|null $thinkingEffort a case, its value, or 'off'/null; taken as a
@@ -31,7 +30,6 @@ final readonly class AgentConfig implements AgentConfigProviderInterface
         public string $assistantName = 'the assistant',
         public string $brandVoice = 'plain and specific',
         public string $audience = 'a visitor',
-        public string $scope = 'the organisation and what it offers',
         public string $replyLanguage = 'the language of the visitor\'s most recent message',
 
         // -- Models. The turn loop runs on $model and post-turn extraction on $memoryModel; each

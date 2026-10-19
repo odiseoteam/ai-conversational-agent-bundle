@@ -107,8 +107,8 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                     ->scalarNode('brand_name')->defaultValue('the organisation')->end()
                     ->scalarNode('assistant_name')->defaultValue('the assistant')->end()
                     ->scalarNode('brand_voice')->defaultValue('plain and specific')->end()
+                    // Completes "talking with …"; what the agent does comes from the capabilities.
                     ->scalarNode('audience')->defaultValue('a visitor')->end()
-                    ->scalarNode('scope')->defaultValue('the organisation and what it offers')->end()
                     ->scalarNode('reply_language')->defaultValue('the language of the visitor\'s most recent message')->end()
                     // Introduces, in the prompt's language, what the host queued for the model
                     // between turns (a button pressed, an action taken outside the chat).

@@ -155,7 +155,10 @@ alias: `ContextProviderInterface`, `PrincipalResolverInterface`, `TurnHookInterf
 `MemoryStoreInterface`, `SpendLedgerInterface`, `ConfigOverridesInterface`,
 `ApiKeyResolverInterface`, `SpendScopeResolverInterface` and `VersionStoreInterface`. Capabilities implement `CapabilityInterface`
 and are collected by the `odiseo_ai_conversational_agent.capability` tag; rule sources, knowledge
-sources and knowledge searches are collected the same way.
+sources and knowledge searches are collected the same way. A capability that also implements
+`ScopedCapabilityInterface` names an area of what the assistant does ("orders"); the prompt's
+"Stay within …" line lists the registered areas by priority, so registering a capability widens
+it. `identity.audience` completes "talking with …".
 
 ### Rules
 

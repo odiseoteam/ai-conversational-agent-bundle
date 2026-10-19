@@ -33,6 +33,9 @@ final class StaticPromptBuilder
 {
     public const GUIDES_NOTICE = 'When a request touches one of these guides, read it before answering or recommending: it is the organisation\'s own advice.';
 
+    /** What the assistant stays within when no capability names an area. */
+    public const DEFAULT_SCOPE = 'the organisation and what it offers';
+
     private const MAX_KEPT = 8;
 
     /** @var array<string, string> */
@@ -55,7 +58,7 @@ final class StaticPromptBuilder
         $fragments = $this->capabilities->promptFragments();
         $key = md5(serialize([
             $config->brandName, $config->assistantName, $config->brandVoice, $config->audience,
-            $config->scope, $config->replyLanguage, $config->limits->maxComponentsPerTurn,
+            $config->replyLanguage, $config->limits->maxComponentsPerTurn,
             $config->limits->maxChipsPerTurn, $fragments, $this->rules->rules(), $this->guides->guides(),
         ]));
         if (!isset($this->texts[$key]) && \count($this->texts) >= self::MAX_KEPT) {
@@ -148,13 +151,26 @@ final class StaticPromptBuilder
             $this->rulesSection($config),
             $this->trustSection(),
             $this->section($fragments, 'Boundaries', [
-                \sprintf('- Stay within %s for %s. On professional questions (medical, legal, financial) and safety-critical work, help with the choice and say that the how-to belongs to a qualified professional.', $config->scope, $config->brandName),
+                \sprintf('- Stay within %s for %s. On professional questions (medical, legal, financial) and safety-critical work, help with the choice and say that the how-to belongs to a qualified professional.', $this->scope(), $config->brandName),
                 '- When only part of a request is outside what you can do, do the part you can and say in a few words which part you are leaving aside.',
                 '- When the person appears to be in crisis or at risk of harm, set the task aside, respond with care, and point them to appropriate help.',
             ], PromptSection::Boundaries),
         ];
 
         return implode("\n\n", array_filter($sections));
+    }
+
+    /** The registered capabilities' areas, joined as the reference does ("a and b", "a, b, and c"). */
+    private function scope(): string
+    {
+        $areas = $this->capabilities->scopeAreas();
+
+        return match (\count($areas)) {
+            0 => self::DEFAULT_SCOPE,
+            1 => $areas[0],
+            2 => $areas[0].' and '.$areas[1],
+            default => implode(', ', \array_slice($areas, 0, -1)).', and '.$areas[\count($areas) - 1],
+        };
     }
 
     private function intro(AgentConfig $config): string

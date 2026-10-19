@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
+- `Capability\ScopedCapabilityInterface` and `ScopeArea`: a capability names an area of what the
+  assistant does, and the prompt's "Stay within …" line lists the registered ones by priority, as
+  the reference builds it from what is switched on ("a and b", "a, b, and c"). Without any, it
+  says `StaticPromptBuilder::DEFAULT_SCOPE`.
+
 - Runtime settings: `Config\ConfigOverridesInterface` (no changes by default) lays a host's saved
   settings over the configuration for the current request, through `RuntimeAgentConfig`, the
   `Config\AgentConfigProviderInterface` that `AgentLoop`, `BudgetPolicy`, `MemoryRuntime` and
@@ -102,6 +107,8 @@ All notable changes to this project are documented here. The format is based on
 
 ### Changed
 
+- `identity.scope` and `AgentConfig::$scope` are removed: what the assistant stays within comes
+  from the capabilities (`ScopedCapabilityInterface`). Remove the key from the configuration.
 - `StaticPromptBuilder` keeps its text per identity, capability fragments, rules and guides,
   instead of once per process.
 - No exclamation marks or emoji only on turns that add, stage or confirm, as in the reference;

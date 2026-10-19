@@ -21,6 +21,7 @@ use Odiseo\AiConversationalAgentBundle\Rule\RuleBook;
 use Odiseo\AiConversationalAgentBundle\Rule\VersionedRuleSource;
 use Odiseo\AiConversationalAgentBundle\Skill\Skill;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
+use Odiseo\AiConversationalAgentBundle\Tests\Fixture\AreaCapability;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\DirectoryCapability;
 use PHPUnit\Framework\TestCase;
 
@@ -73,6 +74,20 @@ final class StaticPromptTest extends TestCase
 
         self::assertStringNotContainsString('Search before answering', $without);
         self::assertStringContainsString('Search before answering', $with);
+    }
+
+    public function testWithoutAreasTheAssistantStaysWithinTheOrganisation(): void
+    {
+        self::assertStringContainsString('- Stay within the organisation and what it offers for Odiseo.', $this->builder()->build());
+    }
+
+    public function testTheCapabilitiesAreasSayWhatTheAssistantStaysWithin(): void
+    {
+        $two = $this->builder(capabilities: [new AreaCapability('booking', 10), new AreaCapability('records', 20)])->build();
+        $three = $this->builder(capabilities: [new AreaCapability('booking', 10), new AreaCapability('records', 20), new AreaCapability('opening hours')])->build();
+
+        self::assertStringContainsString('- Stay within records and booking for Odiseo.', $two);
+        self::assertStringContainsString('- Stay within records, booking, and opening hours for Odiseo.', $three);
     }
 
     public function testTheChipsRuleAppearsOnlyWhenTheChipsToolIsRegistered(): void

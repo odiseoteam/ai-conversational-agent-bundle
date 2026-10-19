@@ -103,7 +103,6 @@ return static function (ContainerConfigurator $container): void {
         '$assistantName' => param($id.'identity.assistant_name'),
         '$brandVoice' => param($id.'identity.brand_voice'),
         '$audience' => param($id.'identity.audience'),
-        '$scope' => param($id.'identity.scope'),
         '$replyLanguage' => param($id.'identity.reply_language'),
         '$model' => param($id.'models.turn'),
         '$memoryModel' => param($id.'models.memory'),
