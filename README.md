@@ -24,14 +24,14 @@ institutional assistant) are built on top of it as capabilities.
 
 ### Features
 
-- ✅ **Streaming** - Model rounds, tool calls and UI components are sent as server-sent events while the model writes
-- ✅ **Tool validation** - Arguments are checked against each tool's JSON schema, writes and cards accept only ids a tool returned, and grounding rules force a lookup when a message matches a lexicon
-- ✅ **Fencing** - Site content, tool results and memory are sanitized and passed to the model as data, never as instructions
-- ✅ **Memory** - Facts about the visitor are extracted after the turn by a second, cheaper model, with identifiers and credentials filtered out
-- ✅ **Budgets** - Spend caps per session, per client and per day, rate limits on the endpoints and a ledger of every call's cost
-- ✅ **Rules and knowledge** - House rules go in the cached prompt; policies and guides are searched by section, from Markdown files or other sources
-- ✅ **Models** - Claude or OpenAI per role (turn, memory, judge) through Symfony AI, or a custom adapter
-- ✅ **Evals** - JSON cases run against the live model, graded by code and by a judge model, with trials and replays
+- ✅ **Streaming** - Model rounds, tool calls and UI components sent as server-sent events
+- ✅ **Tool validation** - JSON-schema arguments, server-issued ids only and forced lookups
+- ✅ **Fencing** - Site content, tool results and memory reach the model as data, not instructions
+- ✅ **Memory** - Facts extracted after the turn by a cheaper model, without identifiers
+- ✅ **Budgets** - Spend caps per session, client and day, rate limits and a cost ledger
+- ✅ **Rules and knowledge** - House rules in the cached prompt; policies and guides searched by section
+- ✅ **Models** - Claude or OpenAI per role through Symfony AI, or your own adapter
+- ✅ **Evals** - JSON cases graded by code and by a judge, with trials and replays
 
 ## Getting Started
 
