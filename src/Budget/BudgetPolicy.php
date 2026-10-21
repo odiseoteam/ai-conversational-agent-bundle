@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Budget;
 
-use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
+use Odiseo\AiConversationalAgentBundle\Config\AgentConfigProviderInterface;
 use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -17,27 +17,35 @@ use Psr\Log\NullLogger;
 final class BudgetPolicy
 {
     public function __construct(
-        private readonly AgentConfig $config,
+        private readonly AgentConfigProviderInterface $config,
         private readonly SpendLedgerInterface $ledger,
         private readonly CostTable $costs = new CostTable(),
         private readonly ClientKeyResolverInterface $client = new NullClientKeyResolver(),
         private readonly LoggerInterface $logger = new NullLogger(),
+        private readonly SpendScopeResolverInterface $scope = new NullSpendScopeResolver(),
     ) {
     }
 
     public function exceeded(string $sessionId, \DateTimeImmutable $at): ?BudgetLimit
     {
-        if ($this->ledger->sessionSpend($sessionId) >= $this->config->sessionBudgetUsd) {
+        $config = $this->config->agentConfig();
+        if ($this->ledger->sessionSpend($sessionId) >= $config->sessionBudgetUsd) {
             return BudgetLimit::Session;
         }
 
-        $cap = $this->config->clientBudgetUsd;
+        $cap = $config->clientBudgetUsd;
         $client = null === $cap ? null : $this->client->clientKey();
         if (null !== $cap && null !== $client && $this->ledger->clientSpend($client, $at) >= $cap) {
             return BudgetLimit::Client;
         }
 
-        if ($this->ledger->daySpend($at) >= $this->config->dailyBudgetUsd) {
+        if ($this->ledger->daySpend($at) >= $config->dailyBudgetUsd) {
+            return BudgetLimit::Day;
+        }
+
+        $cap = $config->scopeDailyBudgetUsd;
+        $scope = null === $cap ? null : $this->scope->scope();
+        if (null !== $cap && null !== $scope && $this->ledger->scopeSpend($scope, $at) >= $cap) {
             return BudgetLimit::Day;
         }
 
@@ -53,7 +61,7 @@ final class BudgetPolicy
         }
 
         $cost = $this->costs->costOf($model, $usage);
-        $this->ledger->record($sessionId, $at, $cost, $this->client->clientKey(), $model, $usage);
+        $this->ledger->record($sessionId, $at, $cost, $this->client->clientKey(), $model, $usage, $this->scope->scope());
 
         return $cost;
     }

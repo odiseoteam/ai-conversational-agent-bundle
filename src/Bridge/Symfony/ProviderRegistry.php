@@ -25,6 +25,12 @@ final class ProviderRegistry
     ) {
     }
 
+    /** @return list<string> the platforms with an adapter installed */
+    public function platforms(): array
+    {
+        return array_keys($this->providers->getProvidedServices());
+    }
+
     public function get(string $platform): ModelProviderInterface
     {
         if (!$this->providers->has($platform)) {

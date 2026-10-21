@@ -17,14 +17,24 @@ use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\EventListener\SessionWrite
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Messenger\ExtractMemoryHandler;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\OdiseoAiConversationalAgentBundle;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\ProviderRegistry;
+use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\RoutedProvider;
 use Odiseo\AiConversationalAgentBundle\Bridge\Symfony\Session\SessionResolver;
 use Odiseo\AiConversationalAgentBundle\Budget\BudgetPolicy;
 use Odiseo\AiConversationalAgentBundle\Budget\ClientKeyResolverInterface;
 use Odiseo\AiConversationalAgentBundle\Budget\CostTable;
+use Odiseo\AiConversationalAgentBundle\Budget\NullSpendScopeResolver;
 use Odiseo\AiConversationalAgentBundle\Budget\SpendLedgerInterface;
+use Odiseo\AiConversationalAgentBundle\Budget\SpendScopeResolverInterface;
 use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
 use Odiseo\AiConversationalAgentBundle\Capability\Limits;
 use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
+use Odiseo\AiConversationalAgentBundle\Config\AgentConfigProviderInterface;
+use Odiseo\AiConversationalAgentBundle\Config\ConfigOverridesInterface;
+use Odiseo\AiConversationalAgentBundle\Config\NullConfigOverrides;
+use Odiseo\AiConversationalAgentBundle\Config\RuntimeAgentConfig;
+use Odiseo\AiConversationalAgentBundle\Content\InMemoryVersionStore;
+use Odiseo\AiConversationalAgentBundle\Content\RevisionInterface;
+use Odiseo\AiConversationalAgentBundle\Content\VersionStoreInterface;
 use Odiseo\AiConversationalAgentBundle\Eval\EvalEnvironmentInterface;
 use Odiseo\AiConversationalAgentBundle\Eval\EvalIsolationInterface;
 use Odiseo\AiConversationalAgentBundle\Eval\EvalRunner;
@@ -46,16 +56,23 @@ use Odiseo\AiConversationalAgentBundle\Knowledge\GuideIndex;
 use Odiseo\AiConversationalAgentBundle\Knowledge\KnowledgeBase;
 use Odiseo\AiConversationalAgentBundle\Knowledge\LexicalSearch;
 use Odiseo\AiConversationalAgentBundle\Knowledge\MarkdownKnowledgeSource;
+use Odiseo\AiConversationalAgentBundle\Knowledge\VersionedKnowledgeSource;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryCapability;
+use Odiseo\AiConversationalAgentBundle\Memory\MemoryRetentionInterface;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryRuntime;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryStoreInterface;
 use Odiseo\AiConversationalAgentBundle\Memory\MemoryWriteFilter;
+use Odiseo\AiConversationalAgentBundle\Memory\NullMemoryRetention;
 use Odiseo\AiConversationalAgentBundle\Presentation\SuggestionsCapability;
 use Odiseo\AiConversationalAgentBundle\Prompt\ContextBlockBuilder;
 use Odiseo\AiConversationalAgentBundle\Prompt\StaticPromptBuilder;
+use Odiseo\AiConversationalAgentBundle\Provider\ApiKeyResolverInterface;
 use Odiseo\AiConversationalAgentBundle\Provider\ModelProviderInterface;
+use Odiseo\AiConversationalAgentBundle\Provider\NullApiKeyResolver;
 use Odiseo\AiConversationalAgentBundle\Rule\ConfiguredRuleSource;
 use Odiseo\AiConversationalAgentBundle\Rule\RuleBook;
+use Odiseo\AiConversationalAgentBundle\Rule\VersionedRuleSource;
+use Odiseo\AiConversationalAgentBundle\Session\CurrentSession;
 use Odiseo\AiConversationalAgentBundle\Session\SessionStore;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillCapability;
 use Odiseo\AiConversationalAgentBundle\Skill\SkillRegistry;
@@ -69,9 +86,9 @@ use function Symfony\Component\DependencyInjection\Loader\Configurator\tagged_lo
 /*
  * Every service is registered under an `odiseo_ai_conversational_agent.*` id with explicit
  * arguments; the classes and interfaces a host autowires are aliases. A host swaps a port by
- * redefining its alias (ContextProviderInterface, TurnHookInterface…), and a role's model provider by redefining
- * `odiseo_ai_conversational_agent.provider.<role>`. The parameters come from the
- * bundle's configuration.
+ * redefining its alias (ContextProviderInterface, TurnHookInterface, ConfigOverridesInterface…), and a role's
+ * model provider by redefining `odiseo_ai_conversational_agent.provider.<role>`. The parameters come from the
+ * bundle's configuration; the runtime settings lay the host's ConfigOverridesInterface over them.
  */
 return static function (ContainerConfigurator $container): void {
     $id = 'odiseo_ai_conversational_agent.';
@@ -86,12 +103,13 @@ return static function (ContainerConfigurator $container): void {
         '$assistantName' => param($id.'identity.assistant_name'),
         '$brandVoice' => param($id.'identity.brand_voice'),
         '$audience' => param($id.'identity.audience'),
-        '$scope' => param($id.'identity.scope'),
         '$replyLanguage' => param($id.'identity.reply_language'),
         '$model' => param($id.'models.turn'),
         '$memoryModel' => param($id.'models.memory'),
         // Left as a string: resolved by AgentConfig so an env placeholder works here.
         '$thinkingEffort' => param($id.'models.thinking_effort'),
+        '$platform' => param($id.'models.turn_platform'),
+        '$memoryPlatform' => param($id.'models.memory_platform'),
         '$maxTokens' => param($id.'budgets.max_tokens'),
         '$maxToolIterations' => param($id.'budgets.max_tool_iterations'),
         '$requestTimeoutSeconds' => param($id.'budgets.request_timeout'),
@@ -110,6 +128,30 @@ return static function (ContainerConfigurator $container): void {
         '$compactHistoryAboveTokens' => param($id.'limits.compact_history_above_tokens'),
     ]);
     $services->alias(AgentConfig::class, $id.'config');
+
+    // The settings in force: the configured ones with the host's runtime changes on top. Every
+    // service that runs a turn reads these.
+    $services->set($id.'config_overrides.null', NullConfigOverrides::class);
+    $services->alias(ConfigOverridesInterface::class, $id.'config_overrides.null');
+    $services->set($id.'config.runtime', RuntimeAgentConfig::class)
+        ->args([service($id.'config'), service(ConfigOverridesInterface::class), service('logger')])
+        ->tag('monolog.logger', $logChannel);
+    $services->alias(AgentConfigProviderInterface::class, $id.'config.runtime');
+
+    $services->set($id.'session.current', CurrentSession::class);
+    $services->alias(CurrentSession::class, $id.'session.current');
+
+    $services->set($id.'memory.retention.null', NullMemoryRetention::class);
+    $services->alias(MemoryRetentionInterface::class, $id.'memory.retention.null');
+
+    $services->set($id.'api_key_resolver.null', NullApiKeyResolver::class);
+    $services->alias(ApiKeyResolverInterface::class, $id.'api_key_resolver.null');
+
+    // What people edit at runtime, as versions; in memory unless the ORM has a content_version
+    // class, in which case the extension points the alias at the ORM store.
+    $services->set($id.'store.version.in_memory', InMemoryVersionStore::class);
+    $services->alias(VersionStoreInterface::class, $id.'store.version.in_memory');
+    $services->alias(RevisionInterface::class, VersionStoreInterface::class);
 
     $services->set($id.'limits', Limits::class)->args([
         param($id.'limits.max_fenced_chars'),
@@ -150,22 +192,28 @@ return static function (ContainerConfigurator $container): void {
         ->args([service($id.'execution.tool_executor'), service($id.'fence'), service($id.'limits')]);
     $services->alias(HostToolInvoker::class, $id.'execution.host_tool_invoker');
 
-    // Rules: the configured ones, plus any RuleSourceInterface the host tags.
+    // Rules: the configured ones with what was published over them, plus any RuleSourceInterface
+    // the host tags. The version store is in memory unless the ORM has a content_version class.
     $services->set($id.'rule.configured_source', ConfiguredRuleSource::class)
-        ->args([param($id.'rules')])
+        ->args([param($id.'rules')]);
+    $services->set($id.'rule.versioned_source', VersionedRuleSource::class)
+        ->args([service($id.'rule.configured_source'), service(VersionStoreInterface::class)])
         ->tag(OdiseoAiConversationalAgentBundle::RULE_SOURCE_TAG);
     $services->set($id.'rule.book', RuleBook::class)->args([
         tagged_iterator(OdiseoAiConversationalAgentBundle::RULE_SOURCE_TAG),
         param($id.'limits.max_rules'),
         param($id.'limits.max_rule_chars'),
         service('logger'),
+        service(RevisionInterface::class),
     ])->tag('monolog.logger', $logChannel);
     $services->alias(RuleBook::class, $id.'rule.book');
 
     // Knowledge: the lexical search over every tagged source (the Markdown files when knowledge_dir
-    // is set), merged with any other KnowledgeSearchInterface the host tags.
+    // is set, with what was published over them), merged with any other KnowledgeSearchInterface the host tags.
     $services->set($id.'knowledge.markdown_source', MarkdownKnowledgeSource::class)
-        ->args([param($id.'knowledge_dir')])
+        ->args([param($id.'knowledge_dir')]);
+    $services->set($id.'knowledge.versioned_source', VersionedKnowledgeSource::class)
+        ->args([service(VersionStoreInterface::class), service($id.'knowledge.markdown_source')->nullOnInvalid()])
         ->tag(OdiseoAiConversationalAgentBundle::KNOWLEDGE_SOURCE_TAG);
     $services->set($id.'knowledge.lexical_search', LexicalSearch::class)
         ->args([tagged_iterator(OdiseoAiConversationalAgentBundle::KNOWLEDGE_SOURCE_TAG), 3000, 0.5, service('logger')])
@@ -180,10 +228,11 @@ return static function (ContainerConfigurator $container): void {
         param($id.'limits.max_guides'),
         param($id.'limits.max_guide_when_chars'),
         service('logger'),
+        service(RevisionInterface::class),
     ])->tag('monolog.logger', $logChannel);
 
     $services->set($id.'prompt.static_builder', StaticPromptBuilder::class)->args([
-        service($id.'config'),
+        service($id.'config.runtime'),
         service($id.'capability.registry'),
         service($id.'skill.registry'),
         service($id.'fence'),
@@ -197,18 +246,21 @@ return static function (ContainerConfigurator $container): void {
     $services->set($id.'context_provider.null', NullContextProvider::class);
     $services->alias(ContextProviderInterface::class, $id.'context_provider.null');
 
-    // One provider per role, picked by its platform when the service is built; a host replaces a
-    // role's provider by redefining its service.
+    // One provider per role: the turn's and the memory's follow the platform in force on each call,
+    // the judge's is picked when its service is built. A host replaces a role's provider by
+    // redefining its service.
     $services->set($id.'provider.registry', ProviderRegistry::class)
         ->args([tagged_locator(OdiseoAiConversationalAgentBundle::PROVIDER_TAG, 'platform'), param($id.'capabilities')]);
-    foreach (['turn', 'memory', 'judge'] as $role) {
-        $services->set($id.'provider.'.$role, ModelProviderInterface::class)
-            ->factory([service($id.'provider.registry'), 'get'])
-            ->args([param($id.'models.'.$role.'_platform')]);
+    foreach ([RoutedProvider::TURN, RoutedProvider::MEMORY] as $role) {
+        $services->set($id.'provider.'.$role, RoutedProvider::class)
+            ->args([service($id.'provider.registry'), service($id.'config.runtime'), $role]);
     }
+    $services->set($id.'provider.judge', ModelProviderInterface::class)
+        ->factory([service($id.'provider.registry'), 'get'])
+        ->args([param($id.'models.judge_platform')]);
 
     $services->set($id.'agent.loop', AgentLoop::class)->args([
-        service($id.'config'),
+        service($id.'config.runtime'),
         service($id.'provider.turn'),
         service($id.'capability.registry'),
         service($id.'execution.tool_executor'),
@@ -221,6 +273,7 @@ return static function (ContainerConfigurator $container): void {
         service(ContextProviderInterface::class),
         service('logger'),
         service($id.'provider.memory'),
+        service($id.'session.current'),
     ])->tag('monolog.logger', $logChannel);
     $services->alias(AgentLoop::class, $id.'agent.loop');
 
@@ -241,7 +294,7 @@ return static function (ContainerConfigurator $container): void {
         ->args([param($id.'memory.blocked_patterns')]);
     $services->set($id.'memory.runtime', MemoryRuntime::class)->args([
         service(MemoryStoreInterface::class),
-        service($id.'config'),
+        service($id.'config.runtime'),
         service($id.'fence'),
         param($id.'memory.extraction_prompt'),
         service($id.'memory.write_filter'),
@@ -255,12 +308,15 @@ return static function (ContainerConfigurator $container): void {
     $services->set($id.'budget.client_key_resolver', RequestClientKeyResolver::class)
         ->args([service('request_stack')]);
     $services->alias(ClientKeyResolverInterface::class, $id.'budget.client_key_resolver');
+    $services->set($id.'budget.spend_scope_resolver.null', NullSpendScopeResolver::class);
+    $services->alias(SpendScopeResolverInterface::class, $id.'budget.spend_scope_resolver.null');
     $services->set($id.'budget.policy', BudgetPolicy::class)->args([
-        service($id.'config'),
+        service($id.'config.runtime'),
         service(SpendLedgerInterface::class),
         service($id.'budget.cost_table'),
         service(ClientKeyResolverInterface::class),
         service('logger'),
+        service(SpendScopeResolverInterface::class),
     ])->tag('monolog.logger', $logChannel);
 
     // Surfaces: the host names its principal and hooks; what it does not set falls back to a no-op.

@@ -24,7 +24,7 @@ final class OrmSpendLedger implements SpendLedgerInterface
     ) {
     }
 
-    public function record(string $sessionId, \DateTimeImmutable $at, float $usd, ?string $clientKey = null, ?string $model = null, ?Usage $usage = null): void
+    public function record(string $sessionId, \DateTimeImmutable $at, float $usd, ?string $clientKey = null, ?string $model = null, ?Usage $usage = null, ?string $scope = null): void
     {
         if ($usd <= 0.0) {
             return;
@@ -36,6 +36,7 @@ final class OrmSpendLedger implements SpendLedgerInterface
         $entry->setSpentOn($at);
         $entry->setUsd($usd);
         $entry->setModel($model);
+        $entry->setScope($scope);
         if (null !== $usage) {
             $entry->setTokens($usage->inputTokens, $usage->outputTokens, $usage->cacheCreationTokens, $usage->cacheReadTokens);
         }
@@ -81,11 +82,16 @@ final class OrmSpendLedger implements SpendLedgerInterface
         return $this->sum('e.spentOn = :day', ['day' => $day->format('Y-m-d')]);
     }
 
+    public function scopeSpend(string $scope, \DateTimeImmutable $day): float
+    {
+        return $this->sum('e.scope = :scope AND e.spentOn = :day', ['scope' => $scope, 'day' => $day->format('Y-m-d')]);
+    }
+
     /**
      * The sum is selected bare and defaulted in PHP on purpose: hosts may install a DQL walker
      * that appends ORDER BY on the identifier and skips it only when the first select expression
-     * is an aggregate (Sylius ships one). Wrapping it in COALESCE hides the aggregate, and the
-     * appended ORDER BY makes PostgreSQL reject the query.
+     * is an aggregate. Wrapping it in COALESCE hides the aggregate, and the appended ORDER BY
+     * makes PostgreSQL reject the query.
      *
      * @param array<string, mixed> $parameters
      */

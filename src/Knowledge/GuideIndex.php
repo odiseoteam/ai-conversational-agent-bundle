@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Knowledge;
 
+use Odiseo\AiConversationalAgentBundle\Content\FixedRevision;
+use Odiseo\AiConversationalAgentBundle\Content\RevisionInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -17,19 +19,28 @@ final class GuideIndex
     /** @var list<KnowledgeDocument>|null */
     private ?array $guides = null;
 
+    private ?string $revision = null;
+
     /** @param iterable<KnowledgeSourceInterface> $sources */
     public function __construct(
         private readonly iterable $sources = [],
         private readonly int $maxGuides = 20,
         private readonly int $maxWhenChars = 200,
         private readonly LoggerInterface $logger = new NullLogger(),
+        private readonly RevisionInterface $revisions = new FixedRevision(),
     ) {
     }
 
-    /** @return list<KnowledgeDocument> */
+    /** @return list<KnowledgeDocument> collected again when something is published */
     public function guides(): array
     {
-        return $this->guides ??= $this->collect();
+        $revision = $this->revisions->revision();
+        if (null === $this->guides || $revision !== $this->revision) {
+            $this->guides = $this->collect();
+            $this->revision = $revision;
+        }
+
+        return $this->guides;
     }
 
     /** @return list<KnowledgeDocument> */

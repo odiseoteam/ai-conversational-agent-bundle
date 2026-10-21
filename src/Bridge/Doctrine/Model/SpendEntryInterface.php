@@ -30,6 +30,11 @@ interface SpendEntryInterface
 
     public function setModel(?string $model): void;
 
+    /** The part of the deployment the call belongs to, for that part's own day cap. */
+    public function getScope(): ?string;
+
+    public function setScope(?string $scope): void;
+
     public function getInputTokens(): int;
 
     public function getOutputTokens(): int;

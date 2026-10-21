@@ -66,6 +66,20 @@ final class CapabilityRegistry
         return [...$tools, ...$chips];
     }
 
+    /** @return list<string> the areas the registered capabilities add, by priority */
+    public function scopeAreas(): array
+    {
+        $areas = [];
+        foreach ($this->capabilities as $capability) {
+            if ($capability instanceof ScopedCapabilityInterface) {
+                $areas[] = $capability->scopeArea();
+            }
+        }
+        usort($areas, static fn (ScopeArea $a, ScopeArea $b): int => $b->priority <=> $a->priority);
+
+        return array_map(static fn (ScopeArea $area): string => $area->text, $areas);
+    }
+
     public function capabilityForTool(string $tool): ?CapabilityInterface
     {
         if (null === $this->byTool) {

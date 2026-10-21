@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Odiseo\AiConversationalAgentBundle\Rule;
 
+use Odiseo\AiConversationalAgentBundle\Content\FixedRevision;
+use Odiseo\AiConversationalAgentBundle\Content\RevisionInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -18,19 +20,28 @@ final class RuleBook
     /** @var list<Rule>|null */
     private ?array $rules = null;
 
+    private ?string $revision = null;
+
     /** @param iterable<RuleSourceInterface> $sources */
     public function __construct(
         private readonly iterable $sources = [],
         private readonly int $maxRules = 20,
         private readonly int $maxRuleChars = 400,
         private readonly LoggerInterface $logger = new NullLogger(),
+        private readonly RevisionInterface $revisions = new FixedRevision(),
     ) {
     }
 
-    /** @return list<Rule> */
+    /** @return list<Rule> collected again when something is published */
     public function rules(): array
     {
-        return $this->rules ??= $this->collect();
+        $revision = $this->revisions->revision();
+        if (null === $this->rules || $revision !== $this->revision) {
+            $this->rules = $this->collect();
+            $this->revision = $revision;
+        }
+
+        return $this->rules;
     }
 
     /** @return list<Rule> */

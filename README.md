@@ -124,6 +124,8 @@ odiseo_ai_conversational_agent:
             message: App\Entity\AgentMessage
             memory_fact: App\Entity\AgentMemoryFact
             spend_entry: App\Entity\AgentSpendEntry
+            # Optional: rules and documents edited at runtime (see Runtime changes).
+            content_version: App\Entity\AgentContentVersion
 ```
 
 A conversation the core creates carries the session id, the principal and the state document.
@@ -150,9 +152,13 @@ Every service is registered as `odiseo_ai_conversational_agent.*` with explicit 
 The classes and ports a host uses are aliases, and a host replaces a port by redefining its
 alias: `ContextProviderInterface`, `PrincipalResolverInterface`, `TurnHookInterface`,
 `ConsoleEnvironmentInterface`, `ConversationInitializerInterface`, `SessionStore`,
-`MemoryStoreInterface` and `SpendLedgerInterface`. Capabilities implement `CapabilityInterface`
+`MemoryStoreInterface`, `SpendLedgerInterface`, `ConfigOverridesInterface`,
+`ApiKeyResolverInterface`, `SpendScopeResolverInterface` and `VersionStoreInterface`. Capabilities implement `CapabilityInterface`
 and are collected by the `odiseo_ai_conversational_agent.capability` tag; rule sources, knowledge
-sources and knowledge searches are collected the same way.
+sources and knowledge searches are collected the same way. A capability that also implements
+`ScopedCapabilityInterface` names an area of what the assistant does ("orders"); the prompt's
+"Stay within …" line lists the registered areas by priority, so registering a capability widens
+it. `identity.audience` completes "talking with …".
 
 ### Rules
 
@@ -184,9 +190,42 @@ odiseo_ai_conversational_agent:
   logged on the `conversational_agent` channel.
 - A rule is behaviour, never data that changes (a price, an amount): changing a rule changes the
   cached prompt, so the next request reads it uncached.
-- Another source (a database, say) implements `Rule\RuleSourceInterface`; autoconfigured services
-  are tagged `odiseo_ai_conversational_agent.rule_source` and their rules are added to the
-  configured ones. A source is read once per process.
+- Another source implements `Rule\RuleSourceInterface`; autoconfigured services are tagged
+  `odiseo_ai_conversational_agent.rule_source` and their rules are added to the configured ones.
+  A source is read again only when something is published (see Runtime changes).
+- A rule published at runtime replaces the configured one with its id (see Runtime changes).
+
+### Runtime changes
+
+What a host lets people change without a deploy (an admin screen, say) reaches the agent
+through three ports and a version store. Nothing changes until the host implements one.
+
+- **Settings**: `Config\ConfigOverridesInterface::changes()` returns `AgentConfig` arguments to
+  lay over the configuration for the current request: the identity, `model` and `platform`,
+  `thinkingEffort`, `memoryModel` and `memoryPlatform`, the budgets. The services that run a turn
+  read `Config\AgentConfigProviderInterface` (`RuntimeAgentConfig`), so a model saved at runtime
+  takes over on the next turn and the turn's and memory's providers follow its platform. A key
+  left out keeps the configured value; a bad value (an unknown effort) is dropped and logged.
+- **API keys**: `Provider\ApiKeyResolverInterface::apiKey($platform)` returns another key for a
+  platform; the adapter then calls through a platform built like the configured one with that
+  key (`KeyedPlatform`). Null keeps the configured key.
+- **Spend scope**: `Budget\SpendScopeResolverInterface::scope()` names the part of the deployment
+  a call belongs to (one site of several). The ledger records it, and
+  `scopeDailyBudgetUsd` caps that scope's day on top of the deployment's day cap.
+- **The session in progress**: `Session\CurrentSession` holds the session a turn or a memory
+  extraction runs for, so a host's settings can follow it where there is no request (a queue
+  worker).
+- **Versions**: `Content\VersionStoreInterface` keeps what people edit as versions, by kind and
+  key: a draft the agent never reads, publications that are only added, and one "back to the
+  default" version that leaves the configured item in force again. With an
+  `orm.classes.content_version` entity (extending `Bridge\Doctrine\Model\ContentVersion`) they
+  persist; without one they are in memory and only the configuration applies.
+  `Rule\VersionedRuleSource` and `Knowledge\VersionedKnowledgeSource` lay the published versions
+  of `rule` and `knowledge` over the configured rules and the Markdown files: a version replaces
+  the item with its id, a disabled one turns it off, and one that only exists as versions is
+  added. The store's revision changes on every publication, and the house rules, the guide index
+  and the cached prompt are built again when it does, in every process. Each change costs one
+  uncached read of the prompt.
 
 ### Knowledge
 
@@ -331,7 +370,8 @@ Two clocks. `sessions.retention_days` (30) is how long a session is served after
 activity; past it the widget starts a new one, but the conversation stays for the host to read.
 `conversations.retention_days` (180) is how long it is kept; `memory.retention_days` (180)
 does the same for memory facts, counted from their last update, and a fact past it is no longer
-used even before it is pruned. Null keeps them. `bin/console agent:prune` applies both,
+used even before it is pruned. Null keeps them. A host that sets the memory retention at runtime
+says which one pruning uses (`Memory\MemoryRetentionInterface`). `bin/console agent:prune` applies both,
 dropping the conversations with their messages and spend; `--dry-run` only counts. Run it
 from a daily cron.
 
