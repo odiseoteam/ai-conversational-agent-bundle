@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-21
+
 ### Added
 
 - `Capability\ScopedCapabilityInterface` and `ScopeArea`: a capability names an area of what the
