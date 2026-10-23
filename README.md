@@ -33,6 +33,10 @@ institutional assistant) are built on top of it as capabilities.
 - ✅ **Models** - Claude or OpenAI per role through Symfony AI, or your own adapter
 - ✅ **Evals** - JSON cases graded by code and by a judge, with trials and replays
 
+> [!NOTE]
+> This bundle is the core of the shopping agent we're building for Sylius. Follow the devlog:
+> **[Why we're building a shopping agent for Sylius](https://odiseo.io/en/blog/why-were-building-a-shopping-agent-for-sylius?utm_source=github&utm_medium=readme&utm_campaign=ai-conversational-agent-bundle)**
+
 ## Getting Started
 
 ### Install it in 4 steps ⚡
