@@ -99,7 +99,7 @@ final class StaticPromptBuilder
         $modes = array_map(static fn ($component): ChipMode => $component->chips, $this->capabilities->components());
         $max = $config->limits->maxChipsPerTurn;
         $tool = ChipComponent::TOOL;
-        $quality = ' a turn that only answered a question included. Each chip is something the person taps instead of typing: a short imperative, a different kind of step from the others, and nothing this turn already displayed; do not pad the count. After a clarifying question, the chips are the likely answers. Do not offer as a chip something you have just said cannot be done.';
+        $quality = ' a turn that only answered a question included. Each chip is something the person taps instead of typing and is sent as their next message: a short imperative in their voice ("Show me cheaper ones"), never a question or request of yours to them ("Tell me what happened"), a different kind of step from the others, and nothing this turn already displayed; do not pad the count. After a clarifying question, the chips are the likely answers. Do not offer as a chip something you have just said cannot be done.';
 
         if (!array_filter($modes, static fn (ChipMode $mode): bool => $mode->inField())) {
             $rule = \sprintf("\n- Every turn but a sign-off ends with chips, up to %d, through %s,", $max, $tool)

@@ -39,14 +39,38 @@ final class BudgetPolicy
             return BudgetLimit::Client;
         }
 
+        return $this->sharedLimit($at);
+    }
+
+    /**
+     * The day or month cap every visitor shares, or null while both have room. The host asks
+     * it before showing the assistant to someone new.
+     */
+    public function sharedLimit(\DateTimeImmutable $at): ?BudgetLimit
+    {
+        $config = $this->config->agentConfig();
         if ($this->ledger->daySpend($at) >= $config->dailyBudgetUsd) {
             return BudgetLimit::Day;
         }
 
+        $cap = $config->monthlyBudgetUsd;
+        if (null !== $cap && $this->ledger->monthSpend($at) >= $cap) {
+            return BudgetLimit::Month;
+        }
+
+        $scope = null === $config->scopeDailyBudgetUsd && null === $config->scopeMonthlyBudgetUsd ? null : $this->scope->scope();
+        if (null === $scope) {
+            return null;
+        }
+
         $cap = $config->scopeDailyBudgetUsd;
-        $scope = null === $cap ? null : $this->scope->scope();
-        if (null !== $cap && null !== $scope && $this->ledger->scopeSpend($scope, $at) >= $cap) {
+        if (null !== $cap && $this->ledger->scopeSpend($scope, $at) >= $cap) {
             return BudgetLimit::Day;
+        }
+
+        $cap = $config->scopeMonthlyBudgetUsd;
+        if (null !== $cap && $this->ledger->scopeMonthSpend($scope, $at) >= $cap) {
+            return BudgetLimit::Month;
         }
 
         return null;

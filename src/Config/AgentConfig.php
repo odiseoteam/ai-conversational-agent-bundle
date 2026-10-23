@@ -54,9 +54,12 @@ final readonly class AgentConfig implements AgentConfigProviderInterface
         public float $sessionBudgetUsd = 0.50,
         public ?float $clientBudgetUsd = null,
         public float $dailyBudgetUsd = 20.0,
-        // The day cap of the spend scope the host names (one site of several, say), on top
-        // of the deployment's; null turns it off.
+        // The calendar month's cap, on the session's clock like the day; null turns it off.
+        public ?float $monthlyBudgetUsd = null,
+        // The day and month caps of the spend scope the host names (one site of several, say),
+        // on top of the deployment's; null turns each off.
         public ?float $scopeDailyBudgetUsd = null,
+        public ?float $scopeMonthlyBudgetUsd = null,
 
         // -- Latency switches, each independent so a problem can be bisected. Eager dispatch
         // starts a tool call while the round is still being written; the rolling cache turns

@@ -117,8 +117,9 @@ final readonly class AgentEvent
     }
 
     /** $code is what a host translates on; $message is a neutral English fallback, safe to show as is. */
-    public static function error(string $code, string $message): self
+    /** @param array<string, scalar> $detail what the client needs beyond the code (which limit, say) */
+    public static function error(string $code, string $message, array $detail = []): self
     {
-        return new self(EventType::Error, ['code' => $code, 'message' => $message]);
+        return new self(EventType::Error, ['code' => $code, 'message' => $message] + $detail);
     }
 }

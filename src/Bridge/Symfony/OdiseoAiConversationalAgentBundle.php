@@ -156,6 +156,7 @@ final class OdiseoAiConversationalAgentBundle extends AbstractBundle
                     ->floatNode('session_usd')->defaultValue(0.5)->end()
                     ->floatNode('client_usd')->defaultNull()->info('Per client (IP) and day; null turns it off.')->end()
                     ->floatNode('daily_usd')->defaultValue(20.0)->end()
+                    ->floatNode('monthly_usd')->defaultNull()->info('The deployment\'s cap for the calendar month; null turns it off. Needs conversations.retention_days of a month or more, since pruning drops spend.')->end()
                 ->end()->end()
                 ->arrayNode('limits')->addDefaultsIfNotSet()->children()
                     ->integerNode('max_fenced_chars')->defaultValue(12000)->end()

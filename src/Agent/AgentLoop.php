@@ -143,7 +143,7 @@ final class AgentLoop
                         'scope' => $exceeded->value,
                         'session' => $session->sessionTag(),
                     ]);
-                    yield AgentEvent::error('budget_exceeded', 'This conversation has reached its limit for now. Please try again later.');
+                    yield AgentEvent::error('budget_exceeded', 'This conversation has reached its limit for now. Please try again later.', ['limit' => $exceeded->value]);
                     $stopReason = 'budget';
                     break;
                 }
@@ -181,28 +181,46 @@ final class AgentLoop
                 // rest. Waiting for the whole round instead means the local reads this
                 // deployment's tools do resolve before a person ever sees a line.
                 $streamed = new StreamedRound($this->executor, $toolContext, $config->eagerToolDispatch && $can->toolInputDeltas && !$forceText);
-                foreach ($this->provider->stream($request) as $event) {
-                    if ($event instanceof TextChunk) {
-                        if ('' !== trim($event->text)) {
-                            $scope->markText();
+                // A round that ends without TurnFinished has no usage, but its tokens were spent:
+                // the finally charges an estimate so the budgets still count it. It stays
+                // `client_gone` when the stream is dropped while suspended (the person left).
+                $cut = 'client_gone';
+                $streamedChars = 0;
+                try {
+                    foreach ($this->provider->stream($request) as $event) {
+                        if ($event instanceof TextChunk) {
+                            $streamedChars += \strlen($event->text);
+                            if ('' !== trim($event->text)) {
+                                $scope->markText();
+                            }
+                            yield AgentEvent::textDelta($event->text);
+                            continue;
                         }
-                        yield AgentEvent::textDelta($event->text);
-                        continue;
-                    }
 
-                    if ($event instanceof ToolCallStarted) {
-                        $streamed->started($event->id, $event->tool);
-                        continue;
-                    }
+                        if ($event instanceof ToolCallStarted) {
+                            $streamed->started($event->id, $event->tool);
+                            continue;
+                        }
 
-                    if ($event instanceof ToolInputChunk) {
-                        yield from $streamed->chunk($event->id, $event->tool, $event->partialJson);
-                        $settled = $streamed->settled();
-                        continue;
-                    }
+                        if ($event instanceof ToolInputChunk) {
+                            $streamedChars += \strlen($event->partialJson);
+                            yield from $streamed->chunk($event->id, $event->tool, $event->partialJson);
+                            $settled = $streamed->settled();
+                            continue;
+                        }
 
-                    if ($event instanceof TurnFinished) {
-                        $response = $event->response;
+                        if ($event instanceof TurnFinished) {
+                            $response = $event->response;
+                        }
+                    }
+                    $cut = 'incomplete';
+                } catch (\Throwable $failed) {
+                    $cut = 'error';
+
+                    throw $failed;
+                } finally {
+                    if (null === $response) {
+                        $this->chargeEstimate($session, $config->model, $round, $cut, $lastPromptTokens, $request, $streamedChars, $clock);
                     }
                 }
 
@@ -368,6 +386,47 @@ final class AgentLoop
             Transcript::userMessage($intro."\n".$outcome->resultText),
             ...\array_slice($messages, $position),
         ];
+    }
+
+    /**
+     * The prompt only grows within a turn, so the previous round's prompt is a floor for this
+     * one; the first round counts the request's characters. Four characters make a token, and
+     * all of it is charged as uncached input: an estimate that errs high keeps the budgets safe.
+     */
+    private function chargeEstimate(SessionContext $session, string $model, int $round, string $cut, int $lastPromptTokens, TurnRequest $request, int $streamedChars, \DateTimeImmutable $clock): void
+    {
+        $prompt = $lastPromptTokens > 0 ? $lastPromptTokens : intdiv(self::requestChars($request), 4);
+        $usage = new Usage(inputTokens: $prompt, outputTokens: intdiv($streamedChars, 4));
+        try {
+            $usd = $this->budget->charge($session->sessionId, $model, $usage, $clock);
+        } catch (\Throwable $failed) {
+            // Runs while the round's own error unwinds: a failed charge must not replace it.
+            $this->logger->error('the estimated charge failed', ['session' => $session->sessionTag(), 'exception' => $failed]);
+
+            return;
+        }
+
+        $this->logger->warning('round charged on an estimate', [
+            'session' => $session->sessionTag(),
+            'round' => $round,
+            'reason' => $cut,
+            'model' => $model,
+            'usage' => $usage->toArray(),
+            'usd' => $usd,
+        ]);
+    }
+
+    private static function requestChars(TurnRequest $request): int
+    {
+        $chars = \strlen((string) json_encode($request->messages));
+        foreach ($request->system as $block) {
+            $chars += \strlen($block->text);
+        }
+        foreach ($request->tools as $tool) {
+            $chars += \strlen($tool->description) + \strlen((string) json_encode($tool->inputSchema));
+        }
+
+        return $chars;
     }
 
     private function log(SessionContext $session, int|string $round, ProviderResponse $response, string $model): void

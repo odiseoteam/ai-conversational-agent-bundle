@@ -40,6 +40,22 @@ final class SpendLedgerTest extends TestCase
         self::assertEqualsWithDelta(0.0, $ledger->daySpend(new \DateTimeImmutable('2026-09-23')), 1e-9);
     }
 
+    /** @param \Closure(): SpendLedgerInterface $make */
+    #[DataProvider('ledgers')]
+    public function testTheMonthSumsItsCalendarDaysOnly(\Closure $make): void
+    {
+        $ledger = $make();
+        $ledger->record('s1', new \DateTimeImmutable('2026-09-30 23:00'), 0.01, scope: 'WEB');
+        $ledger->record('s1', new \DateTimeImmutable('2026-10-01 00:10'), 0.02, scope: 'WEB');
+        $ledger->record('s2', new \DateTimeImmutable('2026-10-31 22:00'), 0.04, scope: 'OUTLET');
+        $ledger->record('s2', new \DateTimeImmutable('2026-11-01 08:00'), 0.08, scope: 'WEB');
+
+        $october = new \DateTimeImmutable('2026-10-17');
+        self::assertEqualsWithDelta(0.06, $ledger->monthSpend($october), 1e-9);
+        self::assertEqualsWithDelta(0.02, $ledger->scopeMonthSpend('WEB', $october), 1e-9);
+        self::assertEqualsWithDelta(0.08, $ledger->monthSpend(new \DateTimeImmutable('2026-11-05')), 1e-9);
+    }
+
     public function testTheOrmLedgerKeepsTheModelAndTheTokensAndSkipsAFreeCall(): void
     {
         $em = Orm::entityManager();

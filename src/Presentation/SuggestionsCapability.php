@@ -45,7 +45,7 @@ final class SuggestionsCapability implements CapabilityInterface
                         'minItems' => 1,
                         'maxItems' => $this->limits->maxChipsPerTurn,
                         'items' => ['type' => 'string', 'maxLength' => Sanitizer::SUGGESTION_CHIP_MAX_CHARS],
-                        'description' => 'Short imperatives, each a different kind of step, none of them something this turn already showed.',
+                        'description' => 'Short imperatives in the person\'s voice, each a different kind of step, none of them something this turn already showed.',
                     ],
                 ],
                 'required' => ['suggestions'],
