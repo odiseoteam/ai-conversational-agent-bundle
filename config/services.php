@@ -116,6 +116,7 @@ return static function (ContainerConfigurator $container): void {
         '$sessionBudgetUsd' => param($id.'budgets.session_usd'),
         '$clientBudgetUsd' => param($id.'budgets.client_usd'),
         '$dailyBudgetUsd' => param($id.'budgets.daily_usd'),
+        '$monthlyBudgetUsd' => param($id.'budgets.monthly_usd'),
         '$eagerToolDispatch' => param($id.'latency.eager_tool_dispatch'),
         '$rollingConversationCache' => param($id.'latency.rolling_conversation_cache'),
         '$closeOnPresentation' => param($id.'latency.close_on_presentation'),

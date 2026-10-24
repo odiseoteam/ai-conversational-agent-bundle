@@ -87,6 +87,22 @@ final class OrmSpendLedger implements SpendLedgerInterface
         return $this->sum('e.scope = :scope AND e.spentOn = :day', ['scope' => $scope, 'day' => $day->format('Y-m-d')]);
     }
 
+    public function monthSpend(\DateTimeImmutable $month): float
+    {
+        return $this->sum('e.spentOn BETWEEN :first AND :last', self::monthBounds($month));
+    }
+
+    public function scopeMonthSpend(string $scope, \DateTimeImmutable $month): float
+    {
+        return $this->sum('e.scope = :scope AND e.spentOn BETWEEN :first AND :last', ['scope' => $scope] + self::monthBounds($month));
+    }
+
+    /** @return array{first: string, last: string} */
+    private static function monthBounds(\DateTimeImmutable $month): array
+    {
+        return ['first' => $month->format('Y-m-01'), 'last' => $month->format('Y-m-t')];
+    }
+
     /**
      * The sum is selected bare and defaulted in PHP on purpose: hosts may install a DQL walker
      * that appends ORDER BY on the identifier and skips it only when the first select expression

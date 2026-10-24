@@ -132,6 +132,7 @@ final class AgentLoop
         $rounds = 0;
         $stopReason = null;
         $lastPromptTokens = 0;
+        $lastUsage = null;
         /** @var array<string, ToolOutcome> $settled */
         $settled = [];
 
@@ -143,7 +144,7 @@ final class AgentLoop
                         'scope' => $exceeded->value,
                         'session' => $session->sessionTag(),
                     ]);
-                    yield AgentEvent::error('budget_exceeded', 'This conversation has reached its limit for now. Please try again later.');
+                    yield AgentEvent::error('budget_exceeded', 'This conversation has reached its limit for now. Please try again later.', ['limit' => $exceeded->value]);
                     $stopReason = 'budget';
                     break;
                 }
@@ -181,28 +182,49 @@ final class AgentLoop
                 // rest. Waiting for the whole round instead means the local reads this
                 // deployment's tools do resolve before a person ever sees a line.
                 $streamed = new StreamedRound($this->executor, $toolContext, $config->eagerToolDispatch && $can->toolInputDeltas && !$forceText);
-                foreach ($this->provider->stream($request) as $event) {
-                    if ($event instanceof TextChunk) {
-                        if ('' !== trim($event->text)) {
-                            $scope->markText();
+                // A round that ends without TurnFinished has no usage, but its tokens were spent:
+                // the finally charges an estimate so the budgets still count it. It stays
+                // `client_gone` when the stream is dropped while suspended (the person left).
+                $cut = 'client_gone';
+                $received = false;
+                $streamedChars = 0;
+                try {
+                    foreach ($this->provider->stream($request) as $event) {
+                        $received = true;
+                        if ($event instanceof TextChunk) {
+                            $streamedChars += \strlen($event->text);
+                            if ('' !== trim($event->text)) {
+                                $scope->markText();
+                            }
+                            yield AgentEvent::textDelta($event->text);
+                            continue;
                         }
-                        yield AgentEvent::textDelta($event->text);
-                        continue;
-                    }
 
-                    if ($event instanceof ToolCallStarted) {
-                        $streamed->started($event->id, $event->tool);
-                        continue;
-                    }
+                        if ($event instanceof ToolCallStarted) {
+                            $streamed->started($event->id, $event->tool);
+                            continue;
+                        }
 
-                    if ($event instanceof ToolInputChunk) {
-                        yield from $streamed->chunk($event->id, $event->tool, $event->partialJson);
-                        $settled = $streamed->settled();
-                        continue;
-                    }
+                        if ($event instanceof ToolInputChunk) {
+                            $streamedChars += \strlen($event->partialJson);
+                            yield from $streamed->chunk($event->id, $event->tool, $event->partialJson);
+                            $settled = $streamed->settled();
+                            continue;
+                        }
 
-                    if ($event instanceof TurnFinished) {
-                        $response = $event->response;
+                        if ($event instanceof TurnFinished) {
+                            $response = $event->response;
+                        }
+                    }
+                    $cut = 'incomplete';
+                } catch (\Throwable $failed) {
+                    $cut = 'error';
+
+                    throw $failed;
+                } finally {
+                    // A request rejected before streaming anything back was not billed.
+                    if (null === $response && $received) {
+                        $this->chargeEstimate($session, $config->model, $round, $cut, $lastUsage, $request, $streamedChars, $clock);
                     }
                 }
 
@@ -214,6 +236,7 @@ final class AgentLoop
                 $usage = $usage->plus($response->usage);
                 ++$rounds;
                 $lastPromptTokens = $response->usage->promptTokens();
+                $lastUsage = $response->usage;
                 $this->budget->charge($session->sessionId, $config->model, $response->usage, $clock);
                 $this->log($session, $round, $response, $config->model);
 
@@ -368,6 +391,60 @@ final class AgentLoop
             Transcript::userMessage($intro."\n".$outcome->resultText),
             ...\array_slice($messages, $position),
         ];
+    }
+
+    /**
+     * The prompt only grows within a turn, so the previous round's usage is a floor for this
+     * one, priced with its own split of cached and uncached tokens. The first round counts the
+     * request's characters, four to a token: the cacheable prefix as cache reads, the rest as
+     * uncached input.
+     */
+    private function chargeEstimate(SessionContext $session, string $model, int $round, string $cut, ?Usage $previous, TurnRequest $request, int $streamedChars, \DateTimeImmutable $clock): void
+    {
+        $output = intdiv($streamedChars, 4);
+        if (null !== $previous) {
+            $usage = new Usage($previous->inputTokens, $output, $previous->cacheCreationTokens, $previous->cacheReadTokens);
+        } else {
+            [$cached, $uncached] = self::requestChars($request);
+            $usage = new Usage(inputTokens: intdiv($uncached, 4), outputTokens: $output, cacheReadTokens: intdiv($cached, 4));
+        }
+        try {
+            $usd = $this->budget->charge($session->sessionId, $model, $usage, $clock);
+        } catch (\Throwable $failed) {
+            // Runs while the round's own error unwinds: a failed charge must not replace it.
+            $this->logger->error('the estimated charge failed', ['session' => $session->sessionTag(), 'exception' => $failed]);
+
+            return;
+        }
+
+        $this->logger->warning('round charged on an estimate', [
+            'session' => $session->sessionTag(),
+            'round' => $round,
+            'reason' => $cut,
+            'model' => $model,
+            'usage' => $usage->toArray(),
+            'usd' => $usd,
+        ]);
+    }
+
+    /** @return array{int, int} the characters of the cacheable prefix and of the rest */
+    private static function requestChars(TurnRequest $request): array
+    {
+        $cached = 0;
+        $uncached = \strlen((string) json_encode($request->messages));
+        foreach ($request->system as $block) {
+            if ($block->cacheHint) {
+                $cached += \strlen($block->text);
+            } else {
+                $uncached += \strlen($block->text);
+            }
+        }
+        $tools = 0;
+        foreach ($request->tools as $tool) {
+            $tools += \strlen($tool->description) + \strlen((string) json_encode($tool->inputSchema));
+        }
+
+        return $request->cacheTools ? [$cached + $tools, $uncached] : [$cached, $uncached + $tools];
     }
 
     private function log(SessionContext $session, int|string $round, ProviderResponse $response, string $model): void

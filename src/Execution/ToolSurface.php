@@ -111,8 +111,8 @@ final class ToolSurface
                 'items' => ['type' => 'string', 'maxLength' => Sanitizer::SUGGESTION_CHIP_MAX_CHARS],
                 'description' => \sprintf(
                     $required
-                        ? 'The turn\'s chips: 1-%d short imperatives, each a different kind of step, none of them something this turn already showed. When another component follows in the turn, the last one\'s are shown.'
-                        : 'The turn\'s chips, when this is its last component: 1-%d short imperatives, each a different kind of step, none of them something this turn already showed.',
+                        ? 'The turn\'s chips: 1-%d short imperatives in the person\'s voice, each a different kind of step, none of them something this turn already showed. When another component follows in the turn, the last one\'s are shown.'
+                        : 'The turn\'s chips, when this is its last component: 1-%d short imperatives in the person\'s voice, each a different kind of step, none of them something this turn already showed.',
                     $this->limits->maxChipsPerTurn,
                 ),
             ],

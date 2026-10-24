@@ -10,12 +10,18 @@ use Odiseo\AiConversationalAgentBundle\Presentation\ChipComponent;
 use Odiseo\AiConversationalAgentBundle\Presentation\ChipMode;
 use Odiseo\AiConversationalAgentBundle\Provider\Fake\FakeProvider;
 use Odiseo\AiConversationalAgentBundle\Provider\ProviderCapabilities;
+use Odiseo\AiConversationalAgentBundle\Provider\ProviderException;
+use Odiseo\AiConversationalAgentBundle\Provider\Response\ProviderResponse;
+use Odiseo\AiConversationalAgentBundle\Provider\Response\StopReason;
+use Odiseo\AiConversationalAgentBundle\Provider\Response\ToolUse;
+use Odiseo\AiConversationalAgentBundle\Provider\Response\Usage;
 use Odiseo\AiConversationalAgentBundle\Session\SessionContext;
 use Odiseo\AiConversationalAgentBundle\Session\TurnState;
 use Odiseo\AiConversationalAgentBundle\Streaming\AgentEvent;
 use Odiseo\AiConversationalAgentBundle\Streaming\EventType;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\AgentBuilder;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\ChunkedToolCallProvider;
+use Odiseo\AiConversationalAgentBundle\Tests\Fixture\CutStreamProvider;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\Dig;
 use Odiseo\AiConversationalAgentBundle\Tests\Fixture\DirectoryCapability;
 use PHPUnit\Framework\TestCase;
@@ -114,7 +120,7 @@ final class AgentLoopTest extends TestCase
     public function testARoundCutAtTheOutputLimitEndsTheTurnWithWhatArrived(): void
     {
         $builder = new AgentBuilder(new FakeProvider([
-            FakeProvider::text('Here are', \Odiseo\AiConversationalAgentBundle\Provider\Response\StopReason::MaxTokens),
+            FakeProvider::text('Here are', StopReason::MaxTokens),
         ]));
         $messages = [Transcript::userMessage('hi')];
 
@@ -198,16 +204,16 @@ final class AgentLoopTest extends TestCase
     {
         $provider = new FakeProvider([
             FakeProvider::toolCall('find_records', ['query' => 'something'], 'tu-1'),
-            new \Odiseo\AiConversationalAgentBundle\Provider\Response\ProviderResponse(
+            new ProviderResponse(
                 [
                     ['type' => 'tool_use', 'id' => 'tu-2', 'name' => 'present_records', 'input' => (object) ['ids' => ['R-1']]],
                     ['type' => 'tool_use', 'id' => 'tu-3', 'name' => ChipComponent::TOOL, 'input' => (object) ['suggestions' => ['See the other one']]],
                 ],
                 [
-                    new \Odiseo\AiConversationalAgentBundle\Provider\Response\ToolUse('tu-2', 'present_records', ['ids' => ['R-1']]),
-                    new \Odiseo\AiConversationalAgentBundle\Provider\Response\ToolUse('tu-3', ChipComponent::TOOL, ['suggestions' => ['See the other one']]),
+                    new ToolUse('tu-2', 'present_records', ['ids' => ['R-1']]),
+                    new ToolUse('tu-3', ChipComponent::TOOL, ['suggestions' => ['See the other one']]),
                 ],
-                \Odiseo\AiConversationalAgentBundle\Provider\Response\StopReason::ToolUse,
+                StopReason::ToolUse,
             ),
         ]);
         $builder = new AgentBuilder($provider, extra: [new DirectoryCapability()]);
@@ -551,8 +557,106 @@ final class AgentLoopTest extends TestCase
         ), false);
 
         self::assertSame(EventType::Error, $events[0]->type);
+        self::assertSame('session', $events[0]->data['limit']);
         self::assertSame('budget', $this->last($events)->data['stop_reason']);
         self::assertSame([], $provider->requests(), 'the model is never called');
+    }
+
+    public function testARoundThatEndsWithoutACompletedTurnIsChargedOnAnEstimate(): void
+    {
+        $builder = new AgentBuilder(new CutStreamProvider(fails: false));
+
+        $events = iterator_to_array($this->turn($builder, 's-cut'), false);
+
+        self::assertSame('incomplete', $this->last($events)->data['stop_reason']);
+        self::assertGreaterThan(0.0, $builder->ledger->sessionSpend('s-cut'));
+    }
+
+    public function testARoundTheProviderBreaksIsChargedBeforeTheErrorGoesUp(): void
+    {
+        $builder = new AgentBuilder(new CutStreamProvider(fails: true));
+
+        try {
+            iterator_to_array($this->turn($builder, 's-error'), false);
+            self::fail('the provider error reaches the caller');
+        } catch (ProviderException) {
+        }
+
+        self::assertGreaterThan(0.0, $builder->ledger->sessionSpend('s-error'));
+    }
+
+    public function testARoundDroppedWhenThePersonLeavesIsCharged(): void
+    {
+        $builder = new AgentBuilder(new CutStreamProvider(fails: false));
+
+        $turn = $this->turn($builder, 's-gone');
+        $turn->current();
+        // The controller stops reading: the suspended stream is dropped mid-round.
+        unset($turn);
+
+        self::assertGreaterThan(0.0, $builder->ledger->sessionSpend('s-gone'));
+    }
+
+    public function testACompletedRoundIsChargedOnlyOnce(): void
+    {
+        $builder = new AgentBuilder(new FakeProvider([FakeProvider::text('hi')]));
+
+        iterator_to_array($this->turn($builder, 's-done'), false);
+
+        // FakeProvider's usage: 10 input and 5 output tokens at Haiku 5.5's price.
+        self::assertEqualsWithDelta((10 * 0.1 + 5 * 0.5) / 1_000_000, $builder->ledger->sessionSpend('s-done'), 1e-12);
+    }
+
+    public function testARequestRejectedBeforeStreamingIsNotCharged(): void
+    {
+        $builder = new AgentBuilder(new CutStreamProvider(fails: true, writes: false));
+
+        try {
+            iterator_to_array($this->turn($builder, 's-rejected'), false);
+            self::fail('the provider error reaches the caller');
+        } catch (ProviderException) {
+        }
+
+        self::assertSame(0.0, $builder->ledger->sessionSpend('s-rejected'));
+    }
+
+    public function testTheFirstRoundsEstimatePricesTheCacheablePrefixAsCacheReads(): void
+    {
+        $cached = new AgentBuilder(new CutStreamProvider(fails: false, caching: true));
+        $uncached = new AgentBuilder(new CutStreamProvider(fails: false));
+
+        iterator_to_array($this->turn($cached, 's-cached'), false);
+        iterator_to_array($this->turn($uncached, 's-uncached'), false);
+
+        self::assertGreaterThan(0.0, $cached->ledger->sessionSpend('s-cached'));
+        self::assertLessThan($uncached->ledger->sessionSpend('s-uncached'), $cached->ledger->sessionSpend('s-cached'));
+    }
+
+    public function testALaterRoundsEstimateKeepsThePreviousRoundsCacheSplit(): void
+    {
+        $call = new ProviderResponse(
+            [['type' => 'tool_use', 'id' => 'tu-1', 'name' => 'find_records', 'input' => ['query' => 'trees']]],
+            [new ToolUse('tu-1', 'find_records', ['query' => 'trees'])],
+            StopReason::ToolUse,
+            new Usage(inputTokens: 100, outputTokens: 20, cacheReadTokens: 10_000),
+        );
+        $builder = new AgentBuilder(new CutStreamProvider(fails: false, caching: true, before: [$call]), extra: [new DirectoryCapability()]);
+
+        iterator_to_array($this->turn($builder, 's-later'), false);
+
+        // Haiku 5.5: 0.1 input, 0.5 output and 0.01 cache read per million. The cut round
+        // streamed 42 characters, 10 tokens.
+        $first = 100 * 0.1 + 20 * 0.5 + 10_000 * 0.01;
+        $estimate = 100 * 0.1 + 10 * 0.5 + 10_000 * 0.01;
+        self::assertEqualsWithDelta(($first + $estimate) / 1_000_000, $builder->ledger->sessionSpend('s-later'), 1e-12);
+    }
+
+    /** @return \Generator<int, AgentEvent> */
+    private function turn(AgentBuilder $builder, string $sessionId): \Generator
+    {
+        $messages = [Transcript::userMessage('show me trees')];
+
+        return $builder->loop()->streamTurn($messages, new SessionContext($sessionId, 'visitor-1', 'America/Argentina/Buenos_Aires'), new TurnState());
     }
 
     public function testTheClientBudgetSurvivesAFreshSession(): void

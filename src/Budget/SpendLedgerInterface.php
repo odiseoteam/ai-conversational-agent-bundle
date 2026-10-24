@@ -26,4 +26,9 @@ interface SpendLedgerInterface
     public function daySpend(\DateTimeImmutable $day): float;
 
     public function scopeSpend(string $scope, \DateTimeImmutable $day): float;
+
+    /** The spend of $month's calendar month, from its first day to its last. */
+    public function monthSpend(\DateTimeImmutable $month): float;
+
+    public function scopeMonthSpend(string $scope, \DateTimeImmutable $month): float;
 }

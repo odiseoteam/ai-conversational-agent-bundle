@@ -57,10 +57,18 @@ final class ChatController
             while (\PHP_SAPI !== 'cli' && ob_get_level() > 0) {
                 ob_end_flush();
             }
+            // A person who closes the tab stops the turn here, between events, instead of PHP
+            // aborting it mid-write: the loop then charges the round that was cut.
+            ignore_user_abort(true);
 
             try {
                 foreach ($this->turns->run($record, $session, $message) as $event) {
                     $this->write(SseEncoder::encode($event));
+                    if (connection_aborted()) {
+                        $this->logger->info('the person left; the turn stops');
+
+                        return;
+                    }
                 }
                 $this->memory->defer($this->turns->memoryOf($record, $session));
             } catch (AuthenticationException $failed) {
