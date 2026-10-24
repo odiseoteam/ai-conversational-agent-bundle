@@ -132,6 +132,7 @@ final class AgentLoop
         $rounds = 0;
         $stopReason = null;
         $lastPromptTokens = 0;
+        $lastUsage = null;
         /** @var array<string, ToolOutcome> $settled */
         $settled = [];
 
@@ -185,9 +186,11 @@ final class AgentLoop
                 // the finally charges an estimate so the budgets still count it. It stays
                 // `client_gone` when the stream is dropped while suspended (the person left).
                 $cut = 'client_gone';
+                $received = false;
                 $streamedChars = 0;
                 try {
                     foreach ($this->provider->stream($request) as $event) {
+                        $received = true;
                         if ($event instanceof TextChunk) {
                             $streamedChars += \strlen($event->text);
                             if ('' !== trim($event->text)) {
@@ -219,8 +222,9 @@ final class AgentLoop
 
                     throw $failed;
                 } finally {
-                    if (null === $response) {
-                        $this->chargeEstimate($session, $config->model, $round, $cut, $lastPromptTokens, $request, $streamedChars, $clock);
+                    // A request rejected before streaming anything back was not billed.
+                    if (null === $response && $received) {
+                        $this->chargeEstimate($session, $config->model, $round, $cut, $lastUsage, $request, $streamedChars, $clock);
                     }
                 }
 
@@ -232,6 +236,7 @@ final class AgentLoop
                 $usage = $usage->plus($response->usage);
                 ++$rounds;
                 $lastPromptTokens = $response->usage->promptTokens();
+                $lastUsage = $response->usage;
                 $this->budget->charge($session->sessionId, $config->model, $response->usage, $clock);
                 $this->log($session, $round, $response, $config->model);
 
@@ -389,14 +394,20 @@ final class AgentLoop
     }
 
     /**
-     * The prompt only grows within a turn, so the previous round's prompt is a floor for this
-     * one; the first round counts the request's characters. Four characters make a token, and
-     * all of it is charged as uncached input: an estimate that errs high keeps the budgets safe.
+     * The prompt only grows within a turn, so the previous round's usage is a floor for this
+     * one, priced with its own split of cached and uncached tokens. The first round counts the
+     * request's characters, four to a token: the cacheable prefix as cache reads, the rest as
+     * uncached input.
      */
-    private function chargeEstimate(SessionContext $session, string $model, int $round, string $cut, int $lastPromptTokens, TurnRequest $request, int $streamedChars, \DateTimeImmutable $clock): void
+    private function chargeEstimate(SessionContext $session, string $model, int $round, string $cut, ?Usage $previous, TurnRequest $request, int $streamedChars, \DateTimeImmutable $clock): void
     {
-        $prompt = $lastPromptTokens > 0 ? $lastPromptTokens : intdiv(self::requestChars($request), 4);
-        $usage = new Usage(inputTokens: $prompt, outputTokens: intdiv($streamedChars, 4));
+        $output = intdiv($streamedChars, 4);
+        if (null !== $previous) {
+            $usage = new Usage($previous->inputTokens, $output, $previous->cacheCreationTokens, $previous->cacheReadTokens);
+        } else {
+            [$cached, $uncached] = self::requestChars($request);
+            $usage = new Usage(inputTokens: intdiv($uncached, 4), outputTokens: $output, cacheReadTokens: intdiv($cached, 4));
+        }
         try {
             $usd = $this->budget->charge($session->sessionId, $model, $usage, $clock);
         } catch (\Throwable $failed) {
@@ -416,17 +427,24 @@ final class AgentLoop
         ]);
     }
 
-    private static function requestChars(TurnRequest $request): int
+    /** @return array{int, int} the characters of the cacheable prefix and of the rest */
+    private static function requestChars(TurnRequest $request): array
     {
-        $chars = \strlen((string) json_encode($request->messages));
+        $cached = 0;
+        $uncached = \strlen((string) json_encode($request->messages));
         foreach ($request->system as $block) {
-            $chars += \strlen($block->text);
+            if ($block->cacheHint) {
+                $cached += \strlen($block->text);
+            } else {
+                $uncached += \strlen($block->text);
+            }
         }
+        $tools = 0;
         foreach ($request->tools as $tool) {
-            $chars += \strlen($tool->description) + \strlen((string) json_encode($tool->inputSchema));
+            $tools += \strlen($tool->description) + \strlen((string) json_encode($tool->inputSchema));
         }
 
-        return $chars;
+        return $request->cacheTools ? [$cached + $tools, $uncached] : [$cached, $uncached + $tools];
     }
 
     private function log(SessionContext $session, int|string $round, ProviderResponse $response, string $model): void
