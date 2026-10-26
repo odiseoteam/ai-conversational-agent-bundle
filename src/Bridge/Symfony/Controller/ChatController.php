@@ -47,10 +47,11 @@ final class ChatController
             return ApiError::json('empty_message', 400);
         }
 
+        $retry = true === ($body['retry'] ?? false);
         $surface = Scalar::keyed($body['page'] ?? null);
         $session = $this->sessions->context($record, $surface);
 
-        $response = new StreamedResponse(function () use ($record, $session, $message): void {
+        $response = new StreamedResponse(function () use ($record, $session, $message, $retry): void {
             // An open output buffer (the SAPI's output_buffering) holds the events until the
             // turn ends; it is closed before the first one. On the CLI the buffers belong to the
             // caller (a test client capturing the stream).
@@ -62,7 +63,7 @@ final class ChatController
             ignore_user_abort(true);
 
             try {
-                foreach ($this->turns->run($record, $session, $message) as $event) {
+                foreach ($this->turns->run($record, $session, $message, $retry) as $event) {
                     $this->write(SseEncoder::encode($event));
                     if (connection_aborted()) {
                         $this->logger->info('the person left; the turn stops');

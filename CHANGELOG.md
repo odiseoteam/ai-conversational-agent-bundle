@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- `retry: true` in the chat request: when the stored conversation ends on that same message with
+  no reply (the turn that failed or hit a cap), the turn answers it again instead of storing it
+  twice. `TurnRunner::run()` takes it as `$retry`.
+
 ## [0.3.0] - 2026-10-21
 
 ### Added

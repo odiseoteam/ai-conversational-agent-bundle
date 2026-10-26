@@ -39,4 +39,18 @@ final class TranscriptTest extends TestCase
 
         self::assertSame('user: my budget is 30k', Transcript::text(Transcript::latestExchange($messages)));
     }
+
+    public function testAConversationEndsUnansweredOnTheMessageWithNoReply(): void
+    {
+        $asked = [Transcript::userMessage('hi'), ['role' => 'assistant', 'content' => [['type' => 'text', 'text' => 'Hello.']]], Transcript::userTurn('cheaper ones', ['Added a tee'], 'Meanwhile')];
+
+        self::assertTrue(Transcript::endsUnanswered($asked, 'cheaper ones'));
+        self::assertFalse(Transcript::endsUnanswered($asked, 'something else'));
+        self::assertFalse(Transcript::endsUnanswered(\array_slice($asked, 0, 2), 'hi'), 'answered');
+        self::assertFalse(Transcript::endsUnanswered([], 'hi'));
+        self::assertFalse(Transcript::endsUnanswered(
+            [['role' => 'user', 'content' => [['type' => 'tool_result', 'tool_use_id' => 't1', 'content' => 'cheaper ones', 'is_error' => false]]]],
+            'cheaper ones',
+        ), 'a tool result is not what the person typed');
+    }
 }

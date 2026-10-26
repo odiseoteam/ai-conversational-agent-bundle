@@ -55,6 +55,23 @@ final class Transcript
         ];
     }
 
+    /**
+     * Whether the conversation ends on this message, with no reply after it.
+     *
+     * @param list<array<string, mixed>> $messages
+     */
+    public static function endsUnanswered(array $messages, string $text): bool
+    {
+        $last = [] === $messages ? null : $messages[array_key_last($messages)];
+        if (null === $last || 'user' !== ($last['role'] ?? null) || !\is_array($last['content'] ?? null) || [] === $last['content']) {
+            return false;
+        }
+
+        $block = $last['content'][array_key_last($last['content'])];
+
+        return \is_array($block) && 'text' === ($block['type'] ?? null) && $text === ($block['text'] ?? null);
+    }
+
     /** @param list<array<string, mixed>> $messages */
     public static function latestUserText(array $messages): string
     {

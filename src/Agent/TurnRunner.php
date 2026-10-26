@@ -29,13 +29,20 @@ final class TurnRunner
     ) {
     }
 
-    /** @return \Generator<int, AgentEvent> */
-    public function run(SessionRecord $record, SessionContext $session, string $message): \Generator
+    /**
+     * A retry of the message the last turn left unanswered answers it again instead of storing it
+     * twice; one that never got stored goes in as usual.
+     *
+     * @return \Generator<int, AgentEvent>
+     */
+    public function run(SessionRecord $record, SessionContext $session, string $message, bool $retry = false): \Generator
     {
         $this->hook->beforeTurn($session);
 
-        $record->messages[] = Transcript::userTurn($message, $record->pendingAppEvents, $this->appEventsLabel);
-        $record->pendingAppEvents = [];
+        if (!$retry || !Transcript::endsUnanswered($record->messages, $message)) {
+            $record->messages[] = Transcript::userTurn($message, $record->pendingAppEvents, $this->appEventsLabel);
+            $record->pendingAppEvents = [];
+        }
 
         foreach ($this->agent->streamTurn($record->messages, $session, $record->state) as $event) {
             if (EventType::TurnComplete === $event->type && 0 !== ($event->data['results_cleared'] ?? 0)) {
