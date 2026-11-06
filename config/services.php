@@ -80,6 +80,7 @@ use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigura
 
 use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
+use function Symfony\Component\DependencyInjection\Loader\Configurator\service_closure;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\tagged_iterator;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\tagged_locator;
 
@@ -173,7 +174,7 @@ return static function (ContainerConfigurator $container): void {
         ->args([tagged_iterator($capabilityTag)]);
     $services->alias(CapabilityRegistry::class, $id.'capability.registry');
     $services->set($id.'capability.skill', SkillCapability::class)
-        ->args([service($id.'skill.registry')])
+        ->args([service($id.'skill.registry'), service_closure($id.'capability.registry')])
         ->tag($capabilityTag);
     $services->set($id.'capability.memory', MemoryCapability::class)
         ->args([service($id.'memory.runtime')])

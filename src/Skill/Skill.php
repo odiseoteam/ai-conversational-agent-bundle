@@ -6,10 +6,18 @@ namespace Odiseo\AiConversationalAgentBundle\Skill;
 
 final readonly class Skill
 {
+    /** @param list<string> $requires the tools the flow leans on; without them it is not offered */
     public function __construct(
         public string $name,
         public string $description,
         public string $body,
+        public array $requires = [],
     ) {
+    }
+
+    /** @param list<string> $tools */
+    public function availableWith(array $tools): bool
+    {
+        return [] === array_diff($this->requires, $tools);
     }
 }

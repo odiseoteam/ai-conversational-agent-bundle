@@ -7,6 +7,7 @@ namespace Odiseo\AiConversationalAgentBundle\Prompt;
 use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
 use Odiseo\AiConversationalAgentBundle\Capability\PromptFragment;
 use Odiseo\AiConversationalAgentBundle\Capability\PromptSection;
+use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
 use Odiseo\AiConversationalAgentBundle\Config\AgentConfig;
 use Odiseo\AiConversationalAgentBundle\Config\AgentConfigProviderInterface;
 use Odiseo\AiConversationalAgentBundle\Fencing\Fence;
@@ -200,13 +201,14 @@ final class StaticPromptBuilder
 
     private function skillsSection(): string
     {
-        if ([] === $this->skills->names()) {
+        $skills = $this->skills->availableWith(array_map(static fn (ToolSpec $tool): string => $tool->name, $this->capabilities->tools()));
+        if ([] === $skills->names()) {
             return '';
         }
 
         return "# Skills\n\n"
             ."Each entry below is a flow whose rules are in the skill, not here. When a request matches an entry, on whichever turn it arrives, call `load_skill` in the same round as your first read, however clear the flow looks. One obvious lookup for a thing the person named needs no skill.\n\n"
-            .$this->skills->indexBlock();
+            .$skills->indexBlock();
     }
 
     /**

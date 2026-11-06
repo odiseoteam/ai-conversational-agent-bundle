@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- `requires` in a skill's frontmatter: the tools its flow leans on. Without one of them the skill
+  is neither in the index nor loadable, so a flow can ship with a tool a deployment may not
+  register. `SkillCapability` takes the registry as a closure to know the tools.
+
 ## [0.4.0] - 2026-10-29
 
 ### Added
