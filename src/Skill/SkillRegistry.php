@@ -8,9 +8,10 @@ use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
 
 /**
- * A skill is a directory holding SKILL.md: YAML frontmatter with `name` and `description`,
- * then the instructions. The static prompt carries the index; `load_skill` returns a body on
- * demand. Skills are sorted by name so the index renders the same bytes every time.
+ * A skill is a directory holding SKILL.md: YAML frontmatter with `name` and `description`, and
+ * optionally the `requires` tools, then the instructions. The static prompt carries the index;
+ * `load_skill` returns a body on demand. Skills are sorted by name so the index renders the same
+ * bytes every time.
  */
 final class SkillRegistry
 {
@@ -100,7 +101,24 @@ final class SkillRegistry
             throw new SkillLoadException(\sprintf('%s: frontmatter needs `name` and `description`', $where));
         }
 
-        return new Skill($name, trim($description), trim($parts[2]));
+        $requires = \is_array($meta) ? ($meta['requires'] ?? []) : [];
+        if (!\is_array($requires) || !array_is_list($requires) || [] !== array_filter($requires, static fn (mixed $tool): bool => !\is_string($tool))) {
+            throw new SkillLoadException(\sprintf('%s: `requires` is a list of tool names', $where));
+        }
+
+        /** @var list<string> $requires */
+        return new Skill($name, trim($description), trim($parts[2]), $requires);
+    }
+
+    /**
+     * The skills whose required tools are all there: a flow that leans on a tool the deployment
+     * does not have is neither indexed nor loadable.
+     *
+     * @param list<string> $tools
+     */
+    public function availableWith(array $tools): self
+    {
+        return new self(array_filter($this->skills, static fn (Skill $skill): bool => $skill->availableWith($tools)));
     }
 
     /** @return list<string> */

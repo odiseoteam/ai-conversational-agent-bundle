@@ -32,6 +32,21 @@ use PHPUnit\Framework\TestCase;
  */
 final class StaticPromptTest extends TestCase
 {
+    public function testASkillWhoseToolIsMissingIsNotIndexed(): void
+    {
+        $skills = new SkillRegistry([
+            new Skill('refunds', 'Refund flow.', 'Rules.', ['issue_refund']),
+            new Skill('records', 'Find a record.', 'Rules.', ['find_records']),
+            new Skill('service-discovery', 'Find a service.', 'Rules.'),
+        ]);
+
+        $text = $this->builder(capabilities: [new DirectoryCapability()], skills: $skills)->build();
+
+        self::assertStringContainsString('service-discovery', $text);
+        self::assertStringContainsString('`records`', $text);
+        self::assertStringNotContainsString('refunds', $text);
+    }
+
     public function testTheStaticPromptIsByteIdenticalAcrossBuilds(): void
     {
         $first = $this->builder()->build();

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Skill;
 
 use Odiseo\AiConversationalAgentBundle\Capability\CapabilityInterface;
+use Odiseo\AiConversationalAgentBundle\Capability\CapabilityRegistry;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolContext;
 use Odiseo\AiConversationalAgentBundle\Capability\ToolSpec;
 use Odiseo\AiConversationalAgentBundle\Streaming\ToolOutcome;
@@ -18,8 +19,11 @@ final class SkillCapability implements CapabilityInterface
 {
     public const TOOL = 'load_skill';
 
-    public function __construct(private readonly SkillRegistry $skills)
-    {
+    /** @param (\Closure(): CapabilityRegistry)|null $registry a closure, since the registry holds this capability too; null offers every skill */
+    public function __construct(
+        private readonly SkillRegistry $skills,
+        private readonly ?\Closure $registry = null,
+    ) {
     }
 
     public function name(): string
@@ -29,7 +33,7 @@ final class SkillCapability implements CapabilityInterface
 
     public function tools(): array
     {
-        $names = $this->skills->names();
+        $names = $this->available()->names();
         if ([] === $names) {
             return [];
         }
@@ -70,16 +74,34 @@ final class SkillCapability implements CapabilityInterface
     public function execute(string $tool, array $input, ToolContext $context): ToolOutcome
     {
         $name = Scalar::string($input['skill_name'] ?? null);
-        $body = $this->skills->instructions($name);
+        $skills = $this->available();
+        $body = $skills->instructions($name);
 
         if (null === $body) {
             return ToolOutcome::error(\sprintf(
                 'No skill named "%s". Available: %s',
                 $name,
-                implode(', ', $this->skills->names()),
+                implode(', ', $skills->names()),
             ));
         }
 
         return new ToolOutcome($body);
+    }
+
+    /** The skills whose required tools the other capabilities provide. */
+    private function available(): SkillRegistry
+    {
+        if (null === $this->registry) {
+            return $this->skills;
+        }
+
+        $tools = [];
+        foreach (($this->registry)()->all() as $capability) {
+            if ($capability !== $this) {
+                array_push($tools, ...array_map(static fn (ToolSpec $tool): string => $tool->name, $capability->tools()));
+            }
+        }
+
+        return $this->skills->availableWith($tools);
     }
 }
