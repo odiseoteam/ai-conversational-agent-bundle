@@ -11,6 +11,14 @@ All notable changes to this project are documented here. The format is based on
 - `requires` in a skill's frontmatter: the tools its flow leans on. Without one of them the skill
   is neither in the index nor loadable, so a flow can ship with a tool a deployment may not
   register. `SkillCapability` takes the registry as a closure to know the tools.
+- `TurnRunner::prepare()` runs the host's `TurnHookInterface` ahead of the turn; `run()` then
+  skips it for that session. The chat endpoint calls it before the streamed response starts.
+
+### Fixed
+
+- The host's hook ran inside the streamed response, after the PHP session had been written, so
+  what it stored there was lost: a cart a store created for the turn did not stay with the
+  visitor, and the next turn started another one.
 
 ## [0.4.0] - 2026-10-29
 

@@ -51,6 +51,9 @@ final class ChatController
         $surface = Scalar::keyed($body['page'] ?? null);
         $session = $this->sessions->context($record, $surface);
 
+        // Before the stream: the session is written when the response starts.
+        $this->turns->prepare($session);
+
         $response = new StreamedResponse(function () use ($record, $session, $message, $retry): void {
             // An open output buffer (the SAPI's output_buffering) holds the events until the
             // turn ends; it is closed before the first one. On the CLI the buffers belong to the

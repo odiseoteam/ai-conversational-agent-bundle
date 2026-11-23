@@ -21,12 +21,26 @@ use Psr\Log\NullLogger;
  */
 final class TurnRunner
 {
+    /** @var \WeakMap<SessionContext, true> sessions whose hook already ran */
+    private \WeakMap $prepared;
+
     public function __construct(
         private readonly AgentLoop $agent,
         private readonly TurnHookInterface $hook,
         private readonly string $appEventsLabel,
         private readonly LoggerInterface $logger = new NullLogger(),
     ) {
+        $this->prepared = new \WeakMap();
+    }
+
+    /**
+     * Runs the host's hook now. A surface that streams calls it before the response starts, so
+     * what the hook stores in the PHP session is written with it; run() then skips the hook.
+     */
+    public function prepare(SessionContext $session): void
+    {
+        $this->hook->beforeTurn($session);
+        $this->prepared[$session] = true;
     }
 
     /**
@@ -37,7 +51,10 @@ final class TurnRunner
      */
     public function run(SessionRecord $record, SessionContext $session, string $message, bool $retry = false): \Generator
     {
-        $this->hook->beforeTurn($session);
+        if (!isset($this->prepared[$session])) {
+            $this->hook->beforeTurn($session);
+        }
+        unset($this->prepared[$session]);
 
         if (!$retry || !Transcript::endsUnanswered($record->messages, $message)) {
             $record->messages[] = Transcript::userTurn($message, $record->pendingAppEvents, $this->appEventsLabel);
