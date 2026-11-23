@@ -30,8 +30,9 @@ final class TurnState
             $this->seenRecords[$record->id] = $record;
         }
 
+        // array_shift() would renumber numeric ids.
         while (\count($this->seenRecords) > self::PROVENANCE_CAP) {
-            array_shift($this->seenRecords);
+            unset($this->seenRecords[array_key_first($this->seenRecords)]);
         }
     }
 
@@ -48,7 +49,8 @@ final class TurnState
     /** @return list<string> */
     public function seenIds(): array
     {
-        return array_keys($this->seenRecords);
+        // PHP turns a numeric id key into an int.
+        return array_map('strval', array_keys($this->seenRecords));
     }
 
     /** @return array<string, SeenRecord> */
