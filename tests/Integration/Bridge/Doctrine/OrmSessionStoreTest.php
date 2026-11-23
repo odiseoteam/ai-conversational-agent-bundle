@@ -39,6 +39,25 @@ final class OrmSessionStoreTest extends TestCase
         $store2->save($second);
     }
 
+    public function testASaveThatOnlyAddsMessagesStillBumpsTheVersion(): void
+    {
+        $em = Orm::entityManager();
+        $store = Orm::sessionStore($em);
+
+        $record = $store->start('visitor-1');
+        $record->messages[] = Transcript::userMessage('uno');
+        $store->save($record);
+        $record->messages[] = Transcript::userMessage('dos');
+        $store->save($record);
+        $em->clear();
+
+        self::assertSame($record->version, $store->readState($record->sessionId)[0] ?? null);
+
+        $record->messages[] = Transcript::userMessage('tres');
+        $store->save($record);
+        self::assertCount(3, $store->readMessages($record->sessionId));
+    }
+
     public function testAnExpiredSessionIsNotServedButKeptUntilPruned(): void
     {
         $em = Orm::entityManager();

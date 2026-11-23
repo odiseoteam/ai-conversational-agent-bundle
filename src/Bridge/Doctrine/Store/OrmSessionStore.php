@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Store;
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
-use Doctrine\DBAL\LockMode;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\OptimisticLockException;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\ConversationInitializerInterface;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\ConversationInterface;
 use Odiseo\AiConversationalAgentBundle\Bridge\Doctrine\Model\Message;
@@ -21,9 +20,9 @@ use Odiseo\AiConversationalAgentBundle\Support\Scalar;
  * The session store over the ORM: a conversation row for the state document, a message row
  * per transcript entry.
  *
- * The compare-and-set on the version is Doctrine's optimistic lock: the UPDATE carries
- * `WHERE version = :expected` and a lost race surfaces as OptimisticLockException, here as
- * SessionConflictException. Two starts racing on one id meet the unique constraint instead.
+ * The compare-and-set on the version is an UPDATE with `WHERE version = :expected` that bumps
+ * it; no row updated is a lost race, surfaced as SessionConflictException. Two starts racing on
+ * one id meet the unique constraint instead.
  *
  * Two clocks: `expires_at` is how long the session is served, prune() how long the
  * conversation is kept for the host to read. Neither is a background sweep.
@@ -68,14 +67,31 @@ final class OrmSessionStore extends SessionStore
             throw new SessionConflictException($sessionId);
         }
 
-        self::fill($conversation, $document, $this->expiry());
+        // Not the ORM's optimistic lock: it skips the UPDATE, and the bump with it, when no
+        // column changes at database precision (a save that only adds messages, within a second).
+        $updated = $this->em->createQueryBuilder()
+            ->update($this->conversationClass, 'c')
+            ->set('c.version', 'c.version + 1')
+            ->set('c.state', ':state')
+            ->set('c.pendingAppEvents', ':events')
+            ->set('c.updatedAt', ':now')
+            ->set('c.expiresAt', ':expires')
+            ->where('c.id = :id AND c.version = :version')
+            ->setParameter('state', Scalar::keyed($document['state'] ?? null), Types::JSON)
+            ->setParameter('events', Scalar::strings($document['pending_app_events'] ?? null), Types::JSON)
+            ->setParameter('now', new \DateTimeImmutable(), Types::DATETIME_IMMUTABLE)
+            ->setParameter('expires', $this->expiry(), Types::DATETIME_IMMUTABLE)
+            ->setParameter('id', $conversation->getId())
+            ->setParameter('version', $version)
+            ->getQuery()
+            ->execute();
 
-        try {
-            $this->em->lock($conversation, LockMode::OPTIMISTIC, $version);
-            $this->em->flush();
-        } catch (OptimisticLockException) {
+        if (1 !== $updated) {
             throw new SessionConflictException($sessionId);
         }
+
+        // The managed entity still holds the old row; a later flush would write it back.
+        $this->em->refresh($conversation);
     }
 
     public function readMessages(string $sessionId): array
